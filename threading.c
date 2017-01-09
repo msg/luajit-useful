@@ -11,7 +11,7 @@ typedef struct proc {
 	int nargs;
 } proc;
 
-int luaopen_threading(lua_State *lua);
+int luaopen_useful_threading(lua_State *lua);
 
 static lua_State *luax = NULL; /* used to store message info */
 
@@ -261,7 +261,7 @@ static int ll_receive(lua_State *lua) {
 static void *ll_thread(void *arg) {
 	lua_State *lua = (lua_State *)arg;
 	luaL_openlibs(lua);
-	luaopen_threading(lua);
+	luaopen_useful_threading(lua);
 	if (lua_pcall(lua, lua_gettop(lua)-1, 0, 0) != 0)
 		fprintf(stderr, "thread error: %s\n", lua_tostring(lua, -1));
 	pthread_cond_destroy(&get_self(lua)->cond);
@@ -348,7 +348,7 @@ static const struct luaL_Reg ll_funcs[] = {
 	{ NULL,		NULL },
 };
 
-int luaopen_threading(lua_State *lua) {
+int luaopen_useful_threading(lua_State *lua) {
 	proc *self = (proc *)lua_newuserdata(lua, sizeof(proc));
 	lua_setfield(lua, LUA_REGISTRYINDEX, "_SELF");
 	pthread_mutex_lock(&kernel_access);
