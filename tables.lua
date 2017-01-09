@@ -6,7 +6,6 @@ module(..., package.seeall)
 
 local insert = table.insert
 local remove = table.remove
-local concat = table.concat
 
 function serialize(o, indent, sp, nl)
 	local new = {}
@@ -32,7 +31,7 @@ function serialize(o, indent, sp, nl)
 					k = '[' .. k .. '] = '
 				end
 			end
-			insert(new, concat({
+			insert(new, table.concat({
 				indent, sp, k,
 				serialize(v, indent .. sp), ','
 			}, ''))
@@ -41,7 +40,7 @@ function serialize(o, indent, sp, nl)
 	else
 		error('cannot serialize a ' ..type(o))
 	end
-	return concat(new, nl)
+	return table.concat(new, nl)
 end
 
 function unserialize(t)

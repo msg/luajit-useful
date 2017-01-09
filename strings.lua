@@ -13,11 +13,14 @@ function rstrip(s) return gsub(s, '%s*$', '') end
 function strip(s) return gsub(gsub(s, '^%s*', ''), '%s*$', '') end
 join = table.concat -- join(s, sep)
 
+function capitalize(s)
+	return s:sub(1,1):upper() .. s:sub(2)
+end
+
 function split(s, sep)
 	local fields = {}
 	sep = sep or '%s+'
-	local first, last, next
-	next = 1
+	local first, last, next = 0, 0, 1
 	while true do
 		first, last = s:find(sep, next)
 		if first == nil then break end
