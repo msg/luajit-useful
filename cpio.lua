@@ -2,6 +2,9 @@
 --
 -- c p i o . l u a
 --
+
+module(..., package.seeall)
+
 local bit = require('bit')
 local band, bor, lshift = bit.band, bit.bor, bit.lshift
 
@@ -180,9 +183,14 @@ function CPIO(file)
 		return data
 	end
 
-	function self.read_entry()
+	function self.read_header()
 		local header = CPIOHeader()
 		header.read(self.file)
+		return header
+	end
+
+	function self.read_entry()
+		local header = self.read_header()
 		return header, self.read_contents(header)
 	end
 
