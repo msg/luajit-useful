@@ -4,9 +4,12 @@
 
 module(..., package.seeall)
 
-local gsub	= string.gsub
-local rep	= string.rep
-local insert	= table.insert
+local bit = require('bit')
+local bor, band		= bit.bor, bit.band
+local lshift, rshift	= bit.lshift, bit.rshift
+local insert, concat	= table.insert, table.concat
+local byte, char	= string.byte, string.char
+local gsub, rep		= string.gsub, string.rep
 
 function lstrip(s) return gsub(s, '^%s*', '') end
 function rstrip(s) return gsub(s, '%s*$', '') end
@@ -74,3 +77,45 @@ function parse_ranges(s)
 	return ranges
 end
 
+function hex_to_binary(s)
+	local zero, nine = byte('0'), byte('9')
+	local letter_a, letter_f = byte('a'), byte('f')
+	function add_ascii_hex(b, c)
+		if zero <= c and c <= nine then
+			return bor(lshift(b, 4), c - zero), true
+		elseif letter_a <= c and c <= letter_f then
+			return bor(lshift(b, 4), 10 + c - letter_a), true
+		else
+			return b, false
+		end
+	end
+	local b, o = 0, 0
+	local out = { }
+	for i=1,#s do
+		local c = byte(s:sub(i, i):lower())
+		b, is_hex = add_ascii_hex(b, c)
+		if is_hex then
+			if o == 1 then
+				insert(out, char(b))
+				b = 0
+			end
+			o = 1 - o
+		end
+	end
+	return string.concat(out)
+end
+
+function binary_to_hex(s, sep)
+	local out = { }
+	for i=1,#inb do
+		local c = byte(inb:sub(i, i))
+		local l = rshift(c, 4) + 1
+		insert(out, hexs:sub(l, l))
+		l = band(c, 0xf) + 1
+		insert(out, hexs:sub(l, l))
+		if sep then
+			insert(out, sep)
+		end
+	end
+	return string.concat(out)
+end
