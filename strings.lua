@@ -20,15 +20,15 @@ end
 function split(s, sep)
 	local fields = {}
 	sep = sep or '%s+'
-	local first, last, next = 0, 0, 1
+	local first, last, next = 0, 0, 0
 	while true do
-		first, last = s:find(sep, next)
+		first, last = s:find(sep, next + 1)
 		if first == nil then break end
-		insert(fields, s:sub(next, first-1))
-		next = last + 1 -- next +1 of last
+		insert(fields, s:sub(next, first - 1))
+		next = last
 	end
-	if next <= #s + 1 then -- +1 because next is always +1 of last
-		insert(fields, s:sub(next))
+	if next <= #s then
+		insert(fields, s:sub(next + 1))
 	end
 	return fields
 end
