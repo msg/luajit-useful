@@ -4,12 +4,13 @@
 
 module(..., package.seeall)
 
-local bit = require('bit')
+local bit		= require('bit')
 local bor, band		= bit.bor, bit.band
 local lshift, rshift	= bit.lshift, bit.rshift
 local insert, concat	= table.insert, table.concat
 local byte, char	= string.byte, string.char
 local gsub, rep		= string.gsub, string.rep
+local tables		= require('useful.tables')
 
 function lstrip(s) return gsub(s, '^%s*', '') end
 function rstrip(s) return gsub(s, '%s*$', '') end
@@ -17,17 +18,18 @@ function strip(s) return gsub(gsub(s, '^%s*', ''), '%s*$', '') end
 join = table.concat -- join(s, sep)
 
 function capitalize(s)
-	return s:sub(1,1):upper() .. s:sub(2)
+	return s:sub(1,1):upper() .. s:sub(2):lower()
 end
 
-function split(s, sep)
+function split(s, sep, count)
 	local fields = {}
 	sep = sep or '%s+'
+	count = count or #s
 	local first, last, next = 0, 0, 0
-	while true do
+	for i=1,count do
 		first, last = s:find(sep, next + 1)
 		if first == nil then break end
-		insert(fields, s:sub(next, first - 1))
+		insert(fields, s:sub(next + 1, first - 1))
 		next = last
 	end
 	if next <= #s then
@@ -36,39 +38,50 @@ function split(s, sep)
 	return fields
 end
 
-function ljust(s, w)
+function title(s)
+	local fields = { }
+	for i,field in ipairs(split(s)) do
+		fields[i] = capitalize(field)
+	end
+	return join(fields, ' ')
+end
+
+function ljust(s, w, c)
 	local l = #s
 	if l > w then
 		return s:sub(1, w)
 	else
-		return s .. rep(' ', w-l)
+		return s .. rep(c or ' ', w-l)
 	end
 end
 
-function rjust(s, w)
+function rjust(s, w, c)
 	local l = #s
 	if l > w then
 		return s:sub(1, w)
 	else
-		return rep(' ', w-l) .. s
+		return rep(c or ' ', w-l) .. s
 	end
 end
 
-function center(s, w)
+function center(s, w, c)
 	local l = #s
 	if l > w then
 		return s
 	else
 		local n = (w - l) / 2
-		return rep(' ', n) .. s .. rep(' ', n)
+		return rep(c or ' ', n) .. s .. rep(c or ' ', n)
 	end
 end
 
 function parse_ranges(s)
 	local ranges = {}
 	for _,range in ipairs(split(s, ',')) do
-		local s, e = unpack(tables.imap(split(range, '-'),
-				function (n,v) return tonumber(v) end))
+		local s, e = unpack(
+			tables.imap(split(range, '-'), function (n,v)
+				return tonumber(v)
+			end)
+		)
 		e = e or s
 		for i=s,e do
 			insert(ranges, i)
@@ -102,13 +115,14 @@ function hex_to_binary(s)
 			o = 1 - o
 		end
 	end
-	return string.concat(out)
+	return join(out)
 end
 
+local hexs = '0123456789abcdef'
 function binary_to_hex(s, sep)
 	local out = { }
-	for i=1,#inb do
-		local c = byte(inb:sub(i, i))
+	for i=1,#s do
+		local c = byte(s:sub(i, i))
 		local l = rshift(c, 4) + 1
 		insert(out, hexs:sub(l, l))
 		l = band(c, 0xf) + 1
@@ -117,5 +131,5 @@ function binary_to_hex(s, sep)
 			insert(out, sep)
 		end
 	end
-	return string.concat(out)
+	return join(out)
 end
