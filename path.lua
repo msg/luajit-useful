@@ -2,8 +2,7 @@
 module(..., package.seeall)
 
 local ffi	= require('ffi')
-local time	= require('posix.time')
-local pstring	= require('posix.string')
+local strings	= require('useful.strings')
 local C		= ffi.C
 
 ffi.cdef([[
@@ -52,3 +51,26 @@ function basepath(path)
 	end
 end
 
+local sep = package.config:sub(1,1)
+
+function split_path(path)
+	local dentries = strings.split(path, sep)
+	local base = table.remove(dentries, #dentries)
+	return strings.join(dentries, sep), base
+end
+
+function split_ext(path)
+	local entries = strings.split(path, '%.', 1)
+	entries[#entries] = '.' .. entries[#entries]
+	return entries
+end
+
+function base_path(path)
+	local path, base = split_path(path)
+	return base
+end
+
+function dir_path(path)
+	local path, base = split_path(path)
+	return path
+end
