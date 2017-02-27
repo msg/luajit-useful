@@ -74,7 +74,7 @@ function load_table(filename)
 	return t
 end
 
-function count_table(t)
+function count(t)
 	local i = 0
 	for _,_ in pairs(t) do
 		i = i + 1
@@ -219,6 +219,20 @@ function range(first, last, inc)
 	return new
 end
 
+function update (t,...)
+    for i=1,select('#',...) do
+        for k,v in pairs(select(i,...)) do
+            t[k] = v
+        end
+    end
+    return t
+end
+
+
+--
+--
+--
+
 function import(env, from, ...)
 	local vars = {...}
 	if #vars ~= 0 then
@@ -346,3 +360,4 @@ function structure(initializer)
 
 	return self
 end
+
