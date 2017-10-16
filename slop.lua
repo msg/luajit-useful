@@ -5,10 +5,10 @@ module(..., package.seeall)
 
 local ffi	= require('ffi')
 
-local strings	= require('strings')
-local tables	= require('tables')
-local log	= require('log')
-local tcp	= require('tcp')
+local strings	= require('useful.strings')
+local tables	= require('useful.tables')
+local log	= require('useful.log')
+local tcp	= require('useful.tcp')
 
 local strip = strings.strip
 local rstrip = strings.rstrip

@@ -2,6 +2,7 @@
 module(..., package.seeall)
 
 local ffi		= require('ffi')
+
 local unistd		= require('posix.unistd')
 local sys_types		= require('posix.sys.types')
 local sys_time		= require('posix.sys.time')

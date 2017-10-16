@@ -6,13 +6,15 @@
 module(..., package.seeall)
 
 local ffi	= require('ffi')
+local bit	= require('bit')
+
 local sys_types = require('posix.sys.types')
 local unistd	= require('posix.unistd')
 local poll	= require('posix.poll')
 local fcntl	= require('posix.fcntl')
 local pstring	= require('posix.string')
-local bit	= require('bit')
-local tcp	= require('tcp')
+
+local tcp	= require('useful.tcp')
 
 local bnot, bor, band = bit.bnot, bit.bor, bit.band
 local lshift, rshift = bit.lshift, bit.rshift

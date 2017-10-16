@@ -5,11 +5,13 @@
 -- vim:ft=lua
 module(..., package.seeall)
 
-local argparse		= require('argparse')
 local ffi		= require('ffi')
-local sys_socket	= require('posix.sys.socket')
-local mmalloc		= require('mmalloc')
 local C = ffi.C
+
+local sys_socket	= require('posix.sys.socket')
+
+local argparse		= require('useful.argparse')
+local mmalloc		= require('useful.mmalloc')
 
 sprintf = string.format
 
