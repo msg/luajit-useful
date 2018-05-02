@@ -3,7 +3,13 @@
 -- c p i o . l u a
 --
 
-module(..., package.seeall)
+local function is_main()
+	return debug.getinfo(4) == nil
+end
+
+if not is_main() then
+	module(..., package.seeall)
+end
 
 local bit = require('bit')
 local band, bor, lshift = bit.band, bit.bor, bit.lshift
@@ -197,7 +203,7 @@ function CPIO(file)
 	return self
 end
 
-function test()
+function main()
 	local f = io.open('test.cpio', 'w')
 	local cpio = CPIO(f)
 	for i=0,99 do
@@ -221,4 +227,7 @@ function test()
 	f:close()
 end
 
---test()
+if is_main() then
+	main()
+end
+

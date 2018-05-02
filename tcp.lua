@@ -1,5 +1,11 @@
 
-module(..., package.seeall)
+local function is_main()
+	return debug.getinfo(4) == nil
+end
+
+if not is_main() then
+	module(..., package.seeall)
+end
 
 local ffi		= require('ffi')
 
@@ -97,7 +103,7 @@ function TCPSocket(server_port, backlog)
 	return self
 end
 
-function main_test()
+function main()
 	local server, err = TCPSocket(12345)
 	if server == nil then
 		print("error " .. err)
@@ -111,5 +117,9 @@ function main_test()
 		tonumber(C.ntohs(from.sin_port)))
 	C.write(rc, 'testing\n', 8)
 	C.sleep(10)
+end
+
+if is_main() then
+	main()
 end
 
