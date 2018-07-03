@@ -263,13 +263,13 @@ static int ll_start(lua_State *lua) {
 	int i, n;
 	lua_State *new_lua;
 
-	manager *man = get_manager(lua, RAISE_ERROR);
-	lua_pushlightuserdata(new_lua, man);
-	lua_setfield(new_lua, LUA_REGISTRYINDEX, "_MANAGER");
-
 	new_lua = luaL_newstate();
 	if (new_lua == NULL)
 		luaL_error(lua, "unable to create new state");
+
+	manager *man = get_manager(lua, RAISE_ERROR);
+	lua_pushlightuserdata(new_lua, man);
+	lua_setfield(new_lua, LUA_REGISTRYINDEX, "_MANAGER");
 
 	n = lua_gettop(lua);
 	for (i = 2; i <= n; i++) { // all but function
