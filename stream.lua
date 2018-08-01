@@ -38,9 +38,9 @@ function Stream(fd, size, timeout_ms, unget_size)
 	self.out_next	= ffi.cast('char *', self.out_buffer)
 
 	function self.set_timeout(timeout_ms)
-		local fl = bor(C.fcntl(self.fd, fcntl.F_GETFL),
-				fcntl.O_NONBLOCK)
 		if self.fd ~= NOFD then
+			local fl = bor(C.fcntl(self.fd, fcntl.F_GETFL),
+					fcntl.O_NONBLOCK)
 			C.fcntl(self.fd, fcntl.F_SETFL, fl)
 		end
 		self.timeout_ms = timeout_ms
