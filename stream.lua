@@ -6,7 +6,14 @@
 module(..., package.seeall)
 
 local ffi	= require('ffi')
+local C		= ffi.C
+
 local bit	= require('bit')
+local bnot	= bit.bnot
+local bor	= bit.bor
+local band	= bit.band
+local lshift	= bit.lshift
+local rshift	= bit.rshift
 
 local sys_types = require('posix.sys.types')
 local unistd	= require('posix.unistd')
@@ -14,19 +21,15 @@ local poll	= require('posix.poll')
 local fcntl	= require('posix.fcntl')
 local pstring	= require('posix.string')
 
-local tcp	= require('useful.tcp')
-
-local bnot, bor, band = bit.bnot, bit.bor, bit.band
-local lshift, rshift = bit.lshift, bit.rshift
-
-local C = ffi.C
+local socket	= require('useful.socket')
 
 local min = math.min
 
 local printf = function(...) io.stdout:write(string.format(...)) end
 
-NOFD = -1
-function Stream(fd, size, timeout_ms, unget_size)
+NOFD = -1 -- when the Stream has no file descriptor
+
+function Stream(fd, size, timeout, unget_size)
 	unget_size = unget_size or 1
 	local self = {
 		fd		= fd,
@@ -37,13 +40,13 @@ function Stream(fd, size, timeout_ms, unget_size)
 	self.out_buffer	= ffi.new('char[?]', size)
 	self.out_next	= ffi.cast('char *', self.out_buffer)
 
-	function self.set_timeout(timeout_ms)
+	function self.set_timeout(timeout)
 		if self.fd ~= NOFD then
 			local fl = bor(C.fcntl(self.fd, fcntl.F_GETFL),
 					fcntl.O_NONBLOCK)
 			C.fcntl(self.fd, fcntl.F_SETFL, fl)
 		end
-		self.timeout_ms = timeout_ms
+		self.timeout = timeout
 	end
 
 	function self.reopen(fd)
@@ -53,7 +56,7 @@ function Stream(fd, size, timeout_ms, unget_size)
 		self.out_next	= self.out_buffer
 		self.fd		= fd
 		if fd ~= NOFD then
-			self.set_timeout(self.timeout_ms)
+			self.set_timeout(self.timeout)
 		end
 		return 0
 	end
@@ -87,12 +90,12 @@ function Stream(fd, size, timeout_ms, unget_size)
 		self.flush_write()
 	end
 
-	function self.stream_poll(fd, events, timeout_ms)
+	function self.stream_poll(fd, events, timeout)
 		local rc
 		local pfd	= ffi.new('struct pollfd[1]')
 		pfd[0].fd	= fd
 		pfd[0].events	= events
-		rc = C.poll(pfd, 1, timeout_ms)
+		rc = C.poll(pfd, 1, timeout * 1000)
 		if rc <= 0 then
 			errno = EAGAIN
 			return rc
@@ -102,7 +105,7 @@ function Stream(fd, size, timeout_ms, unget_size)
 
 	function self.stream_read(buf, len)
 		local rc
-		rc = self.stream_poll(self.fd, poll.POLLIN, self.timeout_ms)
+		rc = self.stream_poll(self.fd, poll.POLLIN, self.timeout)
 		if rc < 0 then
 			return rc
 		end
@@ -111,7 +114,7 @@ function Stream(fd, size, timeout_ms, unget_size)
 
 	function self.stream_write(buf, len)
 		local rc
-		rc = self.stream_poll(self.fd, poll.POLLOUT, self.timeout_ms)
+		rc = self.stream_poll(self.fd, poll.POLLOUT, self.timeout)
 		if rc < 0 then
 			return rc
 		end
@@ -285,22 +288,18 @@ function Stream(fd, size, timeout_ms, unget_size)
 		return rc;
 	end
 
-	self.set_timeout(timeout_ms)
+	self.set_timeout(timeout)
 	self.flush_read()
 	return self
 end
 
-local sys_socket = require('posix.sys.socket')
+function TCPStream(fd, size, timeout, unget_size)
+	local self = Stream(fd, size, timeout, unget_size)
+	local self.tcp = tcp()
 
-function TCPStream(fd, size, timeout_ms, unget_size)
-	local self = Stream(fd, size, timeout_ms, unget_size)
-
-	function self.set_timeout(timeout_ms)
-		local tv	= ffi.new('struct timeval[1]')
-		tv[0].tv_sec	= timeout_ms / 1000
-		tv[0].tv_usec	= (timeout_ms % 1000) * 1000
-		return C.setsockopt(self.fd, sys_socket.SOL_SOCKET,
-				sys_socket.SO_RCVTIMEO, tv, ffi.sizeof(tv[0]))
+	function self.set_timeout(timeout)
+		self.tcp.fd = self.fd
+		self.rcvtimeo(timeout)
 	end
 
 	function self.stream_write(buf, len)

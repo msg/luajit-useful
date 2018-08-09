@@ -14,7 +14,7 @@ local ffi	= require('ffi')
 local strings	= require('useful.strings')
 local tables	= require('useful.tables')
 local log	= require('useful.log')
-local tcp	= require('useful.tcp')
+local socket	= require('useful.socket')
 local stream	= require('useful.stream')
 
 local strip = strings.strip
@@ -300,18 +300,23 @@ end
 
 function TCPSlopServer(port)
 	local self	= Slop()
-	self.tcp	= tcp.TCPSocket(port)
-	self.stream	= stream.TCPStream(stream.NOFD, 32768, 5000)
+	self.stream	= stream.TCPStream(stream.NOFD, 32768, 5)
+
+	self.tcp	= socket.tcp()
+	self.tcp.bind('*', port)
+	self.tcp.listen()
 
 	function self.process()
 		local io = self.stream
-		local rc, from = self.tcp.accept(4000)
+		local rc, from = self.tcp.accept(4)
 		if rc > 0 then
 			io.reopen(rc)
 			while rc >= 0 do
 				rc = self.process_transaction(io, io)
 			end
 			io.reopen(stream.NOFD)
+		else
+			printf("%s\n", socket.syserror('accept'))
 		end
 
 		return rc
