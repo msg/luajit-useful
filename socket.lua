@@ -178,8 +178,9 @@ function udp()
 	function self.recvfrom(buf, flags)
 		local from	= ffi.new('struct sockaddr_in[1]')
 		local fromp	= ffi.cast('struct sockaddr *', from)
-		return C.recvfrom(self.fd, buf, ffi.sizeof(buf),
+		local ret = C.recvfrom(self.fd, buf, ffi.sizeof(buf),
 				flags, fromp, ffi.sizeof(from[0]))
+		return ret, from[0]
 	end
 
 	function self.send(buf, flags)
