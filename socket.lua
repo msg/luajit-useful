@@ -178,8 +178,9 @@ function udp()
 	function self.recvfrom(buf, flags)
 		local from	= ffi.new('struct sockaddr_in[1]')
 		local fromp	= ffi.cast('struct sockaddr *', from)
+		local size	= ffi.new('uint32_t[1]', ffi.sizeof(from))
 		local ret = C.recvfrom(self.fd, buf, ffi.sizeof(buf),
-				flags, fromp, ffi.sizeof(from[0]))
+				flags, fromp, size)
 		return ret, from[0]
 	end
 
@@ -188,9 +189,10 @@ function udp()
 	end
 
 	function self.sendto(buf, flags, ip, port)
-		local addr = getaddrinfo(ip, port)
-		return C.sendto(buf, ffi.sizeof(buf), flags,
-				addr, ffi.sizeof(addr))
+		local addr	= getaddrinfo(ip, port)
+		local addrp	= ffi.cast('struct sockaddr *', addr)
+		return C.sendto(self.fd, buf, ffi.sizeof(buf), flags,
+				addrp, ffi.sizeof(addr))
 	end
 
 	self.fd = C.socket(sys_socket.AF_INET, sys_socket.SOCK_DGRAM, 0)
