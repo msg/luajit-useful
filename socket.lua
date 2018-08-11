@@ -171,28 +171,26 @@ end
 function udp()
 	local self = socket()
 
-	function self.recv(buf, flags)
-		return C.recv(self.fd, buf, ffi.sizeof(buf), flags)
+	function self.recv(buf, len)
+		return C.recv(self.fd, buf, len, 0)
 	end
 
-	function self.recvfrom(buf, flags)
+	function self.recvfrom(buf, len)
 		local from	= ffi.new('struct sockaddr_in[1]')
 		local fromp	= ffi.cast('struct sockaddr *', from)
 		local size	= ffi.new('uint32_t[1]', ffi.sizeof(from))
-		local ret = C.recvfrom(self.fd, buf, ffi.sizeof(buf),
-				flags, fromp, size)
+		local ret = C.recvfrom(self.fd, buf, len, 0, fromp, size)
 		return ret, from[0]
 	end
 
-	function self.send(buf, flags)
-		return C.send(self.fd, buf, ffi.sizeof(buf), flags)
+	function self.send(buf, len)
+		return C.send(self.fd, buf, len, 0)
 	end
 
-	function self.sendto(buf, flags, ip, port)
+	function self.sendto(buf, len, ip, port)
 		local addr	= getaddrinfo(ip, port)
 		local addrp	= ffi.cast('struct sockaddr *', addr)
-		return C.sendto(self.fd, buf, ffi.sizeof(buf), flags,
-				addrp, ffi.sizeof(addr))
+		return C.sendto(self.fd, buf, len, 0, addrp, ffi.sizeof(addr))
 	end
 
 	self.fd = C.socket(sys_socket.AF_INET, sys_socket.SOCK_DGRAM, 0)
