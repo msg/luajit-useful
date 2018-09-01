@@ -204,6 +204,8 @@ static int ll_receive(lua_State *lua) {
 		move_itable(lua, man->lua);
 	}
 
+	lua_settop(man->lua, 0);
+
 	pthread_mutex_unlock(&man->mutex);
 
 	return 1;
