@@ -1,5 +1,5 @@
 --
--- f u n c t i o n s . l u a
+-- u s e f u l / f u n c t i o n s . l u a
 --
 
 -- vim:ft=lua

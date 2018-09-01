@@ -1,4 +1,6 @@
-
+--
+-- u s e f u l / p a t h . l u a
+--
 module(..., package.seeall)
 
 local ffi	= require('ffi')

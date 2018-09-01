@@ -1,5 +1,5 @@
 --
--- t a b l e s . l u a
+-- u s e f u l / t a b l e s . l u a
 --
 
 module(..., package.seeall)

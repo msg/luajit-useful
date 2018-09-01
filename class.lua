@@ -1,5 +1,5 @@
 --
--- c l a s s . l u a
+-- u s e f u l / c l a s s . l u a
 --
 
 local function is_main()

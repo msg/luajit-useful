@@ -1,5 +1,5 @@
 --
--- s t a t e m a c h i n e . l u a
+-- u s e f u l / s t a t e m a c h i n e . l u a
 --
 -- vim:ft=lua
 

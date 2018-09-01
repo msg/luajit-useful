@@ -1,5 +1,5 @@
 --
--- l o g . l u a
+-- u s e f u l / l o g . l u a
 --
 
 -- vim:ft=lua

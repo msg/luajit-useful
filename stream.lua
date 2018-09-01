@@ -1,5 +1,5 @@
 --
--- s t r e a m . l u a
+-- u s e f u l / s t r e a m . l u a
 --
 
 -- vim:ft=lua

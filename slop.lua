@@ -1,5 +1,5 @@
 --
--- s l o p . l u a
+-- u s e f u l / s l o p . l u a
 --
 local function is_main()
 	return debug.getinfo(4) == nil

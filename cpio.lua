@@ -1,6 +1,6 @@
 #!/usr/bin/luajit
 --
--- c p i o . l u a
+-- u s e f u l / c p i o . l u a
 --
 
 local function is_main()

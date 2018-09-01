@@ -1,5 +1,5 @@
 --
--- s t r i n g s
+-- u s e f u l / s t r i n g s . l u a
 --
 
 module(..., package.seeall)
