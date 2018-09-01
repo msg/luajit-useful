@@ -3,7 +3,13 @@
 --
 
 -- vim:ft=lua
-module(..., package.seeall)
+local function is_main()
+	return debug.getinfo(4) == nil
+end
+
+if not is_main() then
+	module(..., package.seeall)
+end
 
 local ffi	= require('ffi')
 local C		= ffi.C
@@ -22,6 +28,8 @@ local fcntl	= require('posix.fcntl')
 local pstring	= require('posix.string')
 
 local socket	= require('useful.socket')
+local class	= require('useful.class')
+local Class	= class.Class
 
 local min = math.min
 
@@ -29,53 +37,55 @@ local printf = function(...) io.stdout:write(string.format(...)) end
 
 NOFD = -1 -- when the Stream has no file descriptor
 
-function Stream(fd, size, timeout, unget_size)
-	unget_size = unget_size or 1
-	local self = {
-		fd		= fd,
-		size		= size,
-		unget_size	= unget_size,
-	}
-	self.in_buffer	= ffi.new('char[?]', size + unget_size + 1)
-	self.out_buffer	= ffi.new('char[?]', size)
-	self.out_next	= ffi.cast('char *', self.out_buffer)
+Stream = Class({
+	new = function(self, fd, size, timeout, unget_size)
+		unget_size = unget_size or 1
+		self.fd		= fd
+		self.size	= size
+		self.unget_size	= unget_size
+		self.in_buffer	= ffi.new('char[?]', size + unget_size + 1)
+		self.out_buffer	= ffi.new('char[?]', size)
+		self.out_next	= ffi.cast('char *', self.out_buffer)
+		self:set_timeout(timeout)
+		self:flush_read()
+	end,
 
-	function self.set_timeout(timeout)
+	set_timeout = function(self, timeout)
 		if self.fd ~= NOFD then
-			local fl = bor(C.fcntl(self.fd, fcntl.F_GETFL),
-					fcntl.O_NONBLOCK)
+			local fl
+			fl = bor(C.fcntl(self.fd, fcntl.F_GETFL), fcntl.O_NONBLOCK)
 			C.fcntl(self.fd, fcntl.F_SETFL, fl)
 		end
 		self.timeout = timeout
-	end
+	end,
 
-	function self.reopen(fd)
+	reopen = function(self, fd)
 		if self.fd ~= NOFD then
-			self.close()
+			self:close()
 		end
 		self.out_next	= self.out_buffer
 		self.fd		= fd
 		if fd ~= NOFD then
-			self.set_timeout(self.timeout)
+			self:set_timeout(self.timeout)
 		end
 		return 0
-	end
+	end,
 
-	function self.close()
-		self.flush()
+	close = function(self)
+		self:flush()
 		return C.close(self.fd)
-	end
+	end,
 
-	function self.flush_read()
+	flush_read = function(self)
 		self.in_next	= self.in_buffer + self.unget_size
 		self.in_end	= self.in_next
-	end
+	end,
 
-	function self.flush_write()
+	flush_write = function(self)
 		local rc = 0
 		local p = self.out_buffer
 		while p < self.out_next do
-			rc = self.stream_write(p, self.out_next - p)
+			rc = self:stream_write(p, self.out_next - p)
 			if rc <= 0 then
 				return rc
 			end
@@ -83,14 +93,14 @@ function Stream(fd, size, timeout, unget_size)
 		end
 		self.out_next = self.out_buffer
 		return rc
-	end
+	end,
 
-	function self.flush()
-		self.flush_read()
-		self.flush_write()
-	end
+	flush = function(self)
+		self:flush_read()
+		self:flush_write()
+	end,
 
-	function self.stream_poll(fd, events, timeout)
+	stream_poll = function(self, fd, events, timeout)
 		local rc
 		local pfd	= ffi.new('struct pollfd[1]')
 		pfd[0].fd	= fd
@@ -101,36 +111,36 @@ function Stream(fd, size, timeout, unget_size)
 			return rc
 		end
 		return 0
-	end
+	end,
 
-	function self.stream_read(buf, len)
+	stream_read = function(self, buf, len)
 		local rc
-		rc = self.stream_poll(self.fd, poll.POLLIN, self.timeout)
+		rc = self:stream_poll(self.fd, poll.POLLIN, self.timeout)
 		if rc < 0 then
 			return rc
 		end
 		return C.read(self.fd, buf, len)
-	end
+	end,
 
-	function self.stream_write(buf, len)
+	stream_write = function(self, buf, len)
 		local rc
-		rc = self.stream_poll(self.fd, poll.POLLOUT, self.timeout)
+		rc = self:stream_poll(self.fd, poll.POLLOUT, self.timeout)
 		if rc < 0 then
 			return rc
 		end
 		return C.write(self.fd, buf, len)
-	end
+	end,
 
-	function self.stream_close()
+	stream_close = function(self)
 		return C.close(self.fd)
-	end
+	end,
 
-	function self.read_more()
+	read_more = function(self)
 		local rc = -1
 		self.in_next	= self.in_buffer + self.unget_size
 		self.in_end	= self.in_next
 		while true do
-			rc = self.stream_read(self.in_next, self.size)
+			rc = self:stream_read(self.in_next, self.size)
 			if rc < 0 then
 				break
 			end
@@ -141,41 +151,41 @@ function Stream(fd, size, timeout, unget_size)
 			end
 		end
 		return rc
-	end
+	end,
 
-	function self.getch()
+	getch = function(self)
 		if self.in_next == self.in_end then
-			if self.read_more() < 0 then
+			if self:read_more() < 0 then
 				return -1
 			end
 		end
 		local c		= self.in_next[0]
 		self.in_next	= self.in_next + 1
 		return c
-	end
+	end,
 
-	function self.ungetch(c)
+	ungetch = function(self, c)
 		if self.in_next == self.in_buffer then
 			return -1
 		end
 		self.in_next	= self.in_next - 1
 		self.in_next[0]	= c
 		return c
-	end
+	end,
 
-	function self.read(buf, len)
+	read = function(self, buf, len)
 		local rc = 0
 		local p = buf
 		local e = p + len
-		local n
 		while p < e do
 			if self.in_next ~= self.in_end then
+				local n
 				n = min(self.in_end - self.in_next, e - p)
 				C.memcpy(p, self.in_next, n)
 				p		= p + n
 				self.in_next	= self.in_next + n
 			else
-				rc = self.read_more()
+				rc = self:read_more()
 				if rc <= 0 then
 					break
 				end
@@ -186,19 +196,19 @@ function Stream(fd, size, timeout, unget_size)
 		else
 			return p - buf
 		end
-	end
+	end,
 
-	function self.read_delims(buf, len, delims)
-		local rc	= 0
-		local p		= buf
-		local e		= p + len - 1 -- for \0
-		local n, spn
+	read_delims = function(self, buf, len, delims)
 		if len == 0 then
 			return 0
 		end
 
+		local rc	= 0
+		local p		= buf
+		local e		= p + len - 1 -- for \0
 		while p < e do
 			if self.in_next ~= self.in_end then
+				local n, spn
 				n	= min(self.in_end - self.in_next, e - p)
 				spn	= C.strcspn(self.in_next, delims)
 				if spn < n then
@@ -211,7 +221,7 @@ function Stream(fd, size, timeout, unget_size)
 					break
 				end
 			else
-				rc = self.read_more()
+				rc = self:read_more()
 				if rc <= 0 then
 					break
 				end
@@ -223,13 +233,13 @@ function Stream(fd, size, timeout, unget_size)
 		else
 			return p - buf
 		end
-	end
+	end,
 
-	function self.unread_space()
+	unread_space = function(self)
 		return self.in_next - self.in_buffer
-	end
+	end,
 
-	function self.unread(buf, len)
+	unread = function(self, buf, len)
 		local p = buf
 		local n = min(self.in_next - self.in_buffer, len)
 		if n <= 0 then
@@ -238,16 +248,16 @@ function Stream(fd, size, timeout, unget_size)
 		self.in_next = self.in_next - n
 		C.memcpy(self.in_next, p + len - n, n)
 		return n
-	end
+	end,
 
-	function self.write(buf, len)
+	write = function(self, buf, len)
 		local rc	= 0
 		local p		= buf
 		local e		= p + len
-		local out_end	= self.out_buffer + size
+		local out_end	= self.out_buffer + self.size
 		while p < e do
 			if out_end == self.out_next then
-				rc = self.flush_write()
+				rc = self:flush_write()
 				if rc < 0 then
 					return rc
 				end
@@ -258,26 +268,26 @@ function Stream(fd, size, timeout, unget_size)
 			p		= p + rc
 		end
 		return p - buf
-	end
+	end,
 
-	function self.writef(fmt, ...)
+	writef = function(self, fmt, ...)
 		local rc
 		local buf = string.format(fmt, ...)
-		return self.write(buf, #buf)
-	end
+		return self:write(buf, #buf)
+	end,
 
-	function self.readline(buf, len)
+	readline = function(self, buf, len)
 		local rc, c, d
 
 		-- -3 below because eol could be two chars plus the terminating \0.
-		rc = self.read_delims(buf, len-3, "\r\n");
+		rc = self:read_delims(buf, len-3, "\r\n");
 		if rc <= 0 then
 			return rc
 		end
 		if string.char(buf[rc-1]) == '\r' then
-			d = self.getch()
+			d = self:getch()
 			if string.char(d) ~= '\n' then
-				self.ungetch(d)
+				self:ungetch(d)
 			else
 				buf[rc] = d
 				rc = rc + 1
@@ -286,27 +296,31 @@ function Stream(fd, size, timeout, unget_size)
 
 		buf[rc] = 0 -- terminate for safety
 		return rc;
-	end
+	end,
+})
 
-	self.set_timeout(timeout)
-	self.flush_read()
-	return self
-end
+TCPStream = Class(Stream, {
+	new = function(self, fd, size, timeout, unget_size)
+		self.tcp = socket.TCP() -- must be first, Stream:new calls set_timeout()
+		Stream:new(self, fd, size, timeout, unget_size)
+	end,
 
-function TCPStream(fd, size, timeout, unget_size)
-	local self = Stream(fd, size, timeout, unget_size)
-	local self.tcp = tcp()
-
-	function self.set_timeout(timeout)
+	set_timeout = function(self, timeout)
+		Stream:set_timeout(self, timeout)
 		self.tcp.fd = self.fd
-		self.rcvtimeo(timeout)
-	end
+		self.tcp:rcvtimeo(timeout)
+	end,
 
-	function self.stream_write(buf, len)
+	stream_write = function(self, buf, len)
 		-- no polling needed because of SO_RCV_TIMEO
 		return C.write(self.fd, buf, len)
-	end
+	end,
+})
 
-	return self
+local function main()
+end
+
+if is_main() then
+	main()
 end
 

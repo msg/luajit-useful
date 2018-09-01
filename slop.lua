@@ -17,29 +17,32 @@ local log	= require('useful.log')
 local socket	= require('useful.socket')
 local stream	= require('useful.stream')
 
-local strip = strings.strip
-local rstrip = strings.rstrip
-local lstrip = strings.lstrip
-local split = strings.split
-local ljust = strings.ljust
+local class	= require('useful.class')
+local Class	= class.Class
 
-local format = string.format
+local strip	= strings.strip
+local rstrip	= strings.rstrip
+local lstrip	= strings.lstrip
+local split	= strings.split
+local ljust	= strings.ljust
 
-local insert = table.insert
-local remove = table.remove
-local join = table.concat
+local format	= string.format
 
-local line_limit = 256
-local multi_limit = 256
-local binary_limit = 1024 * 1024
+local insert	= table.insert
+local remove	= table.remove
+local join	= table.concat
 
-local eol = '\n'
-local one_start = ''
-local multi_start = '<'
-local multi_end = '>'
-local binary_start = '['
-local binary_end = ']'
-local error_start = '?'
+local line_limit	= 256
+local multi_limit	= 256
+local binary_limit	= 1024 * 1024
+
+local eol		= '\n'
+local one_start		= ''
+local multi_start	= '<'
+local multi_end		= '>'
+local binary_start	= '['
+local binary_end	= ']'
+local error_start	= '?'
 
 local printf = function(...) io.stdout:write(string.format(...)) end
 
@@ -66,98 +69,107 @@ function help(xact)
 		local s = ljust(name .. ': ', ml) ..  strip(usage)
 		insert(multi, s)
 	end
-	return xact.send_multi(join(xact.args, ' '), multi)
+	return xact:send_multi(join(xact.args, ' '), multi)
 end
 
 function limits(xact)
 	local s = string.format('%d %d %d', xact.line_limit,
 			xact.multi_limit, xact.binary_limit)
-	return xact.send_single(s)
+	return xact:send_single(s)
 end
 
-function Transaction()
-	local self = {
-		done		= false,
-		commands	= {},
-		line_limit	= line_limit,
-		multi_limit	= multi_limit,
-		binary_limit	= binary_limit,
-	}
+Command = Class({
+	new = function(self, name, func, usage)
+		self.name	= name
+		self.func	= func
+		self.usage	= usage
+	end,
+})
 
-	function self.reset()
-		self.seq = nil
-		self.binary = nil
-		self.multi = {}
-		self.error = false
-		self.valid = true
-		self.name = ''
-		self.error_message = ''
-	end
+Transaction = Class({
+	new = function(self)
+		self.done		= false
+		self.commands		= {}
+		self.line_limit		= line_limit
+		self.multi_limit	= multi_limit
+		self.binary_limit	= binary_limit
+		self:reset()
+	end,
 
-	function self.add(name, func, usage)
-		self.commands[name] = { name=name, func=func, usage=usage }
-	end
+	reset = function(self)
+		self.seq		= nil
+		self.binary		= nil
+		self.multi		= {}
+		self.error		= false
+		self.valid		= true
+		self.name		= ''
+		self.error_message	= ''
+	end,
 
-	function self.write(data)
-		self.out.write(ffi.cast('char *', data), #data)
-	end
+	add = function(self, name, func, usage)
+		self.commands[name] = Command(name, func, usage)
+	end,
 
-	function self.send(leader, message)
+	write = function(self, data)
+		self.out:write(ffi.cast('char *', data), #data)
+	end,
+
+	send = function(self, leader, message)
 		local s = {}
 		if self.error then insert(s, error_start) end
 		if self.seq ~= nil then insert(s, self.seq) end
 		if self.name then insert(s, self.name) end
 		insert(s, message .. eol)
-		self.write(leader .. join(s, ' '))
-	end
+		self:write(leader .. join(s, ' '))
+	end,
 
-	function self.finish(leader)
+	finish = function(self, leader)
 		if leader ~= '' then
-			self.write(leader .. eol)
+			self:write(leader .. eol)
 		end
-		self.out.flush()
-	end
+		self.out:flush()
+	end,
 
-	function self.send_single(message)
-		self.send('', message)
-		self.finish('')
+	send_single = function(self, message)
+		self:send('', message)
+		self:finish('')
 		return 0
-	end
+	end,
 
-	function self.send_multi(message, multi)
-		self.send(multi_start, message)
+	send_multi = function(self, message, multi)
+		self:send(multi_start, message)
 		if #multi > 0 then
-			self.write(join(multi, eol))
-			self.write(eol)
+			self:write(join(multi, eol))
+			self:write(eol)
 		end
-		self.finish(multi_end)
+		self:finish(multi_end)
 		return 0
-	end
+	end,
 
-	function self.send_binary(message, binary)
-		self.send(binary_start, #binary .. message)
-		self.write(binary)
-		self.finish(binary_end)
+	send_binary = function(self, message, binary)
+		self:send(binary_start, #binary .. message)
+		self:write(binary)
+		self:finish(binary_end)
 		return 0
-	end
+	end,
 
-	function self.send_transaction(inp, out, requestion, data)
-		self.reset()
+	send_transaction = function(self, inp, out, requestion, data)
+		self:reset()
 		self.out = out
 		if type(data) == 'table' then
-			self.send_multi(request, data)
+			self:send_multi(request, data)
 		elseif type(data) == 'string' then
-			self.send_binary(request, data)
+			self:send_binary(request, data)
 		else
-			self.send_single(request)
+			self:send_single(request)
 		end
-		return self.recv_transaction(inp)
-	end
+		return self:recv_transaction(inp)
+	end,
 
-	function self.readline(inp)
+	readline = function(self, inp)
 		local rc
 		local buf = ffi.new('char[?]', line_limit)
-		rc = inp.readline(buf, line_limit)
+		rc = inp:readline(buf, line_limit)
 		if rc <= 0 then
 			return ''
 		end
@@ -165,9 +177,9 @@ function Transaction()
 			return ''
 		end
 		return ffi.string(buf, rc)
-	end
+	end,
 
-	function self.process_status()
+	process_status = function(self)
 		if #self.args < 1 then
 			return
 		end
@@ -185,13 +197,13 @@ function Transaction()
 			self.seq = tonumber(arg)
 			self.name = remove(self.args, 1)
 		end
-	end
+	end,
 
-	function self.recv_multi(inp)
+	recv_multi = function(self, inp)
 		self.multi = {}
 		local line
 		for i=1,#multi_limit do
-			line = self.readline(inp)
+			line = self:readline(inp)
 			if line:sub(#line-#eol) ~= eol then
 				break
 			end
@@ -204,9 +216,9 @@ function Transaction()
 			self.error_message = 'max line limit ' .. multi_limit
 			self.valid = false
 		end
-	end
+	end,
 
-	function self.recv_binary(ssize, inp)
+	recv_binary = function(self, ssize, inp)
 		self.valid = false
 		local size = tonumber(ssize)
 		if size == nil then
@@ -218,35 +230,35 @@ function Transaction()
 			return
 		end
 
-		self.binary = inp.read(size)
+		self.binary = inp:read(size)
 
-		line = self.readline(inp)
+		line = self:readline(inp)
 		if not line:sub(1, #binary_end) ~= binary_end then
 			self.error_message = 'no binary end'
 		else
 			self.valid = true
 		end
-	end
+	end,
 
-	function self.recv_transaction(inp)
-		self.reset()
-		self.status = self.readline(inp)
+	recv_transaction = function(self, inp)
+		self:reset()
+		self.status = self:readline(inp)
 		if self.status == '' or
-		   self.status:sub(#self.status-(#eol-1)) ~= eol then
+			self.status:sub(#self.status-(#eol-1)) ~= eol then
 			return -1
 		end
 		self.args = split(strip(self.status), '%s+')
 
-		self.process_status()
+		self:process_status()
 		if self.name == nil then
 			return -1
-		elseif self.name.sub(1, #multi_start) == multi_start then
+		elseif self.name:sub(1, #multi_start) == multi_start then
 			self.name = self.name:sub(#multi_start+1)
-			self.recv_multi(inp)
-		elseif self.name.sub(1, #binary_start) == binary_start then
+			self:recv_multi(inp)
+		elseif self.name:sub(1, #binary_start) == binary_start then
 			ssize = self.args[1]
 			self.name = slef.args[2]
-			self.recv_binary(ssize, inp)
+			self:recv_binary(ssize, inp)
 		end
 
 		if self.valid == false then
@@ -255,18 +267,18 @@ function Transaction()
 		else
 			return 0
 		end
-	end
+	end,
 
-	function self.execute()
+	execute = function(self)
 		command = self.commands[self.name]
 		if command ~= nil then
 			rc = command.func(self)
-			self.out.flush()
+			self.out:flush()
 			return rc
 		else
 			return -1
 		end
-	end
+	end,
 
 	-- inp requires readline() and read(size) methods
 	--   readline() returns a string terminated with \n or \r\n
@@ -276,54 +288,52 @@ function Transaction()
 	-- out requires write(string) and flush() methods
 	--   write(string) writes string to output
 	--   flush()    flushes the buffer (if output is buffered)
-	function self.process_transaction(inp, out)
+	process_transaction = function(self, inp, out)
 		self.out = out
-		local rc = self.recv_transaction(inp)
+		local rc = self:recv_transaction(inp)
 		if rc < 0 then
 			return rc
 		end
-		return self.execute()
-	end
+		return self:execute()
+	end,
+})
 
-	self.reset()
-	return self
-end
+Slop = Class(Transaction, {
+	new = function(self)
+		Transaction.new(self)
 
-function Slop()
-	local self = Transaction()
+		self:add('help', help, 'commands*')
+		self:add('limits', limits, '')
+	end,
+})
 
-	self.add('help', help, 'commands*')
-	self.add('limits', limits, '')
+TCPSlopServer = Class(Slop, {
+	new = function(self, port)
+		Slop.new(self)
+		self.stream = stream.TCPStream(stream.NOFD, 32768, 5)
 
-	return self
-end
+		self.tcp = socket.TCP()
+		self.tcp:reuseaddr()
+		self.tcp:bind('*', port)
+		self.tcp:listen()
+	end,
 
-function TCPSlopServer(port)
-	local self	= Slop()
-	self.stream	= stream.TCPStream(stream.NOFD, 32768, 5)
-
-	self.tcp	= socket.tcp()
-	self.tcp.bind('*', port)
-	self.tcp.listen()
-
-	function self.process()
+	process = function(self)
 		local io = self.stream
-		local rc, from = self.tcp.accept(4)
+		local rc, from = self.tcp:accept(4)
 		if rc > 0 then
-			io.reopen(rc)
+			io:reopen(rc)
 			while rc >= 0 do
-				rc = self.process_transaction(io, io)
+				rc = self:process_transaction(io, io)
 			end
-			io.reopen(stream.NOFD)
+			io:reopen(stream.NOFD)
 		else
 			printf("%s\n", socket.syserror('accept'))
 		end
 
 		return rc
-	end
-
-	return self
-end
+	end,
+})
 
 function main()
 	local server = TCPSlopServer(10000)
@@ -335,9 +345,9 @@ function main()
 			for _,line in ipairs(xact.multi) do
 				insert(multi, strip(line))
 			end
-			return xact.send_multi(s, multi)
+			return xact:send_multi(s, multi)
 		else
-			return xact.send_binary(s, xact.binary)
+			return xact:send_binary(s, xact.binary)
 		end
 	end
 
@@ -345,12 +355,12 @@ function main()
 
 	function set(xact)
 		if #xact.args < 2 then
-			return xact.send_single('name value')
+			return xact:send_single('name value')
 		else
 			local n = remove(xact.args, 1)
 			local v = join(xact.args, ' ')
 			xact.vars[n] = v
-			return xact.send_single(format('%s %s', n, v))
+			return xact:send_single(format('%s %s', n, v))
 		end
 	end
 
@@ -367,7 +377,7 @@ function main()
 				insert(vars, format('%s %s', n, v))
 			end
 		end
-		return xact.send_multi(join(xact.args, ' '), vars)
+		return xact:send_multi(join(xact.args, ' '), vars)
 	end
 
 	function del(xact)
@@ -382,14 +392,14 @@ function main()
 				end
 			end
 		end
-		return xact.send_multi(join(xact.args, ' '), vars)
+		return xact:send_multi(join(xact.args, ' '), vars)
 	end
 
-	server.add('echo', echo, '[args]*\\n[data]*')
-	server.add('set', set, 'name value')
-	server.add('get', get, 'name*')
-	server.add('del', del, 'name+')
-	return server.process()
+	server:add('echo', echo, '[args]*\\n[data]*')
+	server:add('set', set, 'name value')
+	server:add('get', get, 'name*')
+	server:add('del', del, 'name+')
+	return server:process()
 end
 
 if is_main() then

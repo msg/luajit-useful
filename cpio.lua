@@ -14,6 +14,9 @@ end
 local bit = require('bit')
 local band, bor, lshift = bit.band, bit.bor, bit.lshift
 
+local class = require('useful.class')
+local Class = class.Class
+
 -- This is a lujit module to read/write cpio files in "New ASCII Format"
 --
 -- $ man 5 cpio
@@ -27,10 +30,10 @@ local sprintf	= string.format
 local printf	= function(...) io.stdout:write(sprintf(...)) end
 
 function pad4(l)
-  return band(4 - band(l, 3), 3)
+	return band(4 - band(l, 3), 3)
 end
 
-function octal(val)
+local function octal(val)
 	local oct = 0
 	local bit = 0
 	while val > 0 do
@@ -67,20 +70,30 @@ cpio_fields = { 'c_ino', 'c_mode', 'c_uid', 'c_gid',
 	'c_namesize', 'c_check',
 }
 
+Header = Class({
+	new = function(self, path, fields)
+		-- ctor
+		for _,field in ipairs(cpio_fields) do
+			self[field] = 0
+		end
+		self.c_nlink = 1
+		self.c_mtime = os.time()
+		self.path = path or ''
+		self:update(fields)
 
-function CPIOHeader(path, fields)
-	local self = { }
+		return self
+	end,
 
-	function self.update(fields)
+	update = function(self, fields)
 		if fields == nil then
 			return
 		end
 		for field, value in pairs(fields) do
 			self[field] = value
 		end
-	end
+	end,
 
-	function self.parse(data)
+	parse = function(self, data)
 		if data:sub(1,6) ~= NEW_CPIO_MAGIC then
 			error('bad magic not ' .. NEW_CPIO_MAGIC)
 		end
@@ -88,134 +101,126 @@ function CPIOHeader(path, fields)
 			local offset = 7 + (i-1) * 8
 			self[field] = eval('0x' .. data:sub(offset, offset+7))
 		end
-	end
+	end,
 
-	function self.read(file)
+	read = function(self, file)
 		header_len = 6 + 8 * #cpio_fields
-		self.parse(file:read(header_len))
+		self:parse(file:read(header_len))
 		self.path = file:read(self.c_namesize)
 		file:read(pad4(header_len + #self.path))
 		self.path = self.path:sub(1, self.c_namesize - 1)
-	end
+	end,
 
-	function self.format()
-		self.c_namesize = #path + 1
+	format = function(self)
+		self.c_namesize = #self.path + 1
 		local chunks = { NEW_CPIO_MAGIC }
 		for _,field in ipairs(cpio_fields) do
 			insert(chunks, sprintf('%08x', self[field]))
 		end
-		local s = table.concat(chunks) .. path .. '\0'
+		local s = table.concat(chunks) .. self.path .. '\0'
 		return s .. string.rep('\0', pad4(#s))
-	end
+	end,
+})
 
-	-- ctor
-	for _,field in ipairs(cpio_fields) do
-		self[field] = 0
-	end
-	self.c_nlink = 1
-	self.c_mtime = os.time()
-	self.path = path or ''
-	self.update(fields)
+CPIO = Class({
+	new = function(self, file)
+		self.file	= file
+		self.ino	= 1
+	end,
 
-	return self
-end
+	flush = function(self)
+		self.file:flush()
+	end,
 
-function CPIO(file)
-	local self = {
-		file	= file,
-		ino	= 1,
-	}
+	write = function(self, data)
+		self.file:write(data)
+	end,
 
-	function self.flush()		self.file:flush()	end
-	function self.write(data)	self.file:write(data)	end
-
-	function self.write_data(path, data, mode, fields)
-		local header = CPIOHeader(path, {
+	write_data = function(self, path, data, mode, fields)
+		local header = Header(path, {
 			c_mode		= mode,
 			c_filesize	= #data,
 			c_ino		= self.ino
 		})
-		header.update(fields)
-		self.write(header.format())
-		self.write(data)
-		self.write(string.rep('\0', pad4(#data)))
+		header:update(fields)
+		self:write(header:format())
+		self:write(data)
+		self:write(string.rep('\0', pad4(#data)))
 		self.ino = self.ino + 1
-	end
+	end,
 
-	function self.write_file(path, data, mode)
+	write_file = function(self, path, data, mode)
 		mode = mode or octal(0644)
 		mode = bor(mode, TYPE_REGULAR)
-		self.write_data(path, data, mode)
-	end
+		self:write_data(path, data, mode)
+	end,
 
-	function self.write_symlink(path, data, mode)
+	write_symlink = function(self, path, data, mode)
 		mode = mode or octal(0644)
 		mode = bor(mode, TYPE_SYMLINK)
-		self.write_data(path, data, mode)
-	end
+		self:write_data(path, data, mode)
+	end,
 
-	function self.write_special(path, mode)
-		self.write_data(path, '', mode)
-	end
+	write_special = function(self, path, mode)
+		self:write_data(path, '', mode)
+	end,
 
-	function self.write_dir(path, mode)
+	write_dir = function(self, path, mode)
 		mode = mode or octal(0755)
 		mode = bor(mode, TYPE_DIR)
-		self.write_special(path, mode)
-	end
+		self:write_special(path, mode)
+	end,
 
-	function self.write_end_of_archive()
-		header = CPIOHeader(END_OF_ARCHIVE, { c_mtime = 0 })
-		self.write(header.format())
-	end
+	write_end_of_archive = function(self)
+		header = Header(END_OF_ARCHIVE, { c_mtime = 0 })
+		self:write(header:format())
+	end,
 
-	function self.close()
-		self.write_end_of_archive()
+	close = function(self)
+		self:write_end_of_archive()
 		self.file:close()
-	end
+	end,
 
-	function self.skip(header)
+	skip = function(self, header)
 		local size = header.c_filesize
 		self.file:seek(size + pad4(size), 'cur')
-	end
+	end,
 
-	function self.read(count)
+	read = function(self, count)
 		return self.file:read(count)
-	end
+	end,
 
-	function self.read_contents(header)
-		data = self.read(header.c_filesize)
-		self.read(pad4(header.c_filesize))
+	read_contents = function(self, header)
+		data = self:read(header.c_filesize)
+		self:read(pad4(header.c_filesize))
 		return data
-	end
+	end,
 
-	function self.read_header()
-		local header = CPIOHeader()
-		header.read(self.file)
+	read_header = function(self)
+		local header = Header()
+		header:read(self.file)
 		return header
-	end
+	end,
 
-	function self.read_entry()
-		local header = self.read_header()
-		return header, self.read_contents(header)
-	end
+	read_entry = function(self)
+		local header = self:read_header()
+		return header, self:read_contents(header)
+	end,
+})
 
-	return self
-end
-
-function main()
+local function main()
 	local f = io.open('test.cpio', 'w')
 	local cpio = CPIO(f)
 	for i=0,99 do
-		cpio.write_file(sprintf('a/b/c/d/testing/%02d', i),
+		cpio:write_file(sprintf('a/b/c/d/testing/%02d', i),
 				string.rep(string.char(i), 100+i))
 	end
-	cpio.write_end_of_archive()
+	cpio:write_end_of_archive()
 	f:close()
 	f = io.open('test.cpio', 'r')
 	local cpio = CPIO(f)
 	while true do
-		local header, contents = cpio.read_entry()
+		local header, contents = cpio:read_entry()
 		if header.path == END_OF_ARCHIVE then
 			break
 		end
@@ -229,5 +234,7 @@ end
 
 if is_main() then
 	main()
+else
+	return M
 end
 

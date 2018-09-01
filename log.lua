@@ -5,6 +5,9 @@
 -- vim:ft=lua
 module(..., package.seeall)
 
+local class = require('useful.class')
+local Class = class.Class
+
 NONE	= 0
 ERROR	= 1
 WARNING	= 2
@@ -14,43 +17,66 @@ ALL	= 5
 
 sprintf = string.format
 
-function Log(level)
-	local self = { }
-	self.level = level or ALL
+Log = Class({
+	new = function(self, level)
+		self.level = level or ALL
+	end,
 
-	function self.write(buf) end
-	function self.clear() end
+	write = function(self, buf)
+	end,
 
-	function self.message(level, fmt, ...)
+	clear = function(self)
+	end,
+
+	message = function(self, level, fmt, ...)
 		if level <= self.level then
 			self.write(sprintf(fmt, ...))
 		end
+	end,
+
+	error = function(self, fmt, ...)
+		self:message(ERROR, fmt, ...)
+	end,
+
+	warning = function(self, fmt, ...)
+		self:message(WARNING, fmt, ...)
+	end,
+
+	info = function(self, fmt, ...)
+		self:message(INFO, fmt, ...)
+	end,
+
+	debug = function(self, fmt, ...)
+		self:message(DEBUG, fmt, ...)
+	end,
+})
+
+StringLog = Class(Log, {
+	new = function(self, level)
+		Log.new(self, level)
+	end,
+
+	write = function(self, buf)
+		table.insert(self.data, buf)
+	end,
+
+	clear = function(self)
+		self.data = {}
+	end,
+
+	tostring = function(self)
+		return table.concat(self.data, '\n')
 	end
+})
 
-	function self.error(fmt, ...) self.message(ERROR, fmt, ...) end
-	function self.warning(fmt, ...) self.message(WARNING, fmt, ...) end
-	function self.info(fmt, ...) self.message(INFO, fmt, ...) end
-	function self.debug(fmt, ...) self.message(DEBUG, fmt, ...) end
+FileLog = Class(Log, {
 
-	return self
-end
+	new = function(self, filename, level)
+		Log.new(self, level)
+		self.filename = filename
+	end,
 
-function StringLog(level)
-	local self = Log(level)
-	self.data = {}
-
-	function self.write(buf) table.insert(self.data, buf) end
-	function self.clear() self.data = {} end
-	function self.tostring() return table.concat(self.data, '\n') end
-
-	return self
-end
-
-function FileLog(filename, level)
-	local self = Log(level)
-	self.filename = filename
-
-	function self.write(buf)
+	write = function(self, buf)
 		if self.filename == '-' then
 			io.stdout:write(buf)
 		else
@@ -58,31 +84,28 @@ function FileLog(filename, level)
 			f:write(buf)
 			f:close()
 		end
-	end
+	end,
+})
 
-	return self
-end
+GroupLog = Class(Log, {
+	new = function(self, level)
+		Log.new(self, level)
+		self.logs = {}
+	end,
 
-function GroupLog(level)
-	local self = Log(level)
-	self.logs = {}
-
-	function self.add_log(log)
+	add_log = function(self, log)
 		table.insert(self.logs, log)
-	end
+	end,
 
-	function self.write(buf)
+	write = function(self, buf)
 		for _,log in ipairs(self.logs) do
-			log.write(buf)
+			log:write(buf)
 		end
-	end
+	end,
 
-	function self.clear()
+	clear = function(self)
 		for _,log in ipairs(self.logs) do
-			log.clear()
+			log:clear()
 		end
-	end
-
-	return self
-end
-
+	end,
+})
