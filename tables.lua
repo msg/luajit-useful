@@ -1,5 +1,5 @@
 --
--- t a b l e s
+-- t a b l e s . l u a
 --
 
 module(..., package.seeall)
@@ -53,18 +53,12 @@ function unserialize(t)
 end
 
 function save_table(filename, t)
-	if not os or not os.loadAPI then
-		filename = '../' .. filename
-	end
 	local f = io.open(filename, 'w')
 	f:write(serialize(t))
 	f:close()
 end
 
 function load_table(filename)
-	if not os or not os.loadAPI then
-		filename = '../' .. filename
-	end
 	local f = io.open(filename, 'r')
 	if f == nil then
 		return { }
@@ -175,7 +169,7 @@ end
 function reverse(t)
 	local new = {}
 	for _,entry in ipairs(t) do
-		insert(t, _, entry)
+		insert(new, _, entry)
 	end
 	return new
 end
@@ -228,11 +222,6 @@ function update (t,...)
     return t
 end
 
-
---
---
---
-
 function import(env, from, ...)
 	local vars = {...}
 	if #vars ~= 0 then
@@ -243,80 +232,6 @@ function import(env, from, ...)
 		for n,v in pairs(from) do
 			env[n] = v
 		end
-	end
-end
-
-function select_entries(entries, title)
-	local w, h = term.getSize()
-	--local w, h = 80, 30
-	--read = function() return io.stdin:read() end
-	local t, dt, l, dl = 1, 0, 1, 0
-	h = h - 2
-	title = title .. ' ' or ''
-
-	function find(entries, what, first, last, inc)
-		if inc == nil then
-			inc = 1
-		end
-		for i=first,last,inc do
-			if entries[i]:find(what) then
-				return i
-			end
-		end
-		return 0
-	end
-
-	while true do
-		t = math.min(math.max(t, 1), #entries-h)
-		l = math.max(l, 1)
-		local first=math.min(math.max(t, 1), #entries)
-		local last=math.min(math.max(first+h, 1), #entries)
-
-		for i=first,last do
-			printf('%3d %s\n', i, entries[i]:sub(l,l+w-5))
-		end
-		percent = math.floor(1000*last/#entries)/10
-		local s = 'h'
-		local arg,n
-		while s == 'h' do
-			printf('%s(%.1f%%) h=help: ', title, percent)
-			s = read()
-			arg = s:sub(2)
-			n = tonumber(arg) or 1
-			s = s:sub(1,1)
-			if s == 'h' then
-				printf("[qtbnpduflr/?][*],ENT,#[-#]: ")
-				s = read()
-			end
-		end
-		local ranges = strings.parse_ranges(s..arg)
-		if #ranges > 0 then
-			return ranges
-		elseif s == 'q' then return 0, 0
-		elseif s == 't' then t = n
-		elseif s == 'b' then t = #entries
-		elseif s == 'n' then dt = n * h
-		elseif s == 'p' then dt = -(n * h)
-		elseif s == 'd' then dt = n
-		elseif s == 'u' then dt = -n
-		elseif s == 'f' then l = n
-		elseif s == 'l' then dl = -5
-		elseif s == 'r' then dl = 5
-		elseif s == '/' then
-			local i = find(entries, arg, t+1, #entries)
-			if i > 0 then t = i end
-		elseif s == '?' then
-			local i = find(entries, arg, t-1, 1, -1)
-			if i < 1 then
-				i = find(entries, arg, #entries, t, -1)
-			end
-			if i > 0 then t = i end
-		else		     dt = h
-		end
-		t = t + dt
-		dt = 0
-		l = l + dl
-		dl = 0
 	end
 end
 
