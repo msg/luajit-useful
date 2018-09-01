@@ -10,11 +10,12 @@ function callable(obj)
 			getmetatable(obj).__call
 end
 
-function memoize()
+function memoize(func)
 	return setmetatable({ }, {
 		__index = function(self, key, ...)
-			self[key] = func(key, ...)
-			return self[key]
+			local v = func(key, ...)
+			self[key] = v
+			return v
 		end,
 		__call = function(self, key) return self[key] end
 	})
