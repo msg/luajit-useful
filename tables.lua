@@ -2,7 +2,13 @@
 -- u s e f u l / t a b l e s . l u a
 --
 
-module(..., package.seeall)
+local function is_main()
+	return debug.getinfo(4) == nil
+end
+
+if not is_main() then
+	module(..., package.seeall)
+end
 
 local insert = table.insert
 local remove = table.remove
@@ -175,23 +181,25 @@ function reverse(t)
 end
 
 function upper(t, i)
-    if not i or i > #t then
-        return #t
-    elseif i < 0 then
-        return #t + i + 1
-    else
-        return i
-    end
+	if not i or i > #t then
+		return #t
+	elseif i < 0 then
+		return #t + i + 1
+	else
+		return i
+	end
 end
 
 function sub(t, s, e)
+	s = upper(s or 1)
 	e = upper(e)
-	return { unpack(t, s or 1, e) }
+	return { unpack(t, s, e) }
 end
 
 function remove(t, s, e)
+	s = upper(s or 1)
 	e = upper(e)
-	for i=s or 1,e do
+	for i=s,e do
 		remove(t, s)
 	end
 end
@@ -214,12 +222,12 @@ function range(first, last, inc)
 end
 
 function update (t,...)
-    for i=1,select('#',...) do
-        for k,v in pairs(select(i,...)) do
-            t[k] = v
-        end
-    end
-    return t
+	for i=1,select('#',...) do
+		for k,v in pairs(select(i,...)) do
+			t[k] = v
+		end
+	end
+	return t
 end
 
 function import(env, from, ...)
@@ -274,5 +282,12 @@ function structure(initializer)
 	enable_control_access(self)
 
 	return self
+end
+
+local function main()
+end
+
+if is_main() then
+	main()
 end
 
