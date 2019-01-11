@@ -62,7 +62,10 @@ function path.split_path(_path)
 end
 
 function path.split_ext(_path)
-	local entries = strings.split(_path, '%.', 1)
+	local entries = strings.split(_path, '%.')
+	while #entries > 2 do
+		entries[1] = entries[1] .. '.' .. table.remove(entries, 2)
+	end
 	entries[#entries] = '.' .. entries[#entries]
 	return entries
 end
