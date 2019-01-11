@@ -55,26 +55,28 @@ end
 
 local sep = package.config:sub(1,1)
 
-function path.split_path(path)
-	local dentries = strings.split(path, sep)
+function path.split_path(_path)
+	local dentries = strings.split(_path, sep)
 	local base = table.remove(dentries, #dentries)
 	return strings.join(dentries, sep), base
 end
 
-function path.split_ext(path)
-	local entries = strings.split(path, '%.', 1)
+function path.split_ext(_path)
+	local entries = strings.split(_path, '%.', 1)
 	entries[#entries] = '.' .. entries[#entries]
 	return entries
 end
 
-function path.base_path(path)
-	local path, base = path.split_path(path)
+function path.base_path(_path)
+	local base
+	_path, base = path.split_path(_path)
 	return base
 end
 
-function path.dir_path(path)
-	local path, base = path.split_path(path)
-	return path
+function path.dir_path(_path)
+	local base
+	_path, base = path.split_path(path)
+	return _path
 end
 
 return path
