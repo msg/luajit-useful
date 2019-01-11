@@ -75,7 +75,7 @@ end
 
 function path.dir_path(_path)
 	local base
-	_path, base = path.split_path(path)
+	_path, base = path.split_path(_path)
 	return _path
 end
 
