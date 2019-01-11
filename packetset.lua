@@ -1,9 +1,7 @@
 --
 -- u s e f u l / p a c k e t s e t . l u a
 --
-
--- vim:ft=lua
-module(..., package.seeall)
+local packetset = { }
 
 local ffi		= require('ffi')
 local C = ffi.C
@@ -16,24 +14,24 @@ local mmalloc		= require('useful.mmalloc')
 local class		= require('useful.class')
 local Class		= class.Class
 
-sprintf = string.format
+local sprintf = string.format
 
-function fprintf(out, fmt, ...)
+local function fprintf(out, fmt, ...)
 	out:write(sprintf(fmt, ...))
 end
 
-function printf(fmt, ...)
+local function printf(fmt, ...)
 	fprintf(io.stdout, fmt, ...)
 end
 
-function perror(msg)
+local function perror(msg)
 	fprintf(io.stderr, '%s failed: errno=%d %s\n', msg, ffi.errno(),
 		ffi.string(C.strerror(ffi.errno())))
 end
 
-IOV_MAX=1024
+packetset.IOV_MAX = 1024
 
-PacketSet = Class({
+packetset.PacketSet = Class({
 	new = function(self, packet_size, npackets)
 		npackets = npackets or IOV_MAX
 		npackets = math.min(npackets, IOV_MAX)
@@ -79,7 +77,7 @@ PacketSet = Class({
 			perror('sendmmsg()')
 		end
 		return rc
-	end
+	end,
 
 	writev = function(self, fd, offset, count)
 		local iovecs = self.iovecs + offset
@@ -99,3 +97,5 @@ PacketSet = Class({
 		return rc
 	end,
 })
+
+return packetset

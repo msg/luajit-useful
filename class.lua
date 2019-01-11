@@ -1,16 +1,11 @@
 --
 -- u s e f u l / c l a s s . l u a
 --
+local class = { }
 
-local function is_main()
-	return debug.getinfo(4) == nil
-end
+local is_main	= require('useful.system').is_main
 
-if not is_main() then
-	module(..., package.seeall)
-end
-
-function Class(...)
+function class.Class(...)
 	local class = { }
 
 	local bases = {...}
@@ -38,10 +33,10 @@ function Class(...)
 
 	setmetatable(class, {
 		__call = function (class, ...)
-			local instance = setmetatable({}, class)
+			local instance = setmetatable({ _class=class }, class)
 			-- run the new method if it's there
-			if instance.new then
-				instance:new(...)
+			if class.new then
+				class.new(instance, ...)
 			end
 			return instance
 		end
@@ -51,6 +46,8 @@ function Class(...)
 end
 
 local function main()
+	Class = class.Class
+
 	X = Class({
 		new = function(self)
 			self.x = 5
@@ -86,5 +83,7 @@ end
 
 if is_main() then
 	main()
+else
+	return class
 end
 

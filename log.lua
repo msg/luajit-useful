@@ -1,25 +1,22 @@
 --
 -- u s e f u l / l o g . l u a
 --
+local log = { }
 
--- vim:ft=lua
-module(..., package.seeall)
+local Class = require('useful.class').Class
 
-local class = require('useful.class')
-local Class = class.Class
-
-NONE	= 0
-ERROR	= 1
-WARNING	= 2
-INFO	= 3
-DEBUG	= 4
-ALL	= 5
+log.NONE	= 0
+log.ERROR	= 1
+log.WARNING	= 2
+log.INFO	= 3
+log.DEBUG	= 4
+log.ALL		= 5
 
 sprintf = string.format
 
 Log = Class({
 	new = function(self, level)
-		self.level = level or ALL
+		self.level = level or log.ALL
 	end,
 
 	write = function(self, buf)
@@ -35,23 +32,23 @@ Log = Class({
 	end,
 
 	error = function(self, fmt, ...)
-		self:message(ERROR, fmt, ...)
+		self:message(log.ERROR, fmt, ...)
 	end,
 
 	warning = function(self, fmt, ...)
-		self:message(WARNING, fmt, ...)
+		self:message(log.WARNING, fmt, ...)
 	end,
 
 	info = function(self, fmt, ...)
-		self:message(INFO, fmt, ...)
+		self:message(log.INFO, fmt, ...)
 	end,
 
 	debug = function(self, fmt, ...)
-		self:message(DEBUG, fmt, ...)
+		self:message(log.DEBUG, fmt, ...)
 	end,
 })
 
-StringLog = Class(Log, {
+log.StringLog = Class(log.Log, {
 	new = function(self, level)
 		Log.new(self, level)
 	end,
@@ -69,7 +66,7 @@ StringLog = Class(Log, {
 	end
 })
 
-FileLog = Class(Log, {
+log.FileLog = Class(log.Log, {
 
 	new = function(self, filename, level)
 		Log.new(self, level)
@@ -87,7 +84,7 @@ FileLog = Class(Log, {
 	end,
 })
 
-GroupLog = Class(Log, {
+log.GroupLog = Class(log.Log, {
 	new = function(self, level)
 		Log.new(self, level)
 		self.logs = {}
@@ -109,3 +106,5 @@ GroupLog = Class(Log, {
 		end
 	end,
 })
+
+return log

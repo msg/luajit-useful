@@ -1,52 +1,45 @@
 --
 -- u s e f u l / s t a t e m a c h i n e . l u a
 --
--- vim:ft=lua
+local statemachine = { }
 
-local function is_main()
-	return debug.getinfo(4) == nil
-end
+local is_main	= require('useful.system').is_main
 
-if not is_main() then
-	module(..., package.seeall)
-end
+local Class = require('useful.class').Class
 
-local class = require('useful.class')
-local Class = class.Class
+statemachine.StateMachine = Class()
 
-StateMachine = Class()
-
-function StateMachine:new(init_state)
-	self.init_state		= init_state
-	self.state		= init_state
+function statemachine.StateMachine:new(init_state)
+	self.init_state		= init_state or 'done'
+	self.state		= init_state or 'done'
 	self.states		= {}
 	self:add_state('done', self.done)
 end
 
-function StateMachine:get_state()
-	return { state = self.state }
+function statemachine.StateMachine:get_state()
+	return self.state
 end
 
-function StateMachine:set_state(state_table)
+function statemachine.StateMachine:set_state(state_table)
 	self.state = state_table.state
 end
 
-function StateMachine:add_state(name, func)
+function statemachine.StateMachine:add_state(name, func)
 	self.states[name] = func
 end
 
 -- done is stop state "always"
-function StateMachine:done()
+function statemachine.StateMachine:done()
 	return 'done'
 end
 
 -- restart at the initial state
-function StateMachine:restart()
+function statemachine.StateMachine:restart()
 	self.state = self.init_state
 end
 
 -- run one "step" of current state
-function StateMachine:step()
+function statemachine.StateMachine:step()
 	if self.state == 'done' then
 		return self.state
 	end
@@ -74,7 +67,7 @@ local function make_stop_states(...)
 end
 
 -- run until the "next" state change or "done"
-function StateMachine:next(...)
+function statemachine.StateMachine:next(...)
 	local stop_states = make_stop_states(...)
 	local state = self.state
 	while state == self.state and stop_states[self.state] == nil do
@@ -84,7 +77,7 @@ function StateMachine:next(...)
 end
 
 -- "run" the state machine until the stop states reached
-function StateMachine:run(...)
+function statemachine.StateMachine:run(...)
 	local stop_states = make_stop_states(...)
 	local state = self.state
 	while stop_states[self.state] == nil do
@@ -92,10 +85,12 @@ function StateMachine:run(...)
 	end
 end
 
-function main()
+local function main()
 end
 
 if is_main() then
 	main()
+else
+	return statemachine
 end
 

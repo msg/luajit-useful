@@ -1,8 +1,7 @@
 --
 -- u s e f u l / s t r i n g s . l u a
 --
-
-module(..., package.seeall)
+local strings = { }
 
 local bit		= require('bit')
 local bor, band		= bit.bor, bit.band
@@ -12,16 +11,16 @@ local byte, char	= string.byte, string.char
 local gsub, rep		= string.gsub, string.rep
 local tables		= require('useful.tables')
 
-function lstrip(s) return gsub(s, '^%s*', '') end
-function rstrip(s) return gsub(s, '%s*$', '') end
-function strip(s) return gsub(gsub(s, '^%s*', ''), '%s*$', '') end
-join = table.concat -- join(s, sep)
+function strings.lstrip(s) return gsub(s, '^%s*', '') end
+function strings.rstrip(s) return gsub(s, '%s*$', '') end
+function strings.strip(s) return gsub(gsub(s, '^%s*', ''), '%s*$', '') end
+strings.join = table.concat -- join(s, sep)
 
-function capitalize(s)
+function strings.capitalize(s)
 	return s:sub(1,1):upper() .. s:sub(2):lower()
 end
 
-function split(s, sep, count)
+function strings.split(s, sep, count)
 	local fields = {}
 	sep = sep or '%s+'
 	count = count or #s
@@ -38,15 +37,15 @@ function split(s, sep, count)
 	return fields
 end
 
-function title(s)
+function strings.title(s)
 	local fields = { }
-	for i,field in ipairs(split(s)) do
-		fields[i] = capitalize(field)
+	for i,field in ipairs(strings.split(s)) do
+		fields[i] = strings.capitalize(field)
 	end
-	return join(fields, ' ')
+	return strings.join(fields, ' ')
 end
 
-function ljust(s, w, c)
+function strings.ljust(s, w, c)
 	local l = #s
 	if l > w then
 		return s:sub(1, w)
@@ -55,7 +54,7 @@ function ljust(s, w, c)
 	end
 end
 
-function rjust(s, w, c)
+function strings.rjust(s, w, c)
 	local l = #s
 	if l > w then
 		return s:sub(1, w)
@@ -64,7 +63,7 @@ function rjust(s, w, c)
 	end
 end
 
-function center(s, w, c)
+function strings.center(s, w, c)
 	local l = #s
 	if l > w then
 		return s
@@ -74,11 +73,11 @@ function center(s, w, c)
 	end
 end
 
-function parse_ranges(s)
+function strings.parse_ranges(s)
 	local ranges = {}
-	for _,range in ipairs(split(s, ',')) do
+	for _,range in ipairs(strings.split(s, ',')) do
 		local s, e = unpack(
-			tables.imap(split(range, '-'), function (n,v)
+			tables.imap(strings.split(range, '-'), function (n,v)
 				return tonumber(v)
 			end)
 		)
@@ -90,7 +89,7 @@ function parse_ranges(s)
 	return ranges
 end
 
-function hex_to_binary(s)
+function strings.hex_to_binary(s)
 	local zero, nine = byte('0'), byte('9')
 	local letter_a, letter_f = byte('a'), byte('f')
 	function add_ascii_hex(b, c)
@@ -115,11 +114,11 @@ function hex_to_binary(s)
 			o = 1 - o
 		end
 	end
-	return join(out)
+	return strings.join(out)
 end
 
 local hexs = '0123456789abcdef'
-function binary_to_hex(s, sep)
+function strings.binary_to_hex(s, sep)
 	local out = { }
 	for i=1,#s do
 		local c = byte(s:sub(i, i))
@@ -131,5 +130,8 @@ function binary_to_hex(s, sep)
 			insert(out, sep)
 		end
 	end
-	return join(out)
+	return strings.join(out)
 end
+
+return strings
+

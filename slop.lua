@@ -1,13 +1,9 @@
 --
 -- u s e f u l / s l o p . l u a
 --
-local function is_main()
-	return debug.getinfo(4) == nil
-end
+local slop = { }
 
-if not is_main() then
-	module(..., package.seeall)
-end
+local is_main	= require('useful.system').is_main
 
 local ffi	= require('ffi')
 
@@ -47,7 +43,7 @@ local error_start	= '?'
 local printf = function(...) io.stdout:write(string.format(...)) end
 
 -- global commands
-function help(xact)
+function slop.help(xact)
 	local commands = xact.commands
 	local cmds
 	if #xact.args < 1 then
@@ -72,13 +68,13 @@ function help(xact)
 	return xact:send_multi(join(xact.args, ' '), multi)
 end
 
-function limits(xact)
+function slop.limits(xact)
 	local s = string.format('%d %d %d', xact.line_limit,
 			xact.multi_limit, xact.binary_limit)
 	return xact:send_single(s)
 end
 
-Command = Class({
+slop.Command = Class({
 	new = function(self, name, func, usage)
 		self.name	= name
 		self.func	= func
@@ -86,7 +82,7 @@ Command = Class({
 	end,
 })
 
-Transaction = Class({
+slop.Transaction = Class({
 	new = function(self)
 		self.done		= false
 		self.commands		= {}
@@ -107,7 +103,7 @@ Transaction = Class({
 	end,
 
 	add = function(self, name, func, usage)
-		self.commands[name] = Command(name, func, usage)
+		self.commands[name] = slop.Command(name, func, usage)
 	end,
 
 	write = function(self, data)
@@ -298,18 +294,18 @@ Transaction = Class({
 	end,
 })
 
-Slop = Class(Transaction, {
+slop.Slop = Class(slop.Transaction, {
 	new = function(self)
-		Transaction.new(self)
+		slop.Transaction.new(self)
 
-		self:add('help', help, 'commands*')
-		self:add('limits', limits, '')
+		self:add('help', slop.help, 'commands*')
+		self:add('limits', slop.limits, '')
 	end,
 })
 
-TCPSlopServer = Class(Slop, {
+slop.TCPSlopServer = Class(slop.Slop, {
 	new = function(self, port)
-		Slop.new(self)
+		slop.Slop.new(self)
 		self.stream = stream.TCPStream(stream.NOFD, 32768, 5)
 
 		self.tcp = socket.TCP()
@@ -335,8 +331,8 @@ TCPSlopServer = Class(Slop, {
 	end,
 })
 
-function main()
-	local server = TCPSlopServer(10000)
+local function main()
+	local server = slop.TCPSlopServer(10000)
 
 	function echo(xact)
 		local s = join(xact.args, ' ')
@@ -399,10 +395,13 @@ function main()
 	server:add('set', set, 'name value')
 	server:add('get', get, 'name*')
 	server:add('del', del, 'name+')
+
 	return server:process()
 end
 
 if is_main() then
 	main()
+else
+	return slop
 end
 

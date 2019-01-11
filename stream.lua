@@ -1,15 +1,9 @@
 --
 -- u s e f u l / s t r e a m . l u a
 --
+local stream = { }
 
--- vim:ft=lua
-local function is_main()
-	return debug.getinfo(4) == nil
-end
-
-if not is_main() then
-	module(..., package.seeall)
-end
+local is_main	= require('useful.system').is_main
 
 local ffi	= require('ffi')
 local C		= ffi.C
@@ -35,11 +29,11 @@ local min = math.min
 
 local printf = function(...) io.stdout:write(string.format(...)) end
 
-NOFD = -1 -- when the Stream has no file descriptor
+stream.NOFD = -1 -- when the Stream has no file descriptor
 
-Stream = Class({
+stream.Stream = Class({
 	new = function(self, fd, size, timeout, unget_size)
-		unget_size = unget_size or 1
+		unget_size	= unget_size or 1
 		self.fd		= fd
 		self.size	= size
 		self.unget_size	= unget_size
@@ -51,21 +45,21 @@ Stream = Class({
 	end,
 
 	set_timeout = function(self, timeout)
-		if self.fd ~= NOFD then
-			local fl
-			fl = bor(C.fcntl(self.fd, fcntl.F_GETFL), fcntl.O_NONBLOCK)
+		if self.fd ~= stream.NOFD then
+			local fl = C.fcntl(self.fd, fcntl.F_GETFL)
+			fl = bor(fl, fcntl.O_NONBLOCK)
 			C.fcntl(self.fd, fcntl.F_SETFL, fl)
 		end
 		self.timeout = timeout
 	end,
 
 	reopen = function(self, fd)
-		if self.fd ~= NOFD then
+		if self.fd ~= stream.NOFD then
 			self:close()
 		end
 		self.out_next	= self.out_buffer
 		self.fd		= fd
-		if fd ~= NOFD then
+		if fd ~= stream.NOFD then
 			self:set_timeout(self.timeout)
 		end
 		return 0
@@ -299,14 +293,14 @@ Stream = Class({
 	end,
 })
 
-TCPStream = Class(Stream, {
+stream.TCPStream = Class(stream.Stream, {
 	new = function(self, fd, size, timeout, unget_size)
 		self.tcp = socket.TCP() -- must be first, Stream:new calls set_timeout()
-		Stream:new(self, fd, size, timeout, unget_size)
+		stream.Stream.new(self, fd, size, timeout, unget_size)
 	end,
 
 	set_timeout = function(self, timeout)
-		Stream:set_timeout(self, timeout)
+		stream.Stream.set_timeout(self, timeout)
 		self.tcp.fd = self.fd
 		self.tcp:rcvtimeo(timeout)
 	end,
@@ -322,5 +316,7 @@ end
 
 if is_main() then
 	main()
+else
+	return stream
 end
 

@@ -1,7 +1,7 @@
 --
 -- u s e f u l / p a t h . l u a
 --
-module(..., package.seeall)
+local path = { }
 
 local ffi	= require('ffi')
 local strings	= require('useful.strings')
@@ -13,18 +13,18 @@ ffi.cdef([[
 	char *realpath(char *path, char *resolved);
 ]])
 
-function readpath(path)
+function path.readpath(path)
 	return io.open(path,'r'):read('a*')
 end
 
-function putfile(path, buf)
+function path.putfile(path, buf)
 	local f = io.open(path,'wb')
 	f:write(buf)
 	f:close()
 	return #buf
 end
 
-function abspath(path)
+function path.abspath(path)
 	if path ~= '' then
 		local buf = ffi.new('char[4096]')
 		local p = ffi.new('char[?]', #path, path)
@@ -35,7 +35,7 @@ function abspath(path)
 	end
 end
 
-function dirpath(path)
+function path.dirpath(path)
 	if path ~= '' then
 		local p = ffi.new('char[?]', #path, path)
 		return ffi.string(C.dirname(p))
@@ -44,7 +44,7 @@ function dirpath(path)
 	end
 end
 
-function basepath(path)
+function path.basepath(path)
 	if path ~= '' then
 		local p = ffi.new('char[?]', #path, path)
 		return ffi.string(C.basename(p))
@@ -55,24 +55,26 @@ end
 
 local sep = package.config:sub(1,1)
 
-function split_path(path)
+function path.split_path(path)
 	local dentries = strings.split(path, sep)
 	local base = table.remove(dentries, #dentries)
 	return strings.join(dentries, sep), base
 end
 
-function split_ext(path)
+function path.split_ext(path)
 	local entries = strings.split(path, '%.', 1)
 	entries[#entries] = '.' .. entries[#entries]
 	return entries
 end
 
-function base_path(path)
-	local path, base = split_path(path)
+function path.base_path(path)
+	local path, base = path.split_path(path)
 	return base
 end
 
-function dir_path(path)
-	local path, base = split_path(path)
+function path.dir_path(path)
+	local path, base = path.split_path(path)
 	return path
 end
+
+return path

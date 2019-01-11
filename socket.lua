@@ -1,13 +1,9 @@
 --
 -- u s e f u l / s o c k e t . l u a
 --
-local function is_main()
-	return debug.getinfo(4) == nil
-end
+local socket = { }
 
-if not is_main() then
-	module(..., package.seeall)
-end
+local is_main	= require('useful.system').is_main
 
 local ffi		= require('ffi')
 local C			= ffi.C
@@ -32,11 +28,11 @@ local Class		= class.Class
 local sprintf		= string.format
 local printf		= function(...) io.stdout:write(sprintf(...)) end
 
-function syserror(call)
+function socket.syserror(call)
 	return sprintf("%s: %s\n", call, ffi.string(C.strerror(ffi.errno())))
 end
 
-function getaddrinfo(host, port, protocol)
+function socket.getaddrinfo(host, port, protocol)
 	local hint		= ffi.new('struct addrinfo [1]')
 	local ai		= ffi.new('struct addrinfo *[1]')
 	hint[0].ai_flags	= netdb.AI_CANONNAME
@@ -70,7 +66,7 @@ function getaddrinfo(host, port, protocol)
 	return addr
 end
 
-Socket = Class({
+socket.Socket = Class({
 	new = function(self)
 		self.fd		= -1
 		self.port	= -1
@@ -83,7 +79,7 @@ Socket = Class({
 		local valuelen = valuelen or ffi.sizeof(value)
 		local rc = C.setsockopt(self.fd, level, option, value, valuelen)
 		if rc < 0 then
-			return nil, syserror('setsockopt')
+			return nil, socket.syserror('setsockopt')
 		end
 		return rc
 	end,
@@ -130,29 +126,29 @@ Socket = Class({
 	end,
 
 	bind = function(self, address, port)
-		local addr = getaddrinfo(address, port)
+		local addr = socket.getaddrinfo(address, port)
 		local addrp = ffi.cast('struct sockaddr *', addr)
 		local rc = C.bind(self.fd, addrp, ffi.sizeof(addr[0]))
 		if rc < 0 then
-			return nil, syserror('bind')
+			return nil, socket.syserror('bind')
 		end
 		return rc
 	end
 })
 
-TCP = Class(Socket, {
+socket.TCP = Class(socket.Socket, {
 	new = function(self)
-		Socket.new(self)
+		socket.Socket.new(self)
 		self.fd = C.socket(sys_socket.AF_INET, sys_socket.SOCK_STREAM, 0)
 		if self.fd < 0 then
-			return nil, syserror("socket")
+			return nil, socket.syserror("socket")
 		end
 	end,
 
 	listen = function(self, backlog)
 		local rc = C.listen(self.fd, backlog or 5)
 		if rc < 0 then
-			return nil, syserror('listen')
+			return nil, socket.syserror('listen')
 		end
 		return rc
 	end,
@@ -167,12 +163,12 @@ TCP = Class(Socket, {
 	end,
 })
 
-UDP = Class(Socket, {
+socket.UDP = Class(socket.Socket, {
 	new = function(self)
-		Socket.new(self)
+		socket.Socket.new(self)
 		self.fd = C.socket(sys_socket.AF_INET, sys_socket.SOCK_DGRAM, 0)
 		if self.fd < 0 then
-			return nil, syserror("socket")
+			return nil, socket.syserror("socket")
 		end
 	end,
 
@@ -198,7 +194,7 @@ UDP = Class(Socket, {
 	end,
 
 	add_membership = function(self, addr, port)
-		local addr	= getaddrinfo(addr, port)
+		local addr	= socket.getaddrinfo(addr, port)
 		local addrp	= ffi.cast('struct sockaddr *', addr)
 		local imreq	= ffi.new('struct ip_mreq[1]')
 		return self:setsockopt(netinet_in.IPPROTO_IP,
@@ -207,7 +203,7 @@ UDP = Class(Socket, {
 	end,
 
 	drop_membership = function(self, addr, port)
-		local addr	= getaddrinfo(addr, port)
+		local addr	= socket.getaddrinfo(addr, port)
 		local addrp	= ffi.cast('struct sockaddr *', addr)
 		local imreq	= ffi.new('struct ip_mreq[1]')
 		return self:setsockopt(netinet_in.IPPROTO_IP,
@@ -216,10 +212,12 @@ UDP = Class(Socket, {
 	end,
 })
 
-function main()
+local function main()
 end
 
 if is_main() then
 	main()
+else
+	return socket
 end
 

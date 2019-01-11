@@ -1,19 +1,14 @@
 --
 -- u s e f u l / t a b l e s . l u a
 --
+local tables = { }
 
-local function is_main()
-	return debug.getinfo(4) == nil
-end
-
-if not is_main() then
-	module(..., package.seeall)
-end
+local is_main	= require('useful.system').is_main
 
 local insert = table.insert
 local remove = table.remove
 
-function serialize(o, indent, sp, nl)
+function tables.serialize(o, indent, sp, nl)
 	local new = {}
 	sp = sp or ' '
 	ns = nl or '\n'
@@ -39,7 +34,7 @@ function serialize(o, indent, sp, nl)
 			end
 			insert(new, table.concat({
 				indent, sp, k,
-				serialize(v, indent .. sp), ','
+				tables.serialize(v, indent .. sp), ','
 			}, ''))
 		end
 		insert(new, indent .. '}')
@@ -49,7 +44,7 @@ function serialize(o, indent, sp, nl)
 	return table.concat(new, nl)
 end
 
-function unserialize(t)
+function tables.unserialize(t)
 	local func, err = loadstring('return ' .. t)
 	if func ~= nil then
 		setfenv(func, {})
@@ -58,23 +53,23 @@ function unserialize(t)
 	return nil
 end
 
-function save_table(filename, t)
+function tables.save_table(filename, t)
 	local f = io.open(filename, 'w')
-	f:write(serialize(t))
+	f:write(tables.serialize(t))
 	f:close()
 end
 
-function load_table(filename)
+function tables.load_table(filename)
 	local f = io.open(filename, 'r')
 	if f == nil then
 		return { }
 	end
-	local t = unserialize(f:read('*a'))
+	local t = tables.unserialize(f:read('*a'))
 	f:close()
 	return t
 end
 
-function count(t)
+function tables.count(t)
 	local i = 0
 	for _,_ in pairs(t) do
 		i = i + 1
@@ -82,11 +77,11 @@ function count(t)
 	return i
 end
 
-function is_empty(t)
+function tables.is_empty(t)
 	return next(t) == nil
 end
 
-function in_table(t, e)
+function tables.in_table(t, e)
 	for _,v in pairs(t) do
 		if v == e then
 			return true
@@ -95,7 +90,7 @@ function in_table(t, e)
 	return false
 end
 
-function keys(t)
+function tables.keys(t)
 	local new = {}
 	for n,_ in pairs(t) do
 		insert(new, n)
@@ -103,18 +98,18 @@ function keys(t)
 	return new
 end
 
-function concat(t, s)
+function tables.concat(t, s)
 	for _,v in ipairs(s) do
 		insert(t, v)
 	end
 	return t
 end
 
-function copy(t)
+function tables.copy(t)
 	local new = {}
 	for n,v in pairs(t) do
 		if type(v) == 'table' then
-			new[n] = copy(v)
+			new[n] = tables.copy(v)
 		else
 			new[n] = v
 		end
@@ -122,7 +117,7 @@ function copy(t)
 	return new
 end
 
-function iiter(t)
+function tables.iiter(t)
 	local i = 0
 	return function()
 		i = i + 1
@@ -134,7 +129,7 @@ function iiter(t)
 	end
 end
 
-function map(t, f)
+function tables.map(t, f)
 	if t == nil then
 		error('map(t,f) t is nil', 2)
 	end
@@ -148,7 +143,7 @@ function map(t, f)
 	return new
 end
 
-function imap(t, f)
+function tables.imap(t, f)
 	if t == nil then
 		error('imap(t,f) t is nil', 2)
 	end
@@ -162,7 +157,7 @@ function imap(t, f)
 	return new
 end
 
-function find(t, f)
+function tables.find(t, f)
 	for _,v in ipairs(t) do
 		local result = f(v)
 		if result ~= nil then
@@ -172,7 +167,7 @@ function find(t, f)
 	return nil
 end
 
-function reverse(t)
+function tables.reverse(t)
 	local new = {}
 	for _,entry in ipairs(t) do
 		insert(new, _, entry)
@@ -180,7 +175,7 @@ function reverse(t)
 	return new
 end
 
-function upper(t, i)
+function tables.upper(t, i)
 	if not i or i > #t then
 		return #t
 	elseif i < 0 then
@@ -190,13 +185,13 @@ function upper(t, i)
 	end
 end
 
-function sub(t, s, e)
+function tables.sub(t, s, e)
 	s = upper(s or 1)
 	e = upper(e)
 	return { unpack(t, s, e) }
 end
 
-function remove(t, s, e)
+function tables.remove(t, s, e)
 	s = upper(s or 1)
 	e = upper(e)
 	for i=s,e do
@@ -204,7 +199,7 @@ function remove(t, s, e)
 	end
 end
 
-function rep(value, count)
+function tables.rep(value, count)
 	local new = {}
 	for i=1,count do
 		insert(new, value)
@@ -212,7 +207,7 @@ function rep(value, count)
 	return new
 end
 
-function range(first, last, inc)
+function tables.range(first, last, inc)
 	local new = {}
 	inc = inc or 1
 	for i=first,last,inc do
@@ -221,7 +216,7 @@ function range(first, last, inc)
 	return new
 end
 
-function update (t,...)
+function tables.update(t,...)
 	for i=1,select('#',...) do
 		for k,v in pairs(select(i,...)) do
 			t[k] = v
@@ -230,7 +225,7 @@ function update (t,...)
 	return t
 end
 
-function import(env, from, ...)
+function tables.import(env, from, ...)
 	local vars = {...}
 	if #vars ~= 0 then
 		for _,n in ipairs(vars) do
@@ -243,7 +238,7 @@ function import(env, from, ...)
 	end
 end
 
-function enable_control_access(t)
+function tables.enable_control_access(t)
 	-- metatable controls
 	local mt = {}
 	function mt.__newindex(_, n)
@@ -257,11 +252,11 @@ function enable_control_access(t)
 	return t
 end
 
-function disable_control_access(t)
-	setmetatable(t, {})
+function tables.disable_control_access(t)
+	setmetatable(t, nil)
 end
 
-function structure(initializer)
+function tables.structure(initializer)
 	local self = initializer or {}
 
 	-- add/clear member variable
@@ -279,7 +274,7 @@ function structure(initializer)
 		rawset(self, name, nil)
 	end
 
-	enable_control_access(self)
+	tables.enable_control_access(self)
 
 	return self
 end
@@ -289,5 +284,7 @@ end
 
 if is_main() then
 	main()
+else
+	return tables
 end
 
