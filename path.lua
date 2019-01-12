@@ -53,33 +53,30 @@ function path.basepath(path)
 	end
 end
 
-local sep = package.config:sub(1,1)
-
-function path.split_path(_path)
-	local dentries = strings.split(_path, sep)
-	local base = table.remove(dentries, #dentries)
-	return strings.join(dentries, sep), base
+local function split_last(path, sep)
+	local entries = strings.split(_path, sep)
+	local last = table.remove(entries, #dentries)
+	return strings.join(entries, sep), last
 end
 
-function path.split_ext(_path)
-	local entries = strings.split(_path, '%.')
-	while #entries > 2 do
-		entries[1] = entries[1] .. '.' .. table.remove(entries, 2)
-	end
-	entries[#entries] = '.' .. entries[#entries]
-	return entries
+local directory_sep = package.config:sub(1,1)
+
+local function split_path(path)
+	return split_last(path, directory_sep)
 end
 
-function path.base_path(_path)
-	local base
-	_path, base = path.split_path(_path)
-	return base
+path.split_path = split_path
+
+function path.split_ext(path)
+	return split_last(path, '.')
 end
 
-function path.dir_path(_path)
-	local base
-	_path, base = path.split_path(_path)
-	return _path
+function path.base_path(path)
+	return split_path(path)[2]
+end
+
+function path.dir_path(path)
+	return split_path(path)[1]
 end
 
 return path
