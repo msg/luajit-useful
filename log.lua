@@ -27,7 +27,7 @@ Log = Class({
 
 	message = function(self, level, fmt, ...)
 		if level <= self.level then
-			self.write(sprintf(fmt, ...))
+			self:write(sprintf(fmt, ...))
 		end
 	end,
 
