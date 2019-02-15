@@ -96,7 +96,7 @@ object.ObjectClass = function(...)
 	return object_class
 end
 
-object.StrongObject = object.ObjectClass({
+local StrongClass = object.ObjectClass({
 	declarations = function(self, access)
 		rawset(self, '_access', access or 'rw')
 		setmetatable(self, declarations_mt)
@@ -158,8 +158,12 @@ object.StrongObject = object.ObjectClass({
 	end,
 })
 
-object.WeakObject = object.ObjectClass({
-	-- all the StrongObject members become empty
+object.StrongClass = function(...)
+	return object.ObjectClass(StrongClass, ...)
+end
+
+local WeakClass = object.ObjectClass({
+	-- all the StrongClass members become empty
 	declarations	= function(self, access) end,
 	verification	= function(self, key, verify) end,
 	finish		= function(self) end,
@@ -171,10 +175,14 @@ object.WeakObject = object.ObjectClass({
 	end,
 })
 
+object.WeakClass = function(...)
+	return object.ObjectClass(WeakClass, ...)
+end
+
 local function main()
-	--local Object = object.WeakObject
-	local Object = object.StrongObject
-	local O = object.ObjectClass(Object, {
+	--local Class = object.WeakClass
+	local Class = object.StrongClass
+	local O = Class({
 		new = function(self)
 			self.next = self
 
@@ -209,8 +217,8 @@ local function main()
 	print("o = O()")
 	o = O()
 	print('is_a(O)', o:is_a(O))
-	print('is_a(StrongObject)', o:is_a(object.StrongObject))
-	print('is_a(WeakObject)', o:is_a(object.WeakObject))
+	print('is_a(StrongClass)', o:is_a(StrongClass))
+	print('is_a(WeakClass)', o:is_a(WeakClass))
 	print("p = O()")
 	p = O()
 	print('', pcall(get_member, o, 'next'))
