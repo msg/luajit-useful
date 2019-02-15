@@ -3,7 +3,7 @@
 --
 local statemachine = { }
 
-local is_main	= require('useful.system').is_main
+local is_main = require('useful.system').is_main
 
 local Class = require('useful.class').Class
 
