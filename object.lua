@@ -17,7 +17,7 @@ local imap	= tables.imap
 local split	= strings.split
 
 function object.is_object(o)
-	return type(o) == 'table' and o.is_a ~= nil
+	return type(o) == 'table' and o._class ~= nil
 end
 
 function object.verify_type(v, _type)
@@ -28,9 +28,24 @@ function object.verify_type(v, _type)
 	end
 end
 
-function object.verify_function(_type)
-	return function(v)
-		return object.verify_type(v, _type)
+function object.verify_class(v, class)
+	if object.is_object(v) and v:is_a(class) then
+		return true
+	else
+		return false, 'not the correct object'
+	end
+end
+
+function object.verify_function(value)
+	local _type = type(value)
+	if _type == "table" and value._class ~= nil then
+		return function(v)
+			return object.verify_class(v, value._class)
+		end
+	else
+		return function(v)
+			return object.verify_type(v, _type)
+		end
 	end
 end
 
@@ -126,9 +141,11 @@ object.StrongObject = object.ObjectClass({
 		members[key].verify = verify
 	end,
 
-	add_member = function(self, key, value, access)
+	add_member = function(self, key, value, access, verify)
 		local member = { value=value, verify=verify }
-		member.verify = object.verify_function(type(value))
+		if verify == nil then
+			member.verify = object.verify_function(value)
+		end
 		self._members[key] = member
 		if access:find('r') then self._r[key] = true end
 		if access:find('w') then self._w[key] = true end
