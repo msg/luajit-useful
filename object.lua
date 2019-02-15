@@ -176,6 +176,8 @@ local function main()
 	local Object = object.StrongObject
 	local O = object.ObjectClass(Object, {
 		new = function(self)
+			self.next = self
+
 			self.ii = 6
 			self.ss = 'a string'
 
@@ -211,10 +213,14 @@ local function main()
 	print('is_a(WeakObject)', o:is_a(object.WeakObject))
 	print("p = O()")
 	p = O()
+	print('', pcall(get_member, o, 'next'))
 	print('', pcall(get_member, o, 'i'))
 	print('', pcall(get_member, o, 'ii'))
 	print('', pcall(get_member, o, 'ss'))
 	print('', pcall(get_member, o, 'zz'))
+	print('', pcall(set_member, o, 'next', p))
+	print('', pcall(set_member, o, 'next', 5))
+	print('', pcall(set_member, o, 'next', 'a string'))
 	print('', pcall(set_member, o, 'i', 5))
 	print('', pcall(set_member, o, 'i', 'a string'))
 	print('', pcall(set_member, o, 'ii', 5))
