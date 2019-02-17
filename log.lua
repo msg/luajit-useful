@@ -14,7 +14,7 @@ log.ALL		= 5
 
 sprintf = string.format
 
-Log = Class({
+local Log = Class({
 	new = function(self, level)
 		self.level = level or log.ALL
 	end,
@@ -47,6 +47,7 @@ Log = Class({
 		self:message(log.DEBUG, fmt, ...)
 	end,
 })
+log.Log = Log
 
 log.StringLog = Class(log.Log, {
 	new = function(self, level)
