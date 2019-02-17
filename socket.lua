@@ -61,6 +61,7 @@ function socket.getaddrinfo(host, port, protocol)
 		addr[0].sin_addr.s_addr	= netinet_in.INADDR_ANY
 		addr[0].sin_port	= C.htons(port)
 	end
+	addr[0].sin_family = sys_socket.AF_INET
 	C.freeaddrinfo(ai[0])
 	ai = nil
 	return addr
@@ -133,13 +134,23 @@ socket.Socket = Class({
 			return nil, socket.syserror('bind')
 		end
 		return rc
-	end
+	end,
+
+	recv = function(self, buf, len)
+		return C.recv(self.fd, buf, len, 0)
+	end,
+
+	send = function(self, buf, len)
+		return C.send(self.fd, buf, len, 0)
+	end,
+
 })
 
 socket.TCP = Class(socket.Socket, {
 	new = function(self)
 		socket.Socket.new(self)
-		self.fd = C.socket(sys_socket.AF_INET, sys_socket.SOCK_STREAM, 0)
+		self.fd = C.socket(sys_socket.AF_INET,
+				sys_socket.SOCK_STREAM, 0)
 		if self.fd < 0 then
 			return nil, socket.syserror("socket")
 		end
@@ -161,6 +172,17 @@ socket.TCP = Class(socket.Socket, {
 		local rc = C.accept(self.fd, fromp, size)
 		return rc, from[0]
 	end,
+
+	connect = function(self, host, port)
+		local addr	= socket.getaddrinfo(host, port)
+		local addrp	= ffi.cast('struct sockaddr *', addr)
+		local size	= ffi.sizeof(addr)
+		local rc = C.connect(self.fd, addrp, size)
+		if rc < 0 then
+			return nil, socket.syserror('connect')
+		end
+		return rc
+	end,
 })
 
 socket.UDP = Class(socket.Socket, {
@@ -172,20 +194,12 @@ socket.UDP = Class(socket.Socket, {
 		end
 	end,
 
-	recv = function(self, buf, len)
-		return C.recv(self.fd, buf, len, 0)
-	end,
-
 	recvfrom = function(self, buf, len)
 		local from	= ffi.new('struct sockaddr_in[1]')
 		local fromp	= ffi.cast('struct sockaddr *', from)
 		local size	= ffi.new('uint32_t[1]', ffi.sizeof(from))
 		local ret = C.recvfrom(self.fd, buf, len, 0, fromp, size)
 		return ret, from[0]
-	end,
-
-	send = function(self, buf, len)
-		return C.send(self.fd, buf, len, 0)
 	end,
 
 	sendto = function(self, buf, len, addr)
