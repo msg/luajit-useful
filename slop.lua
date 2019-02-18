@@ -93,12 +93,12 @@ slop.Transaction = Class({
 	end,
 
 	reset = function(self)
+		self.name		= ''
 		self.seq		= nil
 		self.binary		= nil
 		self.multi		= {}
 		self.error		= false
 		self.valid		= true
-		self.name		= ''
 		self.error_message	= ''
 	end,
 
@@ -135,6 +135,8 @@ slop.Transaction = Class({
 	send_multi = function(self, message, multi)
 		self:send(multi_start, message)
 		if #multi > 0 then
+			-- TODO: multi_end at beginning of string needs to
+			--       be escaped.
 			self:write(join(multi, eol))
 			self:write(eol)
 		end
@@ -186,6 +188,9 @@ slop.Transaction = Class({
 		end
 
 		local arg = remove(self.args, 1)
+		if arg == nil or #arg < 1 then
+			return
+		end
 		local c = arg:sub(1,1):byte()
 		if not (48 <= c and c <= 57) then -- '0' <= c <= '9'
 			self.name = arg
@@ -196,19 +201,17 @@ slop.Transaction = Class({
 	end,
 
 	recv_multi = function(self, inp)
-		self.multi = {}
 		local line
-		for i=1,#multi_limit do
+		for i=1,multi_limit do
+			-- TODO: multi_end at beginning of string needs to
+			--       be escaped.
 			line = self:readline(inp)
-			if line:sub(#line-#eol) ~= eol then
-				break
-			end
 			if line:sub(1,#multi_end) == multi_end then
 				break
 			end
-			insert(self.multi, strip(line))
+			insert(self.multi, line)
 		end
-		if line:sub(1,#multiend) ~= multi_end then
+		if line:sub(1,#multi_end) ~= multi_end then
 			self.error_message = 'max line limit ' .. multi_limit
 			self.valid = false
 		end
@@ -246,7 +249,7 @@ slop.Transaction = Class({
 		self.args = split(strip(self.status), '%s+')
 
 		self:process_status()
-		if self.name == nil then
+		if self.name == '' then
 			return -1
 		elseif self.name:sub(1, #multi_start) == multi_start then
 			self.name = self.name:sub(#multi_start+1)
@@ -315,16 +318,16 @@ slop.TCPSlopServer = Class(slop.Slop, {
 	end,
 
 	process = function(self)
-		local io = self.stream
+		local inout = self.stream
 		local rc, from = self.tcp:accept(4)
 		if rc > 0 then
-			io:reopen(rc)
+			inout:reopen(rc)
 			while rc >= 0 do
-				rc = self:process_transaction(io, io)
+				rc = self:process_transaction(inout, inout)
 			end
-			io:reopen(stream.NOFD)
+			inout:reopen(stream.NOFD)
 		else
-			printf("%s\n", socket.syserror('accept'))
+			--printf("%s\n", socket.syserror('accept'))
 		end
 
 		return rc
