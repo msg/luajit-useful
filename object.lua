@@ -86,7 +86,7 @@ object.ObjectClass = function(...)
 		if class.new then
 			class.new(instance, ...)
 		end
-		instance:finish()
+		instance:_finish()
 		return instance
 	end
 
@@ -102,7 +102,7 @@ local StrongClass = object.ObjectClass({
 		setmetatable(self, declarations_mt)
 	end,
 
-	finish = function(self)
+	_finish = function(self)
 		self._access = nil
 		self._class.__newindex = function(tbl, key, value)
 			local member = tbl._members[key]
@@ -166,7 +166,7 @@ local WeakClass = object.ObjectClass({
 	-- all the StrongClass members become empty
 	declarations	= function(self, access) end,
 	verification	= function(self, key, verify) end,
-	finish		= function(self) end,
+	_finish		= function(self) end,
 	add_member	= function(self, key, value, access)
 		self[key] = value
 	end,
