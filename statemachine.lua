@@ -79,7 +79,6 @@ end
 -- "run" the state machine until the stop states reached
 function statemachine.StateMachine:run(...)
 	local stop_states = make_stop_states(...)
-	local state = self.state
 	while stop_states[self.state] == nil do
 		self:step()
 	end

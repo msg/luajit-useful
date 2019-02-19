@@ -12,7 +12,7 @@ log.INFO	= 3
 log.DEBUG	= 4
 log.ALL		= 5
 
-sprintf = string.format
+local sprintf = string.format
 
 local Log = Class({
 	new = function(self, level)
@@ -78,7 +78,7 @@ log.FileLog = Class(log.Log, {
 		if self.filename == '-' then
 			io.stdout:write(buf)
 		else
-			f = io.open(self.filename, 'a')
+			local f = io.open(self.filename, 'a')
 			f:write(buf)
 			f:close()
 		end

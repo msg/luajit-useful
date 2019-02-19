@@ -9,14 +9,14 @@ function class.Class(...)
 	local class = { }
 
 	local bases = {...}
-	for i, base in ipairs(bases) do
+	for _, base in ipairs(bases) do
 		for k, v in pairs(base) do
 			class[k] = v
 		end
 	end
 
 	class._is_a = { [class] = true }
-	for i, base in ipairs(bases) do
+	for _, base in ipairs(bases) do
 		if base._is_a ~= nil then
 			for c in pairs(base._is_a) do
 				class._is_a[c] = true
@@ -46,9 +46,9 @@ function class.Class(...)
 end
 
 local function main()
-	Class = class.Class
+	local Class = class.Class
 
-	X = Class({
+	local X = Class({
 		new = function(self)
 			self.x = 5
 		end,
@@ -59,7 +59,7 @@ local function main()
 	function X:print_is()
 		print('is_a(X)=' .. tostring(self:is_a(X)))
 	end
-	Y = Class(X, {
+	local Y = Class(X, {
 		new = function(self)
 			X.new(self)
 			self.y = 4
@@ -72,11 +72,11 @@ local function main()
 		X.print_is(self)
 		print('is_a(Y)=' .. tostring(self:is_a(Y)))
 	end
-	x = X()
+	local x = X()
 	x:print()
 	x:print_is()
 	Y.print_is(x)
-	y = Y()
+	local y = Y()
 	y:print()
 	y:print_is()
 end

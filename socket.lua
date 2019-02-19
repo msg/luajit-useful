@@ -63,7 +63,6 @@ function socket.getaddrinfo(host, port, protocol)
 	end
 	addr[0].sin_family = sys_socket.AF_INET
 	C.freeaddrinfo(ai[0])
-	ai = nil
 	return addr
 end
 
@@ -77,7 +76,7 @@ socket.Socket = Class({
 		if self.fd < 0 then
 			return -1
 		end
-		local valuelen = valuelen or ffi.sizeof(value)
+		valuelen = valuelen or ffi.sizeof(value)
 		local rc = C.setsockopt(self.fd, level, option, value, valuelen)
 		if rc < 0 then
 			return nil, socket.syserror('setsockopt')
@@ -89,7 +88,7 @@ socket.Socket = Class({
 		if self.fd < 0 then
 			return -1
 		end
-		local valuelen = valuelen or ffi.sizeof(value)
+		valuelen = valuelen or ffi.sizeof(value)
 		return C.getsockopt(self.fd, level, option, value, valuelen)
 	end,
 
@@ -208,18 +207,18 @@ socket.UDP = Class(socket.Socket, {
 	end,
 
 	add_membership = function(self, addr, port)
-		local addr	= socket.getaddrinfo(addr, port)
-		local addrp	= ffi.cast('struct sockaddr *', addr)
+		addr		= socket.getaddrinfo(addr, port)
 		local imreq	= ffi.new('struct ip_mreq[1]')
+		imreq.imr_multiaddr = addr
 		return self:setsockopt(netinet_in.IPPROTO_IP,
 				netinet_in.IP_ADD_MEMBERSHIP,
 				imreq, ffi.sizeof(imreq))
 	end,
 
 	drop_membership = function(self, addr, port)
-		local addr	= socket.getaddrinfo(addr, port)
-		local addrp	= ffi.cast('struct sockaddr *', addr)
+		addr		= socket.getaddrinfo(addr, port)
 		local imreq	= ffi.new('struct ip_mreq[1]')
+		imreq.imr_multiaddr = addr
 		return self:setsockopt(netinet_in.IPPROTO_IP,
 				netinet_in.IP_DROP_MEMBERSHIP,
 				imreq, ffi.sizeof(imreq))

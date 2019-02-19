@@ -9,7 +9,6 @@ local ffi	= require('ffi')
 
 local strings	= require('useful.strings')
 local tables	= require('useful.tables')
-local log	= require('useful.log')
 local socket	= require('useful.socket')
 local stream	= require('useful.stream')
 
@@ -17,8 +16,6 @@ local class	= require('useful.class')
 local Class	= class.Class
 
 local strip	= strings.strip
-local rstrip	= strings.rstrip
-local lstrip	= strings.lstrip
 local split	= strings.split
 local ljust	= strings.ljust
 
@@ -33,14 +30,11 @@ local multi_limit	= 256
 local binary_limit	= 1024 * 1024
 
 local eol		= '\n'
-local one_start		= ''
 local multi_start	= '<'
 local multi_end		= '>'
 local binary_start	= '['
 local binary_end	= ']'
 local error_start	= '?'
-
-local printf = function(...) io.stdout:write(string.format(...)) end
 
 -- global commands
 function slop.help(xact)
@@ -56,7 +50,8 @@ function slop.help(xact)
 	local ml = math.max(unpack(ls)) + 2
 	local multi = {}
 	for _,name in ipairs(cmds) do
-		cmd = commands[name]
+		local cmd = commands[name]
+		local usage
 		if cmd == nil then
 			usage = 'invalid command' + eol
 		else
@@ -151,7 +146,7 @@ slop.Transaction = Class({
 		return 0
 	end,
 
-	send_transaction = function(self, inp, out, requestion, data)
+	send_transaction = function(self, inp, out, request, data)
 		self:reset()
 		self.out = out
 		if type(data) == 'table' then
@@ -202,7 +197,7 @@ slop.Transaction = Class({
 
 	recv_multi = function(self, inp)
 		local line
-		for i=1,multi_limit do
+		for _=1,multi_limit do
 			-- TODO: multi_end at beginning of string needs to
 			--       be escaped.
 			line = self:readline(inp)
@@ -231,7 +226,7 @@ slop.Transaction = Class({
 
 		self.binary = inp:read(size)
 
-		line = self:readline(inp)
+		local line = self:readline(inp)
 		if not line:sub(1, #binary_end) ~= binary_end then
 			self.error_message = 'no binary end'
 		else
@@ -255,7 +250,7 @@ slop.Transaction = Class({
 			self.name = self.name:sub(#multi_start+1)
 			self:recv_multi(inp)
 		elseif self.name:sub(1, #binary_start) == binary_start then
-			ssize = self.args[1]
+			local ssize = self.args[1]
 			self.name = slef.args[2]
 			self:recv_binary(ssize, inp)
 		end
@@ -269,9 +264,9 @@ slop.Transaction = Class({
 	end,
 
 	execute = function(self)
-		command = self.commands[self.name]
+		local command = self.commands[self.name]
 		if command ~= nil then
-			rc = command.func(self)
+			local rc = command.func(self)
 			self.out:flush()
 			return rc
 		else
@@ -326,8 +321,8 @@ slop.TCPSlopServer = Class(slop.Slop, {
 				rc = self:process_transaction(inout, inout)
 			end
 			inout:reopen(stream.NOFD)
-		else
-			--printf("%s\n", socket.syserror('accept'))
+		--else
+		--	printf("%s\n", socket.syserror('accept'))
 		end
 
 		return rc
@@ -337,7 +332,7 @@ slop.TCPSlopServer = Class(slop.Slop, {
 local function main()
 	local server = slop.TCPSlopServer(10000)
 
-	function echo(xact)
+	local function echo(xact)
 		local s = join(xact.args, ' ')
 		if #xact.multi then
 			local multi = {}
@@ -352,7 +347,7 @@ local function main()
 
 	server.vars = { }
 
-	function set(xact)
+	local function set(xact)
 		if #xact.args < 2 then
 			return xact:send_single('name value')
 		else
@@ -363,7 +358,7 @@ local function main()
 		end
 	end
 
-	function get(xact)
+	local function get(xact)
 		local vars = {}
 
 		if #xact.args > 0 then
@@ -379,7 +374,7 @@ local function main()
 		return xact:send_multi(join(xact.args, ' '), vars)
 	end
 
-	function del(xact)
+	local function del(xact)
 		local vars = {}
 		if #xact.args > 0 then
 			for _,n in ipairs(xact.args) do

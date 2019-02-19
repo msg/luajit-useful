@@ -54,8 +54,8 @@ function path.basepath(path)
 end
 
 local function split_last(path, sep)
-	local entries = strings.split(_path, sep)
-	local last = table.remove(entries, #dentries)
+	local entries = strings.split(path, sep)
+	local last = table.remove(entries, #entries)
 	return strings.join(entries, sep), last
 end
 

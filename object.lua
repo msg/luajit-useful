@@ -6,15 +6,7 @@ local object = {}
 
 local is_main	= require('useful.system').is_main
 
-local tables	= require('useful.tables')
-local strings	= require('useful.strings')
 local Class	= require('useful.class').Class
-
-local insert = table.insert
-
-local structure	= tables.structure
-local imap	= tables.imap
-local split	= strings.split
 
 function object.is_object(o)
 	return type(o) == 'table' and o._class ~= nil
@@ -181,8 +173,8 @@ end
 
 local function main()
 	--local Class = object.WeakClass
-	local Class = object.StrongClass
-	local O = Class({
+	local OClass = object.StrongClass
+	local O = OClass({
 		new = function(self)
 			self.next = self
 
@@ -204,23 +196,23 @@ local function main()
 		end,
 	})
 
-	function get_member(o, member)
+	local function get_member(o, member)
 		print('get_member', member)
 		return o[member]
 	end
 
-	function set_member(o, member, value)
+	local function set_member(o, member, value)
 		print('set_member', member, value)
 		o[member] = value
 	end
 
 	print("o = O()")
-	o = O()
+	local o = O()
 	print('is_a(O)', o:is_a(O))
 	print('is_a(StrongClass)', o:is_a(StrongClass))
 	print('is_a(WeakClass)', o:is_a(WeakClass))
 	print("p = O()")
-	p = O()
+	local p = O()
 	print('', pcall(get_member, o, 'next'))
 	print('', pcall(get_member, o, 'i'))
 	print('', pcall(get_member, o, 'ii'))

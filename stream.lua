@@ -9,25 +9,20 @@ local ffi	= require('ffi')
 local C		= ffi.C
 
 local bit	= require('bit')
-local bnot	= bit.bnot
 local bor	= bit.bor
-local band	= bit.band
-local lshift	= bit.lshift
-local rshift	= bit.rshift
 
 local sys_types = require('posix.sys.types')
 local unistd	= require('posix.unistd')
 local poll	= require('posix.poll')
 local fcntl	= require('posix.fcntl')
 local pstring	= require('posix.string')
+local errno	= require('posix.errno')
 
 local socket	= require('useful.socket')
 local class	= require('useful.class')
 local Class	= class.Class
 
 local min = math.min
-
-local printf = function(...) io.stdout:write(string.format(...)) end
 
 stream.NOFD = -1 -- when the Stream has no file descriptor
 
@@ -95,13 +90,12 @@ stream.Stream = Class({
 	end,
 
 	stream_poll = function(self, fd, events, timeout)
-		local rc
 		local pfd	= ffi.new('struct pollfd[1]')
 		pfd[0].fd	= fd
 		pfd[0].events	= events
-		rc = C.poll(pfd, 1, timeout * 1000)
+		local rc = C.poll(pfd, 1, timeout * 1000)
 		if rc <= 0 then
-			errno = EAGAIN
+			ffi.errno(errno.EAGAIN)
 			return rc
 		end
 		return 0
@@ -130,7 +124,7 @@ stream.Stream = Class({
 	end,
 
 	read_more = function(self)
-		local rc = -1
+		local rc
 		self.in_next	= self.in_buffer + self.unget_size
 		self.in_end	= self.in_next
 		while true do
@@ -140,7 +134,7 @@ stream.Stream = Class({
 			end
 			self.in_end = self.in_next + rc
 			self.in_end[0] = 0
-			if errno == EINTR then
+			if ffi.errno() == errno.EINTR then
 				return rc
 			end
 		end
@@ -245,7 +239,7 @@ stream.Stream = Class({
 	end,
 
 	write = function(self, buf, len)
-		local rc	= 0
+		local rc
 		local p		= buf
 		local e		= p + len
 		local out_end	= self.out_buffer + self.size
@@ -265,13 +259,12 @@ stream.Stream = Class({
 	end,
 
 	writef = function(self, fmt, ...)
-		local rc
 		local buf = string.format(fmt, ...)
 		return self:write(buf, #buf)
 	end,
 
 	readline = function(self, buf, len)
-		local rc, c, d
+		local rc, d
 
 		-- -3 below because eol could be two chars plus the terminating \0.
 		rc = self:read_delims(buf, len-3, "\r\n");

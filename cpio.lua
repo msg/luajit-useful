@@ -19,7 +19,6 @@ local Class = require('useful.class').Class
 -- tarfile python object cannot generate tar files to stdout.
 
 local insert	= table.insert
-local remove	= table.remove
 local sprintf	= string.format
 local printf	= function(...) io.stdout:write(sprintf(...)) end
 
@@ -99,7 +98,7 @@ cpio.Header = Class({
 	end,
 
 	read = function(self, file)
-		header_len = 6 + 8 * #cpio.cpio_fields
+		local header_len = 6 + 8 * #cpio.cpio_fields
 		self:parse(file:read(header_len))
 		self.path = file:read(self.c_namesize)
 		file:read(cpio.pad4(header_len + #self.path))
@@ -167,7 +166,7 @@ cpio.CPIO = Class({
 	end,
 
 	write_end_of_archive = function(self)
-		header = cpio.Header(cpio.END_OF_ARCHIVE, { c_mtime = 0 })
+		local header = cpio.Header(cpio.END_OF_ARCHIVE, { c_mtime = 0 })
 		self:write(header:format())
 	end,
 
@@ -186,7 +185,7 @@ cpio.CPIO = Class({
 	end,
 
 	read_contents = function(self, header)
-		data = self:read(header.c_filesize)
+		local data = self:read(header.c_filesize)
 		self:read(cpio.pad4(header.c_filesize))
 		return data
 	end,

@@ -6,7 +6,7 @@ local strings = { }
 local bit		= require('bit')
 local bor, band		= bit.bor, bit.band
 local lshift, rshift	= bit.lshift, bit.rshift
-local insert, concat	= table.insert, table.concat
+local insert		= table.insert
 local byte, char	= string.byte, string.char
 local gsub, rep		= string.gsub, string.rep
 local tables		= require('useful.tables')
@@ -24,8 +24,9 @@ function strings.split(s, sep, count)
 	local fields = {}
 	sep = sep or '%s+'
 	count = count or #s
-	local first, last, next = 0, 0, 0
-	for i=1,count do
+	local first, last
+	local next = 0
+	for _=1,count do
 		first, last = s:find(sep, next + 1)
 		if first == nil then break end
 		insert(fields, s:sub(next + 1, first - 1))
@@ -73,9 +74,9 @@ function strings.center(s, w, c)
 	end
 end
 
-function strings.parse_ranges(s)
+function strings.parse_ranges(str)
 	local ranges = {}
-	for _,range in ipairs(strings.split(s, ',')) do
+	for _,range in ipairs(strings.split(str, ',')) do
 		local s, e = unpack(
 			tables.imap(strings.split(range, '-'), function (n,v)
 				return tonumber(v)
@@ -92,7 +93,7 @@ end
 function strings.hex_to_binary(s)
 	local zero, nine = byte('0'), byte('9')
 	local letter_a, letter_f = byte('a'), byte('f')
-	function add_ascii_hex(b, c)
+	local function add_ascii_hex(b, c)
 		if zero <= c and c <= nine then
 			return bor(lshift(b, 4), c - zero), true
 		elseif letter_a <= c and c <= letter_f then
@@ -105,6 +106,7 @@ function strings.hex_to_binary(s)
 	local out = { }
 	for i=1,#s do
 		local c = byte(s:sub(i, i):lower())
+		local is_hex
 		b, is_hex = add_ascii_hex(b, c)
 		if is_hex then
 			if o == 1 then

@@ -11,7 +11,7 @@ local remove = table.remove
 function tables.serialize(o, indent, sp, nl)
 	local new = {}
 	sp = sp or ' '
-	ns = nl or '\n'
+	nl = nl or '\n'
 	indent = indent or ''
 	if type(o) == 'number' then
 		insert(new, tostring(o))
@@ -149,7 +149,7 @@ function tables.imap(t, f)
 	end
 	local new = {}
 	for n,v in ipairs(t) do
-		local v = f(n, v)
+		v = f(n, v)
 		if v ~= nil then
 			insert(new, v)
 		end
@@ -186,22 +186,22 @@ function tables.upper(t, i)
 end
 
 function tables.sub(t, s, e)
-	s = upper(s or 1)
-	e = upper(e)
+	s = tables.upper(s or 1)
+	e = tables.upper(e)
 	return { unpack(t, s, e) }
 end
 
 function tables.remove(t, s, e)
-	s = upper(s or 1)
-	e = upper(e)
-	for i=s,e do
+	s = tables.upper(s or 1)
+	e = tables.upper(e)
+	for _=s,e do
 		remove(t, s)
 	end
 end
 
 function tables.rep(value, count)
 	local new = {}
-	for i=1,count do
+	for _=1,count do
 		insert(new, value)
 	end
 	return new
@@ -263,7 +263,7 @@ function tables.structure(initializer)
 	function self.add_members(t)
 		for n,v in pairs(t) do
 			if v == nil then
-				error('attempt to set member ' .. name ..
+				error('attempt to set member ' .. n ..
 					' to nil', 2)
 			end
 			rawset(self, n, v)
