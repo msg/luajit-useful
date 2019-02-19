@@ -156,10 +156,10 @@ end
 
 local WeakClass = object.ObjectClass({
 	-- all the StrongClass members become empty
-	declarations	= function(self, access) end, -- luacheck: ignore self access
-	verification	= function(self, key, verify) end, -- luacheck: ignore self key verify
-	_finish		= function(self) end, -- luacheck: ignore self
-	add_member	= function(self, key, value, access) -- luacheck: ignore access
+	declarations	= function(self, access) end, -- luacheck: ignore
+	verification	= function(self, key, verify) end, -- luacheck: ignore
+	_finish		= function(self) end, -- luacheck: ignore
+	add_member	= function(self, key, value, access) -- luacheck: ignore
 		self[key] = value
 	end,
 	remove_member	= function(self, key)

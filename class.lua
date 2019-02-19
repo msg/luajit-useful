@@ -6,7 +6,7 @@ local class = { }
 local is_main	= require('useful.system').is_main
 
 function class.Class(...)
-	local class = { } -- luacheck: ignore class
+	local class = { } -- luacheck: ignore
 
 	local bases = {...}
 	for _, base in ipairs(bases) do
@@ -32,7 +32,7 @@ function class.Class(...)
 	class.__index = class
 
 	setmetatable(class, {
-		__call = function (class, ...) -- luacheck: ignore class
+		__call = function (class, ...) -- luacheck: ignore
 			local instance = setmetatable({ _class=class }, class)
 			-- run the new method if it's there
 			if class.new then

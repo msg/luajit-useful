@@ -11,11 +11,11 @@ local C		= ffi.C
 local bit	= require('bit')
 local bor	= bit.bor
 
-local sys_types = require('posix.sys.types') -- luacheck: ignore sys_types
-local unistd	= require('posix.unistd') -- luacheck: ignore unistd
+local sys_types = require('posix.sys.types') -- luacheck: ignore
+local unistd	= require('posix.unistd') -- luacheck: ignore
 local poll	= require('posix.poll')
 local fcntl	= require('posix.fcntl')
-local pstring	= require('posix.string') -- luacheck: ignore pstring
+local pstring	= require('posix.string') -- luacheck: ignore
 local errno	= require('posix.errno')
 
 local socket	= require('useful.socket')

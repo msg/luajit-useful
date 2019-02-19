@@ -18,10 +18,10 @@ local Log = Class({
 		self.level = level or log.ALL
 	end,
 
-	write = function(self, buf) -- luacheck: ignore self buf
+	write = function(self, buf) -- luacheck: ignore
 	end,
 
-	clear = function(self) -- luacheck: ignore self
+	clear = function(self) -- luacheck: ignore
 	end,
 
 	message = function(self, level, fmt, ...)
@@ -90,18 +90,18 @@ log.GroupLog = Class(log.Log, {
 		self.logs = {}
 	end,
 
-	add_log = function(self, log) -- luacheck: ignore log
+	add_log = function(self, log) -- luacheck: ignore
 		table.insert(self.logs, log)
 	end,
 
 	write = function(self, buf)
-		for _,log in ipairs(self.logs) do -- luacheck: ignore log
+		for _,log in ipairs(self.logs) do -- luacheck: ignore
 			log:write(buf)
 		end
 	end,
 
 	clear = function(self)
-		for _,log in ipairs(self.logs) do -- luacheck: ignore log
+		for _,log in ipairs(self.logs) do -- luacheck: ignore
 			log:clear()
 		end
 	end,

@@ -6,7 +6,7 @@ stdio.fprintf = function(file, ...)
 	file:write(stdio.sprintf(...))
 end
 stdio.printf = function(...)
-	fprintf(io.stdout, ...)
+	stdio.fprintf(io.stdout, ...)
 end
 
 return stdio

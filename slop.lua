@@ -159,7 +159,7 @@ slop.Transaction = Class({
 		return self:recv_transaction(inp)
 	end,
 
-	readline = function(self, inp) -- luacheck: ignore self
+	readline = function(self, inp) -- luacheck: ignore
 		local rc
 		local buf = ffi.new('char[?]', line_limit)
 		rc = inp:readline(buf, line_limit)
@@ -314,7 +314,7 @@ slop.TCPSlopServer = Class(slop.Slop, {
 
 	process = function(self)
 		local inout = self.stream
-		local rc, from = self.tcp:accept(4) -- luacheck: ignore from
+		local rc, from = self.tcp:accept(4) -- luacheck: ignore
 		if rc > 0 then
 			inout:reopen(rc)
 			while rc >= 0 do
