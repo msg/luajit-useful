@@ -1,6 +1,6 @@
 # Maintainer: msg
 pkgname=luajit-useful
-pkgver=2018.08.09.r0.8eda259
+pkgver=2019.02.18.r0.847ff20
 pkgrel=1
 pkgdesc="A luajit ffi useful library"
 arch=('x86_64')

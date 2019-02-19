@@ -3,7 +3,8 @@
 --
 local log = { }
 
-local Class = require('useful.class').Class
+local sprintf	= require('useful.stdio').sprintf
+local Class	= require('useful.class').Class
 
 log.NONE	= 0
 log.ERROR	= 1
@@ -11,8 +12,6 @@ log.WARNING	= 2
 log.INFO	= 3
 log.DEBUG	= 4
 log.ALL		= 5
-
-local sprintf = string.format
 
 local Log = Class({
 	new = function(self, level)

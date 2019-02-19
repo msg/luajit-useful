@@ -321,8 +321,6 @@ slop.TCPSlopServer = Class(slop.Slop, {
 				rc = self:process_transaction(inout, inout)
 			end
 			inout:reopen(stream.NOFD)
-		--else
-		--	printf("%s\n", socket.syserror('accept'))
 		end
 
 		return rc

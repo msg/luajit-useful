@@ -4,12 +4,13 @@
 --
 local cpio = { }
 
-local is_main	= require('useful.system').is_main
-
 local bit = require('bit')
 local band, bor, lshift = bit.band, bit.bor, bit.lshift
 
-local Class = require('useful.class').Class
+local Class	= require('useful.class').Class
+local stdio	= require('useful.stdio')
+local sprintf	= stdio.sprintf
+local printf	= stdio.printf
 
 -- This is a lujit module to read/write cpio files in "New ASCII Format"
 --
@@ -19,8 +20,6 @@ local Class = require('useful.class').Class
 -- tarfile python object cannot generate tar files to stdout.
 
 local insert	= table.insert
-local sprintf	= string.format
-local printf	= function(...) io.stdout:write(sprintf(...)) end
 
 function cpio.pad4(l)
 	return band(4 - band(l, 3), 3)
@@ -226,6 +225,7 @@ local function main()
 	f:close()
 end
 
+local is_main = require('useful.system').is_main
 if is_main() then
 	main()
 else

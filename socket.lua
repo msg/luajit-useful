@@ -24,9 +24,9 @@ local netinet_tcp	= require('posix.netinet.tcp') -- luacheck: ignore netinet_tcp
 
 local class		= require('useful.class')
 local Class		= class.Class
-
-local sprintf		= string.format
-local printf		= function(...) io.stdout:write(sprintf(...)) end
+local stdio		= require('useful.stdio')
+local sprintf		= stdio.sprintf
+local printf		= stdio.printf
 
 function socket.syserror(call)
 	return sprintf("%s: %s\n", call, ffi.string(C.strerror(ffi.errno())))
