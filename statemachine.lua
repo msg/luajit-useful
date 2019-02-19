@@ -29,7 +29,7 @@ function statemachine.StateMachine:add_state(name, func)
 end
 
 -- done is stop state "always"
-function statemachine.StateMachine:done()
+function statemachine.StateMachine:done() -- luacheck: ignore self
 	return 'done'
 end
 

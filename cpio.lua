@@ -28,7 +28,7 @@ end
 
 local function octal(val)
 	local oct = 0
-	local bit = 0
+	local bit = 0 -- luacheck: ignore bit
 	while val > 0 do
 		oct = bor(oct, lshift(math.fmod(val, 10), bit))
 		bit = bit + 3
@@ -204,7 +204,7 @@ cpio.CPIO = Class({
 
 local function main()
 	local f = io.open('test.cpio', 'w')
-	local cpio = cpio.CPIO(f)
+	local cpio = cpio.CPIO(f) -- luacheck: ignore cpio
 	for i=0,99 do
 		cpio:write_file(sprintf('a/b/c/d/testing/%02d', i),
 				string.rep(string.char(i), 100+i))
@@ -212,9 +212,9 @@ local function main()
 	cpio:write_end_of_archive()
 	f:close()
 	f = io.open('test.cpio', 'r')
-	local cpio = cpio.CPIO(f)
+	cpio = cpio.CPIO(f)
 	while true do
-		local header, contents = cpio:read_entry()
+		local header, contents = cpio:read_entry() -- luacheck: ignore contents
 		if header.path == cpio.END_OF_ARCHIVE then
 			break
 		end

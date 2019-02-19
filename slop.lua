@@ -159,7 +159,7 @@ slop.Transaction = Class({
 		return self:recv_transaction(inp)
 	end,
 
-	readline = function(self, inp)
+	readline = function(self, inp) -- luacheck: ignore self
 		local rc
 		local buf = ffi.new('char[?]', line_limit)
 		rc = inp:readline(buf, line_limit)
@@ -251,7 +251,7 @@ slop.Transaction = Class({
 			self:recv_multi(inp)
 		elseif self.name:sub(1, #binary_start) == binary_start then
 			local ssize = self.args[1]
-			self.name = slef.args[2]
+			self.name = self.args[2]
 			self:recv_binary(ssize, inp)
 		end
 
@@ -314,7 +314,7 @@ slop.TCPSlopServer = Class(slop.Slop, {
 
 	process = function(self)
 		local inout = self.stream
-		local rc, from = self.tcp:accept(4)
+		local rc, from = self.tcp:accept(4) -- luacheck: ignore from
 		if rc > 0 then
 			inout:reopen(rc)
 			while rc >= 0 do

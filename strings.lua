@@ -78,7 +78,7 @@ function strings.parse_ranges(str)
 	local ranges = {}
 	for _,range in ipairs(strings.split(str, ',')) do
 		local s, e = unpack(
-			tables.imap(strings.split(range, '-'), function (n,v)
+			tables.imap(strings.split(range, '-'), function (_,v)
 				return tonumber(v)
 			end)
 		)

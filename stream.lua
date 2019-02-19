@@ -11,11 +11,11 @@ local C		= ffi.C
 local bit	= require('bit')
 local bor	= bit.bor
 
-local sys_types = require('posix.sys.types')
-local unistd	= require('posix.unistd')
+local sys_types = require('posix.sys.types') -- luacheck: ignore sys_types
+local unistd	= require('posix.unistd') -- luacheck: ignore unistd
 local poll	= require('posix.poll')
 local fcntl	= require('posix.fcntl')
-local pstring	= require('posix.string')
+local pstring	= require('posix.string') -- luacheck: ignore pstring
 local errno	= require('posix.errno')
 
 local socket	= require('useful.socket')
@@ -89,7 +89,7 @@ stream.Stream = Class({
 		self:flush_write()
 	end,
 
-	stream_poll = function(self, fd, events, timeout)
+	stream_poll = function(self, fd, events, timeout) -- luacheck: ignore self
 		local pfd	= ffi.new('struct pollfd[1]')
 		pfd[0].fd	= fd
 		pfd[0].events	= events

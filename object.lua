@@ -156,10 +156,10 @@ end
 
 local WeakClass = object.ObjectClass({
 	-- all the StrongClass members become empty
-	declarations	= function(self, access) end,
-	verification	= function(self, key, verify) end,
-	_finish		= function(self) end,
-	add_member	= function(self, key, value, access)
+	declarations	= function(self, access) end, -- luacheck: ignore self access
+	verification	= function(self, key, verify) end, -- luacheck: ignore self key verify
+	_finish		= function(self) end, -- luacheck: ignore self
+	add_member	= function(self, key, value, access) -- luacheck: ignore access
 		self[key] = value
 	end,
 	remove_member	= function(self, key)
@@ -187,7 +187,7 @@ local function main()
 			self.s = "a string"
 		end,
 
-		method = function(self, ...)
+		method = function(self, ...) -- luacheck: ignore self
 			local args = { ... }
 			print('method:')
 			for i,arg in ipairs(args) do

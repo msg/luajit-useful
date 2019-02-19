@@ -45,7 +45,7 @@ function tables.serialize(o, indent, sp, nl)
 end
 
 function tables.unserialize(t)
-	local func, err = loadstring('return ' .. t)
+	local func, err = loadstring('return ' .. t) -- luacheck: ignore err
 	if func ~= nil then
 		setfenv(func, {})
 		return func()

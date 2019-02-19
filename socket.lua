@@ -11,16 +11,16 @@ local C			= ffi.C
 local bit		= require('bit')
 local bor		= bit.bor
 
-local unistd		= require('posix.unistd')
+local unistd		= require('posix.unistd') -- luacheck: ignore unistd
 local fcntl		= require('posix.fcntl')
-local sys_types		= require('posix.sys.types')
-local sys_time		= require('posix.sys.time')
+local sys_types		= require('posix.sys.types') -- luacheck: ignore sys_types
+local sys_time		= require('posix.sys.time') -- luacheck: ignore sys_time
 local sys_socket	= require('posix.sys.socket')
-local posix_string	= require('posix.string')
-local arpa_inet		= require('posix.arpa.inet')
+local posix_string	= require('posix.string') -- luacheck: ignore posix_string
+local arpa_inet		= require('posix.arpa.inet') -- luacheck: ignore arpa_inet
 local netdb		= require('posix.netdb')
 local netinet_in	= require('posix.netinet.in')
-local netinet_tcp	= require('posix.netinet.tcp')
+local netinet_tcp	= require('posix.netinet.tcp') -- luacheck: ignore netinet_tcp
 
 local class		= require('useful.class')
 local Class		= class.Class
