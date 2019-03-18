@@ -204,7 +204,8 @@ slop.Transaction = Class({
 			if line:sub(1,#multi_end) == multi_end then
 				break
 			end
-			insert(self.multi, line)
+			-- remove newline and add it to the list
+			insert(self.multi, line:sub(1,-2))
 		end
 		if line:sub(1,#multi_end) ~= multi_end then
 			self.error_message = 'max line limit ' .. multi_limit
