@@ -41,20 +41,20 @@ static manager *get_manager(lua_State *lua, int handle_error) {
 	return man;
 }
 
-static void push_channel_and_queue(manager *man, const char *channel) {
+static void push_channel_and_queue(lua_State *lua, const char *channel) {
 	// put `channels[channel]` on stack
-	lua_getfield(man->lua, LUA_GLOBALSINDEX, "channels");
-	lua_getfield(man->lua, -1, channel);
-	if (lua_isnil(man->lua, -1)) {
-		lua_pop(man->lua, 1);			// remove nil
-		lua_newtable(man->lua);			// channel table
-		lua_newtable(man->lua);			// queue table
-		lua_setfield(man->lua, -2, "queue");	// set channel.queue
-		lua_setfield(man->lua, -2, channel);	// set channels[channel]
-		lua_getfield(man->lua, -1, channel);	//   get it back
+	lua_getfield(lua, LUA_GLOBALSINDEX, "channels");
+	lua_getfield(lua, -1, channel);
+	if (lua_isnil(lua, -1)) {
+		lua_pop(lua, 1);		// remove nil
+		lua_newtable(lua);		// channel table
+		lua_newtable(lua);		// queue table
+		lua_setfield(lua, -2, "queue");	// set channel.queue
+		lua_setfield(lua, -2, channel);	// set channels[channel]
+		lua_getfield(lua, -1, channel);	//   get it back
 	}
-	lua_remove(man->lua, -2); // remove 'channels' from stack
-	lua_getfield(man->lua, -1, "queue"); // push queue also
+	lua_remove(lua, -2);		// remove 'channels' from stack
+	lua_getfield(lua, -1, "queue"); // push queue also
 }
 
 static int move_value(lua_State *to_lua, lua_State *from_lua, int index) {
@@ -109,7 +109,7 @@ static int ll_send(lua_State *lua) {
 
 	pthread_mutex_lock(&man->mutex);
 
-	push_channel_and_queue(man, channel);
+	push_channel_and_queue(man->lua, channel);
 
 	rc = stack_to_new_table(man->lua, lua);
 	if (rc == 0) // append table to channels[channel].queue table
@@ -177,31 +177,39 @@ static int ll_receive(lua_State *lua) {
 
 	pthread_mutex_lock(&man->mutex);
 
-	push_channel_and_queue(man, channel);
+	push_channel_and_queue(man->lua, channel);
 
 	// wait for timeout seconds for a message
 	if (lua_objlen(man->lua, -1) < 1 && timeout > 0.0) {
 		wait_for_queue(man, p, timeout);
 
 		// wait_for_queue clears stack
-		push_channel_and_queue(man, channel);
+		push_channel_and_queue(man->lua, channel);
 
 		// clear wait
 		lua_pushnil(man->lua);
 		lua_setfield(man->lua, -3, "wait");
 	}
 
+	// man->lua stack: queue, channel
 	lua_createtable(lua, 0, 0);
+	// lua stack: new_table
 	if (lua_objlen(man->lua, -1) > 0) {
 		lua_rawgeti(man->lua, -1, 1);
+		// man->lua stack: queue[1], queue, channel
+
+		// move man->lua queue[2..#queue] to queue[1..#queue-1]
 
 		n = lua_objlen(man->lua, -2);
 		for (i = 1; i <= n; i++) {
+			// lua_rawgeti > n will push nil which is what we want
 			lua_rawgeti(man->lua, -2, i+1);
 			lua_rawseti(man->lua, -3, i);
 		}
 
+		lua_createtable(lua, 1, 0);
 		move_itable(lua, man->lua);
+		lua_rawseti(lua, -2, 1);
 	}
 
 	lua_settop(man->lua, 0);
@@ -302,6 +310,19 @@ static const struct luaL_Reg ll_funcs[] = {
 	{ NULL,		NULL },
 };
 
+static int manager_mt_gc(lua_State *lua) {
+	manager *man;
+	lua_getfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
+	man = (manager *)lua_touserdata(lua, -1);
+	lua_close(man->lua);
+	return 0;
+}
+
+static const struct luaL_Reg manager_mt_funcs[] = {
+	{ "__gc",	manager_mt_gc },
+	{ NULL,		NULL },
+};
+
 int luaopen_useful_threading(lua_State *lua) {
 	proc *self = (proc *)lua_newuserdata(lua, sizeof(proc));
 	lua_setfield(lua, LUA_REGISTRYINDEX, "_SELF");
@@ -312,6 +333,9 @@ int luaopen_useful_threading(lua_State *lua) {
 	manager *man = get_manager(lua, IGNORE_ERROR);
 	if (man == NULL) {
 		man = (manager *)lua_newuserdata(lua, sizeof(manager));
+		luaL_newmetatable(lua, "_MANAGER_MT");
+		luaL_register(lua, NULL, manager_mt_funcs);
+		lua_setmetatable(lua, -2);
 		lua_setfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
 		man->lua = luaL_newstate();
 		lua_createtable(man->lua, 0, 0);
