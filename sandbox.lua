@@ -14,32 +14,39 @@ end
 
 function sandbox.sandbox(env)
 	env			= env or { }
-	env.assert		= assert
-	env.error		= error
-	env.getmetatable	= getmetatable
-	env.setmetatable	= setmetatable
-	env.next		= next
-	env.pcall		= pcall
-	env.print		= print
-	env.pairs		= pairs
-	env.select		= select
-	env.tonumber		= tonumber
-	env.tostring		= tostring
-	env.type		= type
-	env.unpack		= unpack
-	env.xpcall		= xpcall
-	sandbox.export(env, 'math', math)
-	sandbox.export(env, 'table', table)
-	sandbox.export(env, 'coroutine', coroutine)
-	sandbox.export(env, 'string', string)
-	env.os = {
-		-- only allowed os calls
-		clock		= os.clock,
-		-- running 5.1.3 or higher:
-		date		= os.date,
-		time		= os.time,
-		difftime	= os.difftime,
-	}
+	setmetatable(env, { __index = _G })
+	setfenv(0, env)
+	env.assert		= env.assert or assert
+	env.error		= env.error or error
+	env.getfenv		= env.getfenv or getfenv
+	env.setfenv		= env.setfenv or setfenv
+	env.getmetatable	= env.getmetatable or getmetatable
+	env.setmetatable	= env.setmetatable or setmetatable
+	env.next		= env.next or next
+	env.pcall		= env.pcall or pcall
+	env.print		= env.print or print
+	env.pairs		= env.pairs or pairs
+	env.select		= env.select or select
+	env.tonumber		= env.tonumber or tonumber
+	env.tostring		= env.tostring or tostring
+	env.type		= env.type or type
+	env.unpack		= env.unpack or unpack
+	env.xpcall		= env.xpcall or xpcall
+	for _,name in ipairs({ 'math', 'table', 'coroutine', 'string' }) do
+		if env[name] == nil then
+			sandbox.export(env, name, getfenv()[name])
+		end
+	end
+	if env.os == nil then
+		env.os = {
+			-- only allowed os calls
+			clock		= os.clock,
+			-- running 5.1.3 or higher:
+			date		= os.date,
+			time		= os.time,
+			difftime	= os.difftime,
+		}
+	end
 	env.string.dump		= nil
 	env._G			= env
 	return env
