@@ -134,7 +134,7 @@ stream.Stream = Class({
 			end
 			self.in_end = self.in_next + rc
 			self.in_end[0] = 0
-			if ffi.errno() == errno.EINTR then
+			if ffi.errno() ~= errno.EINTR then
 				return rc
 			end
 		end
