@@ -53,7 +53,7 @@ local declarations_mt = {
 -- make custom ObjectClass to wrap Class
 -- - to callmethed before and after :new(...)
 -- - setup members and access
-object.ObjectClass = function(...)
+local ObjectClass = function(...)
 	local object_class = Class(...)
 
 	local new = function(class, ...)
@@ -68,8 +68,7 @@ object.ObjectClass = function(...)
 		-- initialize only once?
 		for name,value in pairs(class) do
 			if name ~= '__index' then
-				local member = { value=value }
-				instance._members[name] = member
+				instance._members[name] = { value=value }
 				instance._r[name] = true
 			end
 		end
@@ -87,8 +86,9 @@ object.ObjectClass = function(...)
 	})
 	return object_class
 end
+object.ObjectClass = ObjectClass
 
-local StrongClass = object.ObjectClass({
+local StrongClass = ObjectClass({
 	declarations = function(self, access)
 		rawset(self, '_access', access or 'rw')
 		setmetatable(self, declarations_mt)
@@ -151,10 +151,10 @@ local StrongClass = object.ObjectClass({
 })
 
 object.StrongClass = function(...)
-	return object.ObjectClass(StrongClass, ...)
+	return ObjectClass(StrongClass, ...)
 end
 
-local WeakClass = object.ObjectClass({
+local WeakClass = ObjectClass({
 	-- all the StrongClass members become empty
 	declarations	= function(self, access) end, -- luacheck: ignore
 	verification	= function(self, key, verify) end, -- luacheck: ignore
@@ -168,7 +168,7 @@ local WeakClass = object.ObjectClass({
 })
 
 object.WeakClass = function(...)
-	return object.ObjectClass(WeakClass, ...)
+	return ObjectClass(WeakClass, ...)
 end
 
 local function main()
