@@ -14,7 +14,6 @@ end
 
 function sandbox.sandbox(env)
 	env			= env or { }
-	setmetatable(env, { __index = _G })
 	setfenv(0, env)
 	env.assert		= env.assert or assert
 	env.error		= env.error or error
