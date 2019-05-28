@@ -55,11 +55,11 @@ function sandbox.run(untrusted_code, env)
 	if untrusted_code:byte(1) == 27 then
 		return nil, 'binary code prohibited'
 	end
+	env = env or sandbox.sandbox()
 	local untrusted_function, message = loadstring(untrusted_code)
 	if not untrusted_function then
 		return nil, message
 	end
-	env = env or sandbox.sandbox()
 	setfenv(untrusted_function, env)
 	return pcall(untrusted_function)
 end
@@ -69,22 +69,25 @@ local function main(args)
 		assert(sandbox.run(io.open(args[1],'r'):read('*a')))
 	else
 		local s = [[
-			print('test')
-			print(pairs)
+			print('sandbox _G:')
 			for n,v in pairs(_G) do
-				print(n,v)
+				print('',n,v)
 			end
 		]]
 		--assert(loadstring(s))()
-		assert(sandbox.run(s))
+		assert(sandbox.run(s) == true)
 
 		local t = [[
-			print(os.date('%F'))
+			print('sandbox io:')
+			print('',os.date('%F')) -- this should work
 			f=io.open(arg[0]) -- this should fail on io
 			print(f:read('*a'))
+			print('---- EOF ----')
 			f:close()
 		]]
-		assert(sandbox.run(t) == false)
+		local ok, msg = sandbox.run(t)
+		assert(ok == false)
+		print('', msg)
 	end
 end
 
