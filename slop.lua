@@ -161,8 +161,8 @@ slop.Transaction = Class({
 
 	readline = function(self, inp) -- luacheck: ignore
 		local rc
-		local buf = ffi.new('char[?]', line_limit)
-		rc = inp:readline(buf, line_limit)
+		local buf = ffi.new('char[?]', self.line_limit)
+		rc = inp:readline(buf, self.line_limit)
 		if rc <= 0 then
 			return ''
 		end
@@ -197,7 +197,7 @@ slop.Transaction = Class({
 
 	recv_multi = function(self, inp)
 		local line
-		for _=1,multi_limit do
+		for _=1,self.multi_limit do
 			-- TODO: multi_end at beginning of string needs to
 			--       be escaped.
 			line = self:readline(inp)
@@ -208,7 +208,8 @@ slop.Transaction = Class({
 			insert(self.multi, line:sub(1,-2))
 		end
 		if line:sub(1,#multi_end) ~= multi_end then
-			self.error_message = 'max line limit ' .. multi_limit
+			self.error_message = 'max line limit ' ..
+						self.multi_limit
 			self.valid = false
 		end
 	end,
@@ -220,8 +221,9 @@ slop.Transaction = Class({
 			self.error_message = 'bad size "' .. ssize .. '" format'
 			return
 		end
-		if size > binary_limit then
-			self.error_message = 'max binary size ' .. binary_limit
+		if size > self.binary_limit then
+			self.error_message = 'max binary size ' ..
+						self.binary_limit
 			return
 		end
 
