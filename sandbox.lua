@@ -31,6 +31,8 @@ function sandbox.sandbox(env)
 	env.type		= env.type or type
 	env.unpack		= env.unpack or unpack
 	env.xpcall		= env.xpcall or xpcall
+	env.pairs		= env.pairs or pairs
+	env.ipairs		= env.ipairs or ipairs
 	for _,name in ipairs({ 'math', 'table', 'coroutine', 'string' }) do
 		if env[name] == nil then
 			sandbox.export(env, name, getfenv()[name])
