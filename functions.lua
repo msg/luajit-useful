@@ -20,7 +20,7 @@ function functions.memoize(func)
 end
 
 function functions.lambda(func)
-	local code = 'return function(a,b,c) return ' .. func .. ' end'
+	local code = 'return function(...) return ' .. func .. ' end'
 	local chunk = assert(loadstring(code, 'tmp'))
 	return chunk()
 end
