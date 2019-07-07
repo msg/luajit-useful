@@ -54,9 +54,9 @@ function path.basepath(path) -- luacheck: ignore path
 end
 
 local function split_last(path, sep) -- luacheck: ignore path
-	local entries = strings.split(path, sep)
+	local entries = strings.split(path, '%'..sep)
 	local last = table.remove(entries, #entries)
-	return strings.join(entries, sep), last
+	return strings.join(entries, sep), sep..last
 end
 
 local directory_sep = package.config:sub(1,1)
@@ -72,11 +72,9 @@ function path.split_ext(path) -- luacheck: ignore path
 end
 
 function path.base_path(path) -- luacheck: ignore path
-	return split_path(path)[2]
+	return select(2, split_path(path))
 end
 
-function path.dir_path(path) -- luacheck: ignore path
-	return split_path(path)[1]
-end
+path.dir_path = split_path
 
 return path
