@@ -8,10 +8,12 @@ local is_main	= require('useful.system').is_main
 function class.Class(...)
 	local class = { } -- luacheck: ignore
 
+	class.__index	= class
+
 	local bases = {...}
 	for _, base in ipairs(bases) do
 		for k, v in pairs(base) do
-			class[k] = v
+			rawset(class, k, v)
 		end
 	end
 
@@ -28,8 +30,6 @@ function class.Class(...)
 	function class:is_a(def)
 		return self._is_a[def]
 	end
-
-	class.__index = class
 
 	setmetatable(class, {
 		__call = function (class, ...) -- luacheck: ignore
