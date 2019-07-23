@@ -8,14 +8,15 @@ local is_main	= require('useful.system').is_main
 function class.Class(...)
 	local class = { } -- luacheck: ignore
 
-	class.__index	= class
-
 	local bases = {...}
 	for _, base in ipairs(bases) do
 		for k, v in pairs(base) do
 			rawset(class, k, v)
 		end
 	end
+
+	-- MUST be set after the above loop
+	class.__index	= class
 
 	class._is_a = { [class] = true }
 	for _, base in ipairs(bases) do
