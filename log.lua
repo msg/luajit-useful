@@ -3,7 +3,10 @@
 --
 local log = { }
 
+local ffi	= require('ffi')
+
 local sprintf	= require('useful.stdio').sprintf
+local socket	= require('useful.socket')
 local Class	= require('useful.class').Class
 
 log.NONE	= 0
@@ -67,7 +70,6 @@ log.StringLog = Class(log.Log, {
 })
 
 log.FileLog = Class(log.Log, {
-
 	new = function(self, filename, level)
 		Log.new(self, level)
 		self.filename = filename
@@ -81,6 +83,19 @@ log.FileLog = Class(log.Log, {
 			f:write(buf)
 			f:close()
 		end
+	end,
+})
+
+log.UDPLog = Class(log.Log, {
+	new = function(self, host, port, level)
+		Log.new(self, level)
+		self.dest = socket.getaddrinfo(host, port)
+		self.udp = socket.UDP()
+	end,
+
+	write = function(self, buf)
+		local p = ffi.new('char[?]', #buf, buf)
+		self.udp:sendto(p, #buf, self.dest)
 	end,
 })
 
