@@ -54,6 +54,7 @@ log.Log = Log
 log.StringLog = Class(log.Log, {
 	new = function(self, level)
 		Log.new(self, level)
+		self.data = {}
 	end,
 
 	write = function(self, buf)
