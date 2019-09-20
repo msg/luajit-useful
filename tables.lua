@@ -8,8 +8,9 @@ local is_main	= require('useful.system').is_main
 local insert = table.insert
 local remove = table.remove
 
-function tables.serialize(o, indent, sp, nl)
+function tables.serialize(o, indent, sp, nl, visited)
 	local new = {}
+	visited = visited or { }
 	sp = sp or ' '
 	nl = nl or '\n'
 	indent = indent or ''
@@ -18,6 +19,10 @@ function tables.serialize(o, indent, sp, nl)
 	elseif type(o) == 'string' then
 		insert(new, string.format('%q', o))
 	elseif type(o) == 'table' then
+		if visited[o] == true then
+			error('table loop')
+		end
+		visited[o] = true
 		insert(new, '{')
 		local last = 0
 		for k,v in pairs(o) do
@@ -32,9 +37,9 @@ function tables.serialize(o, indent, sp, nl)
 					k = '[' .. k .. '] = '
 				end
 			end
+			v = tables.serialize(v, indent .. sp, sp, nl, visited)
 			insert(new, table.concat({
-				indent, sp, k,
-				tables.serialize(v, indent .. sp), ','
+				indent, sp, k, v, ','
 			}, ''))
 		end
 		insert(new, indent .. '}')
