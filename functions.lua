@@ -20,7 +20,7 @@ function functions.memoize(func)
 end
 
 function functions.lambda(func)
-	local code = 'return function(...) return ' .. func .. ' end'
+	local code = 'return function(a,b,c,d,e,f,g) return ' .. func .. ' end'
 	local chunk = assert(loadstring(code, 'tmp'))
 	return chunk()
 end
@@ -51,11 +51,17 @@ function functions.bind2(func, b)
 	end
 end
 
-function functions.compose(func1, func2)
-	func1 = functions.function_arg(func1)
-	func2 = functions.function_arg(func2)
+function functions.compose(...)
+	local funcs = { }
+	for _,func in pairs({...}) do
+		table.insert(funcs, 1, functions.function_arg(func))
+	end
 	return function(...)
-		return func1(func2(...))
+		local v = funcs[1](...)
+		for i=2,#funcs do
+			v = funcs[i](v)
+		end
+		return v
 	end
 end
 
