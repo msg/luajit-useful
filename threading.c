@@ -7,6 +7,17 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#define DEBUG(x, lua) \
+	printf("%s: %d " x " ", __FILE__, __LINE__); stack_dump(lua)
+
+#if 0
+#define MODULE luaopen_threading
+#else
+#define MODULE luaopen_useful_threading
+#endif
+int MODULE(lua_State *lua);
+
+
 typedef struct proc {
 	lua_State *lua;
 	pthread_t thread;
@@ -19,7 +30,40 @@ typedef struct manager {
 	proc *prev, *next;
 } manager;
 
-int luaopen_useful_threading(lua_State *lua);
+void stack_dump(lua_State *lua) {
+        // stack_dump doesn't lock, therefore lock before calling
+        int i;
+        int top = lua_gettop(lua);
+        printf("stack %d: ", top);
+        for (i = 1; i <= top; i++) {
+                int t = lua_type(lua, i);
+                switch(t) {
+                case LUA_TSTRING:
+                        printf("s:'%s'  ", lua_tostring(lua, i));
+                        break;
+                case LUA_TBOOLEAN:
+                        printf("b: %s  ",
+				(lua_toboolean(lua, i) ?  "true" : "false"));
+                        break;
+                case LUA_TNUMBER:
+                        printf("n:%g  ", lua_tonumber(lua, i));
+                        break;
+                case LUA_TTABLE:
+                        printf("t:  ");
+                        break;
+                case LUA_TNIL:
+                        printf("0:  ");
+                        break;
+                case LUA_TFUNCTION:
+                        printf("f:   ");
+                        break;
+                default :
+                        printf("u:'%s'  ", lua_typename(lua, i));
+                        break;
+                }
+        }
+        printf("\n");
+}
 
 static proc *get_self(lua_State *lua) {
 	lua_getfield(lua, LUA_REGISTRYINDEX, "_SELF");
@@ -223,7 +267,7 @@ static void *ll_thread(void *arg) {
 	lua_State *lua = (lua_State *)arg;
 	int n = lua_gettop(lua);
 	luaL_openlibs(lua);
-	lua_cpcall(lua, luaopen_useful_threading, NULL);
+	lua_cpcall(lua, MODULE, NULL);
 	if (lua_pcall(lua, n-1, 0, 0) != 0)
 		fprintf(stderr, "thread error: %s\n", lua_tostring(lua, -1));
 	pthread_cond_destroy(&get_self(lua)->cond);
@@ -302,7 +346,95 @@ static int ll_exit(lua_State *lua) {
 	return 0;
 }
 
+static int ll_manager(lua_State *lua) {
+	manager *man;
+	if (lua_gettop(lua) > 0) {
+		// set manager
+		const char *p = lua_tostring(lua, -1);
+		sscanf(p, "%p", (void *)&man);
+		lua_pushlightuserdata(lua, man);
+		lua_setfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
+		return 0;
+	} else {
+		// get manager
+		char pointer[128];
+		man = get_manager(lua, RAISE_ERROR);
+		int l = sprintf(pointer, "%p", man);
+		lua_pushlstring(lua, pointer, l);
+		return 1;
+	}
+}
+
+static int ll_data(lua_State *lua) {
+	const char *name = luaL_checkstring(lua, 1);
+	manager *man = get_manager(lua, RAISE_ERROR);
+	int rc = 0;
+
+	pthread_mutex_lock(&man->mutex);
+
+	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
+	if (lua_gettop(lua) > 1) {
+		// set man->lua data[name] = value
+		move_value(man->lua, lua, 2);
+		lua_setfield(man->lua, -2, name);
+	} else {
+		// get man->lua data[name]
+		lua_getfield(man->lua, -1, name);
+		move_value(lua, man->lua, -1);
+		rc = 1;
+	}
+	lua_settop(man->lua, 0);
+
+	pthread_mutex_unlock(&man->mutex);
+	return rc;
+}
+
+static int ll_data_mt_index(lua_State *lua) {
+	const char *name = luaL_checkstring(lua, 2);
+	manager *man = get_manager(lua, RAISE_ERROR);
+
+	pthread_mutex_lock(&man->mutex);
+
+	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
+	lua_getfield(man->lua, -1, name);
+	if (!lua_isnil(man->lua, -1))
+		move_value(lua, man->lua, -1);
+	else
+		lua_pushnil(lua);
+	lua_settop(man->lua, 0);
+
+	pthread_mutex_unlock(&man->mutex);
+	return 1;
+}
+
+static int ll_data_mt_newindex(lua_State *lua) {
+	const char *name = luaL_checkstring(lua, 2);
+	manager *man = get_manager(lua, RAISE_ERROR);
+
+	pthread_mutex_lock(&man->mutex);
+
+	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
+	if (move_value(man->lua, lua, 3)) {
+		move_value(lua, man->lua, 1);
+		pthread_mutex_unlock(&man->mutex);
+		lua_error(lua);
+	}
+	lua_setfield(man->lua, -2, name);
+	lua_settop(man->lua, 0);
+
+	pthread_mutex_unlock(&man->mutex);
+	return 0;
+}
+
+static const struct luaL_Reg ll_data_mt_funcs[] = {
+	{ "__index",	ll_data_mt_index },
+	{ "__newindex",	ll_data_mt_newindex },
+	{ NULL,		NULL },
+};
+
 static const struct luaL_Reg ll_funcs[] = {
+	{ "manager",	ll_manager },
+	//{ "data",	ll_data },
 	{ "start", 	ll_start },
 	{ "send", 	ll_send },
 	{ "receive",	ll_receive },
@@ -323,7 +455,9 @@ static const struct luaL_Reg manager_mt_funcs[] = {
 	{ NULL,		NULL },
 };
 
-int luaopen_useful_threading(lua_State *lua) {
+int MODULE(lua_State *lua) {
+	luaL_register(lua, "useful.threading", ll_funcs);
+
 	proc *self = (proc *)lua_newuserdata(lua, sizeof(proc));
 	lua_setfield(lua, LUA_REGISTRYINDEX, "_SELF");
 	self->lua = lua;
@@ -333,18 +467,30 @@ int luaopen_useful_threading(lua_State *lua) {
 	manager *man = get_manager(lua, IGNORE_ERROR);
 	if (man == NULL) {
 		man = (manager *)lua_newuserdata(lua, sizeof(manager));
+
+		man->lua = luaL_newstate();
+		pthread_mutex_init(&man->mutex, NULL);
+
 		luaL_newmetatable(lua, "_MANAGER_MT");
 		luaL_register(lua, NULL, manager_mt_funcs);
 		lua_setmetatable(lua, -2);
 		lua_setfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
-		man->lua = luaL_newstate();
+
 		lua_createtable(man->lua, 0, 0);
 		lua_setfield(man->lua, LUA_GLOBALSINDEX, "channels");
+
+		lua_createtable(man->lua, 0, 0);
+		lua_setfield(man->lua, LUA_GLOBALSINDEX, "data");
+
 		luaL_openlibs(man->lua);
-		pthread_mutex_init(&man->mutex, NULL);
+
+		lua_createtable(lua, 0, 0);
+		luaL_newmetatable(lua, "_data_mt");
+		luaL_register(lua, NULL, ll_data_mt_funcs);
+		lua_setmetatable(lua, -2);
+		lua_setfield(lua, -2, "data");
 	}
 
-	luaL_register(lua, "useful.threading", ll_funcs);
 	return 1;
 }
 
