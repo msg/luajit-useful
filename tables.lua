@@ -8,17 +8,22 @@ local is_main	= require('useful.system').is_main
 local insert = table.insert
 local remove = table.remove
 
+local function is_identifier(s)
+	return s:match('^[_A-Za-z][_A-Za-z0-9]*$') ~= nil
+end
+
 function tables.serialize(o, indent, sp, nl, visited)
 	local new = {}
 	visited = visited or { }
 	sp = sp or ' '
 	nl = nl or '\n'
 	indent = indent or ''
-	if type(o) == 'number' then
+	local otype = type(o)
+	if otype == 'number' or otype == 'boolean' then
 		insert(new, tostring(o))
-	elseif type(o) == 'string' then
+	elseif otype == 'string' then
 		insert(new, string.format('%q', o))
-	elseif type(o) == 'table' then
+	elseif otype == 'table' then
 		if visited[o] == true then
 			error('table loop')
 		end
@@ -26,15 +31,21 @@ function tables.serialize(o, indent, sp, nl, visited)
 		insert(new, '{')
 		local last = 0
 		for k,v in pairs(o) do
-			if type(k) == 'string' then
-				k = k .. ' = '
-			elseif type(k) == 'number'  then
+			local ktype = type(k)
+			if ktype == 'string' then
+				if not is_identifier(k) then
+					k = string.format('[%q]', k)
+				end
+				k = k..sp..'='..sp
+			elseif ktype == 'boolean'  then
+				k = '['..tostring(k)..']'..sp..'='..sp
+			elseif ktype == 'number'  then
 				if last == k - 1 then
 					last = k
 					k = ''
 				else
 					last = nil
-					k = '[' .. k .. '] = '
+					k = '['..k..']'..sp..'='..sp
 				end
 			end
 			v = tables.serialize(v, indent .. sp, sp, nl, visited)
