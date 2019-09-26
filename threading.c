@@ -416,6 +416,7 @@ static int ll_data_mt_newindex(lua_State *lua) {
 	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
 	if (move_value(man->lua, lua, 3)) {
 		move_value(lua, man->lua, 1);
+		// lua_error() calls longjmp() so mutex must be unlocked.
 		pthread_mutex_unlock(&man->mutex);
 		lua_error(lua);
 	}
