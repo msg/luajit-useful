@@ -1,6 +1,6 @@
 # Maintainer: msg
 pkgname=luajit-useful
-pkgver=2019.09.27.r0.842f633
+pkgver=2019.10.01.r0.48c672b
 pkgrel=1
 pkgdesc="A luajit ffi useful library"
 arch=('any')
@@ -27,7 +27,7 @@ package() {
 	cd $startdir
 
 	lmod="$pkgdir$(pkg-config --variable=INSTALL_LMOD luajit)"
-	for i in $(find . -name '*.lua' -type f); do
+	for i in *.lua; do
 		install -D -m644 "$i" "$lmod/useful/$i"
 	done
 
