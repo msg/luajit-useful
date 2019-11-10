@@ -62,6 +62,8 @@ ffi.cdef [[
 	enum { LUA_TFUNCTION		= 6 };
 	enum { LUA_TUSERDATA		= 7 };
 	enum { LUA_TTHREAD		= 8 };
+	enum { LUA_TPROTO		= 9 };
+	enum { LUA_TCDATA		= 10 };
 
 	/* minimum lua stack available to a c function */
 	enum { LUA_MINSTACK		= 20 };
@@ -263,7 +265,7 @@ function lj.lua_getglobal(L, s)
 end
 
 function lj.lua_tostring(L, i)
-	return ffi.string(luajit.lua_tolstring(L, i, null))
+	return luajit.lua_tolstring(L, i, null)
 end
 
 --[[
@@ -466,7 +468,7 @@ luaL_checklong	= luaL_checkinteger
 luaL_optlong	= luaL_optinteger
 
 function lj.luaL_typename(L, i)
-	return ffi.string(lua_typename(L, lua_type(L, i)))
+	return lua_typename(L, lua_type(L, i))
 end
 
 function lj.luaL_dofile(L, fn)
@@ -575,6 +577,22 @@ ffi.cdef [[
 
 	void luaL_openlibs(lua_State *L);
 ]]
+
+function lj.lj_tostring(L, i)
+	local sp = luajit.lua_tostring(L, i, null)
+	if sp ~= null then
+		sp = ffi.string(sp)
+	end
+	return sp
+end
+
+function lj.lj_typename(L, i)
+	local sp = lj.luaL_typename(L, i)
+	if sp ~= null then
+		sp = ffi.string(sp)
+	end
+	return sp
+end
 
 local pc = pcall
 setmetatable(lj, {
