@@ -25,9 +25,13 @@ function mmalloc.mmalloc(sz)
 	if p == sys_mman.MAP_FAILED then
 		return ffi.cast('void *', nil)
 	else
-		return ffi.gc(p, function() C.munmap(p, msz) end)
+		return p
 	end
-	return p
 end
+
+function mmalloc.mfree(p, sz)
+	return C.munmap(p, sz)
+end
+
 
 return mmalloc
