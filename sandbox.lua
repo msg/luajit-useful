@@ -63,7 +63,7 @@ function sandbox.run(untrusted_code, env)
 		return nil, message
 	end
 	setfenv(untrusted_function, env)
-	return pcall(untrusted_function)
+	return xpcall(untrusted_function, debug.traceback)
 end
 
 local function main(args)
