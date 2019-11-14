@@ -19,10 +19,10 @@ function pointers.pointer_to_string(p)
 	return ffi.string(np.bytes, pointer_size)
 end
 
-function pointers.string_to_pointer(s)
+function pointers.string_to_pointer(s, type)
 	local np = ffi.new('pointer')
 	np.bytes = s:sub(1, pointer_size)
-	return ffi.new('void *', np.voidp)
+	return ffi.new(type or 'void *', np.voidp)
 end
 
 function pointers.pointer_to_hex(p)
