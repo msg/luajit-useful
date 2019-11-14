@@ -37,6 +37,7 @@ void stack_dump(lua_State *lua) {
         printf("stack %d: ", top);
         for (i = 1; i <= top; i++) {
                 int t = lua_type(lua, i);
+		printf("(%d)", i);
                 switch(t) {
                 case LUA_TSTRING:
                         printf("s:'%s'  ", lua_tostring(lua, i));
@@ -460,12 +461,13 @@ int MODULE(lua_State *lua) {
 
 		luaL_openlibs(man->lua);
 
-		lua_createtable(lua, 0, 0);
-		luaL_newmetatable(lua, "_data_mt");
-		luaL_register(lua, NULL, ll_data_mt_funcs);
-		lua_setmetatable(lua, -2);
-		lua_setfield(lua, -2, "data");
 	}
+
+	lua_createtable(lua, 0, 0);
+	luaL_newmetatable(lua, "_data_mt");
+	luaL_register(lua, NULL, ll_data_mt_funcs);
+	lua_setmetatable(lua, -2);
+	lua_setfield(lua, -2, "data");
 
 	return 1;
 }
