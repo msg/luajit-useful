@@ -150,7 +150,7 @@ static void notify_receivers(manager *man) {
 static int ll_send(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);
 	const char *channel = luaL_checkstring(lua, 1);
-	int i, rc;
+	int rc;
 
 	pthread_mutex_lock(&man->mutex);
 
@@ -201,7 +201,6 @@ static void timespec_add(struct timespec *ts, double dt) {
 
 static int wait_for_queue(manager *man, proc *p, double timeout) {
 	struct timespec ts[1];
-	int seconds = (int)timeout;
 
 	lua_pushlightuserdata(man->lua, (void *)p);
 	lua_setfield(man->lua, -2, "wait");
@@ -211,6 +210,8 @@ static int wait_for_queue(manager *man, proc *p, double timeout) {
 	timespec_add(ts, timeout);
 
 	pthread_cond_timedwait(&p->cond, &man->mutex, ts);
+
+	return 0;
 }
 
 static int ll_receive(lua_State *lua) {
@@ -218,7 +219,7 @@ static int ll_receive(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);
 	const char *channel = luaL_checkstring(lua, 1);
 	double timeout = luaL_checknumber(lua, 2);
-	int i, n, sz;
+	int i, n;
 
 	pthread_mutex_lock(&man->mutex);
 
@@ -283,12 +284,14 @@ typedef struct chunk_move {
 } chunk_move;
 
 static int chunk_writer(lua_State *lua, const void *p, size_t sz, void *ud) {
+	(void)lua;
 	chunk_move *cm = (chunk_move *)ud;
 	luaL_addlstring(cm->buf, p, sz);
 	return 0;
 }
 
 static const char *chunk_reader(lua_State *lua, void *ud, size_t *size) {
+	(void)lua;
 	chunk_move *cm = (chunk_move *)ud;
 	*size = cm->size;
 	return cm->chunk;
@@ -343,6 +346,7 @@ static int ll_start(lua_State *lua) {
 }
 
 static int ll_exit(lua_State *lua) {
+	(void)lua;
 	pthread_exit(NULL);
 	return 0;
 }
@@ -352,7 +356,7 @@ static int ll_manager(lua_State *lua) {
 	if (lua_gettop(lua) > 0) {
 		// set manager
 		const char *p = lua_tostring(lua, -1);
-		sscanf(p, "%p", (void *)&man);
+		sscanf(p, "%p", (void **)&man);
 		lua_pushlightuserdata(lua, man);
 		lua_setfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
 		return 0;
