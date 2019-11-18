@@ -17,20 +17,30 @@ log.DEBUG	= 4
 log.ALL		= 5
 
 local Log = Class({
-	new = function(self, level)
-		self.level = level or log.ALL
+	new = function(self, date_format, level)
+		self.date_format	= date_format or ''
+		self.level		= level or log.ALL
 	end,
 
 	write = function(self, buf) -- luacheck: ignore
+	end,
+
+	date = function(self)
+		if self.date_format == '' then
+			return ''
+		end
+		return os.date(self.date_format) .. ' '
 	end,
 
 	clear = function(self) -- luacheck: ignore
 	end,
 
 	message = function(self, level, fmt, ...)
-		if level <= self.level then
-			self:write(sprintf(fmt, ...))
+		if level > self.level then
+			return
 		end
+		self:write(self:date())
+		self:write(sprintf(fmt, ...))
 	end,
 
 	error = function(self, fmt, ...)
@@ -52,8 +62,8 @@ local Log = Class({
 log.Log = Log
 
 log.StringLog = Class(log.Log, {
-	new = function(self, level)
-		Log.new(self, level)
+	new = function(self, date_format, level)
+		Log.new(self, date_format, level)
 		self.data = {}
 	end,
 
@@ -71,8 +81,8 @@ log.StringLog = Class(log.Log, {
 })
 
 log.FileLog = Class(log.Log, {
-	new = function(self, filename, level)
-		Log.new(self, level)
+	new = function(self, filename, date_format, level)
+		Log.new(self, date_format, level)
 		self.filename = filename
 	end,
 
@@ -88,21 +98,21 @@ log.FileLog = Class(log.Log, {
 })
 
 log.UDPLog = Class(log.Log, {
-	new = function(self, host, port, level)
-		Log.new(self, level)
+	new = function(self, host, port, date_format, level)
+		Log.new(self, date_format, level)
 		self.dest = socket.getaddrinfo(host, port)
 		self.udp = socket.UDP()
 	end,
 
 	write = function(self, buf)
-		local p = ffi.new('char[?]', #buf, buf)
+		local p = ffi.new('char[?]', #buf+1, buf) -- +1 for '\0'
 		self.udp:sendto(p, #buf, self.dest)
 	end,
 })
 
 log.GroupLog = Class(log.Log, {
-	new = function(self, level)
-		Log.new(self, level)
+	new = function(self, date_format, level)
+		Log.new(self, date_format, level)
 		self.logs = {}
 	end,
 
