@@ -172,7 +172,7 @@ static int ll_send(lua_State *lua) {
 	return 0;
 }
 
-static int move_itable(lua_State *to_lua, lua_State *from_lua) {
+static int copy_itable(lua_State *to_lua, lua_State *from_lua) {
 	int i, rc;
 
 	int n = lua_objlen(from_lua, -1);
@@ -254,7 +254,7 @@ static int ll_receive(lua_State *lua) {
 		}
 
 		lua_createtable(lua, 1, 0);
-		move_itable(lua, man->lua);
+		copy_itable(lua, man->lua);
 		lua_rawseti(lua, -2, 1);
 	}
 
