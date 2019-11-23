@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <pthread.h>
 #include <time.h>
 #include <string.h>
@@ -172,7 +173,7 @@ static int ll_send(lua_State *lua) {
 	return 0;
 }
 
-static int copy_itable(lua_State *to_lua, lua_State *from_lua) {
+static int move_itable(lua_State *to_lua, lua_State *from_lua) {
 	int i, rc;
 
 	int n = lua_objlen(from_lua, -1);
@@ -254,7 +255,7 @@ static int ll_receive(lua_State *lua) {
 		}
 
 		lua_createtable(lua, 1, 0);
-		copy_itable(lua, man->lua);
+		move_itable(lua, man->lua);
 		lua_rawseti(lua, -2, 1);
 	}
 
@@ -351,6 +352,12 @@ static int ll_exit(lua_State *lua) {
 	return 0;
 }
 
+static int ll_setname(lua_State *lua) {
+	const char *name = luaL_checkstring(lua, 1);
+	pthread_setname_np(pthread_self(), name);
+	return 0;
+}
+
 static int ll_manager(lua_State *lua) {
 	manager *man;
 	if (lua_gettop(lua) > 0) {
@@ -417,6 +424,7 @@ static const struct luaL_Reg ll_data_mt_funcs[] = {
 static const struct luaL_Reg ll_funcs[] = {
 	{ "manager",	ll_manager },
 	{ "start", 	ll_start },
+	{ "setname",	ll_setname },
 	{ "send", 	ll_send },
 	{ "receive",	ll_receive },
 	{ "exit",	ll_exit },
