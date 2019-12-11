@@ -22,7 +22,7 @@ end
 function pointers.string_to_pointer(s, type)
 	local np = ffi.new('pointer')
 	np.bytes = s:sub(1, pointer_size)
-	return ffi.new(type or 'void *', np.voidp)
+	return ffi.cast(type or 'void *', np.voidp)
 end
 
 function pointers.pointer_to_hex(p)
