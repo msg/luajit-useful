@@ -39,8 +39,7 @@ local Log = Class({
 		if level > self.level then
 			return
 		end
-		self:write(self:date())
-		self:write(sprintf(fmt, ...))
+		self:write(self:date() .. sprintf(fmt, ...))
 	end,
 
 	error = function(self, fmt, ...)
