@@ -579,7 +579,7 @@ ffi.cdef [[
 ]]
 
 function lj.lj_tostring(L, i)
-	local sp = luajit.lua_tostring(L, i, null)
+	local sp = luajit.lua_tolstring(L, i, null)
 	if sp ~= null then
 		sp = ffi.string(sp)
 	end
