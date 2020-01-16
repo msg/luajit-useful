@@ -270,9 +270,13 @@ static int ll_receive(lua_State *lua) {
 static void *ll_thread(void *arg) {
 	lua_State *lua = (lua_State *)arg;
 	int n = lua_gettop(lua);
-	luaL_openlibs(lua);
-	lua_cpcall(lua, MODULE, NULL);
-	if (lua_pcall(lua, n-1, 0, 0) != 0)
+
+	lua_getglobal(lua, "debug");
+	lua_getfield(lua, -1, "traceback");
+	lua_remove(lua, -2);
+	lua_insert(lua, 1);
+
+	if (lua_pcall(lua, n-1, 0, 1) != 0)
 		fprintf(stderr, "thread error: %s\n", lua_tostring(lua, -1));
 	pthread_cond_destroy(&get_self(lua)->cond);
 	lua_close(lua);
@@ -330,6 +334,9 @@ static int ll_start(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);
 	lua_pushlightuserdata(new_lua, man);
 	lua_setfield(new_lua, LUA_REGISTRYINDEX, "_MANAGER");
+
+	luaL_openlibs(new_lua);
+	lua_cpcall(new_lua, MODULE, NULL);
 
 	n = lua_gettop(lua);
 	for (i = 2; i <= n; i++) { // all but function
