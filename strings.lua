@@ -13,7 +13,7 @@ local tables		= require('useful.tables')
 
 function strings.lstrip(s) return s:gsub('^%s*', '') end
 function strings.rstrip(s) return s:gsub('%s*$', '') end
-function strings.strip(s) return s:gsub('^%s*([^%s*]%s*$', '%1') end
+function strings.strip(s) return s:gsub('^%s*([^%s]*)%s*$', '%1') end
 strings.join = table.concat -- join(s, sep)
 
 function strings.capitalize(s)
