@@ -444,7 +444,6 @@ static int manager_mt_gc(lua_State *lua) {
 	lua_getfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
 	man = (manager *)lua_touserdata(lua, -1);
 	lua_close(man->lua);
-	free(man);
 	return 0;
 }
 
@@ -464,8 +463,7 @@ int MODULE(lua_State *lua) {
 
 	manager *man = get_manager(lua, IGNORE_ERROR);
 	if (man == NULL) {
-		man = (manager *)malloc(sizeof(manager));
-		lua_pushlightuserdata(lua, (void *)man);
+		man = (manager *)lua_newuserdata(lua, sizeof(manager));
 
 		man->lua = luaL_newstate();
 		pthread_mutex_init(&man->mutex, NULL);
