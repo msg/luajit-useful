@@ -1,9 +1,9 @@
 # Maintainer: msg
 pkgname=luajit-useful
-pkgver=2019.10.01.r0.48c672b
+pkgver=2020.01.17.r0.c65ea44
 pkgrel=1
 pkgdesc="A luajit ffi useful library"
-arch=('any')
+arch=('x86_64' 'aarch64')
 url="http://localhost"
 license=('MIT')
 groups=()
