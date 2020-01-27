@@ -60,7 +60,7 @@ function tables.serialize(o, indent, sp, nl, visited)
 	return table.concat(new, nl)
 end
 
-function tables.unserialize(t)
+function tables.deserialize(t)
 	local func, err = loadstring('return ' .. t) -- luacheck: ignore
 	if func ~= nil then
 		setfenv(func, {})
@@ -68,6 +68,7 @@ function tables.unserialize(t)
 	end
 	return nil
 end
+tables.unserialize = tables.deserialize
 
 function tables.save_table(filename, t)
 	local f = io.open(filename, 'w')
