@@ -306,6 +306,12 @@ static const char *chunk_reader(lua_State *lua, void *ud, size_t *size) {
 static void load_function(lua_State *to_lua, lua_State *from_lua) {
 	chunk_move cm[1];
 
+	if (lua_isstring(from_lua, -1)) {
+		luaL_loadstring(to_lua, lua_tostring(from_lua, -1));
+		lua_insert(to_lua, 1); // move function to bottom of stack
+		return;
+	}
+
 	luaL_buffinit(to_lua, cm->buf);
 	if (lua_dump(from_lua, chunk_writer, cm) != 0) {
 		luaL_error(from_lua, "unable to dump function: %d",
