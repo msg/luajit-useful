@@ -105,7 +105,8 @@ static void push_channel_and_queue(lua_State *lua, const char *channel) {
 }
 
 static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
-	switch(lua_type(from_lua, index)) {
+	int type = lua_type(from_lua, index);
+	switch(type) {
 	case LUA_TBOOLEAN:
 		lua_pushboolean(to_lua, lua_toboolean(from_lua, index));
 		break;
@@ -346,7 +347,8 @@ static int ll_start(lua_State *lua) {
 
 	n = lua_gettop(lua);
 	for (i = 2; i <= n; i++) { // all but function
-		copy_value(new_lua, lua, i);
+		if (copy_value(new_lua, lua, i) < 0)
+			lua_error(lua);
 	}
 	lua_pushvalue(lua, 1); // push function on the top
 
