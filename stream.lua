@@ -49,7 +49,7 @@ stream.Stream = Class({
 	end,
 
 	reopen = function(self, fd)
-		if self.fd ~= stream.NOFD then
+		if self.fd ~= fd then
 			self:close()
 		end
 		self.out_next	= self.out_buffer
