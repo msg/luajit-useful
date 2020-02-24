@@ -57,9 +57,6 @@ local Log = Class({
 	debug = function(self, fmt, ...)
 		self:message(log.DEBUG, fmt, ...)
 	end,
-
-	close = function(self)
-	end,
 })
 log.Log = Log
 
@@ -110,10 +107,6 @@ log.UDPLog = Class(log.Log, {
 	write = function(self, buf)
 		local p = ffi.new('char[?]', #buf+1, buf) -- +1 for '\0'
 		self.udp:sendto(p, #buf, self.dest)
-	end,
-
-	close = function(self)
-		self.udp:close()
 	end,
 })
 

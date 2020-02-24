@@ -142,10 +142,6 @@ socket.Socket = Class({
 	send = function(self, buf, len)
 		return C.send(self.fd, buf, len, 0)
 	end,
-
-	close = function(self)
-		return C.close(self.fd)
-	end,
 })
 
 socket.TCP = Class(socket.Socket, {
@@ -156,6 +152,8 @@ socket.TCP = Class(socket.Socket, {
 		if self.fd < 0 then
 			return nil, socket.syserror("socket")
 		end
+		self.fdgc = ffi.cast('void *', self.fd)
+		self.fdgc = ffi.gc(self.fdgc, function() C.close(self.fd) end)
 	end,
 
 	listen = function(self, backlog)
@@ -194,6 +192,8 @@ socket.UDP = Class(socket.Socket, {
 		if self.fd < 0 then
 			return nil, socket.syserror("socket")
 		end
+		self.fdgc = ffi.cast('void *', self.fd)
+		self.fdgc = ffi.gc(self.fdgc, function() C.close(self.fd) end)
 	end,
 
 	recvfrom = function(self, buf, len)
