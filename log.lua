@@ -88,6 +88,7 @@ log.FileLog = Class(log.Log, {
 	write = function(self, buf)
 		if self.filename == '-' then
 			io.stdout:write(buf)
+			io.stdout:flush()
 		else
 			local f = io.open(self.filename, 'a')
 			f:write(buf)
