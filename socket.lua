@@ -143,6 +143,9 @@ socket.Socket = Class({
 		return C.send(self.fd, buf, len, 0)
 	end,
 
+	close = function(self)
+		return C.close(self.fd)
+	end,
 })
 
 socket.TCP = Class(socket.Socket, {
