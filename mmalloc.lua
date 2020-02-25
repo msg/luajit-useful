@@ -4,13 +4,14 @@
 local mmalloc = { }
 
 local ffi	= require('ffi')
-local sys_mman	= require('posix.sys.mman')
+local  C	=  ffi.C
 local bit	= require('bit')
+local  band	=  bit.band
+local  bnot	=  bit.bnot
+local  bor	=  bit.bor
+local  lshift	=  bit.lshift
 
-local bnot, bor, band = bit.bnot, bit.bor, bit.band
-local lshift = bit.lshift
-
-local C = ffi.C
+local sys_mman	= require('posix.sys.mman')
 
 function mmalloc.align(sz)
 	local mask = bnot(lshift(bnot(0), 12))

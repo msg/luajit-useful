@@ -4,13 +4,18 @@
 --
 local cpio = { }
 
-local bit = require('bit')
-local band, bor, lshift = bit.band, bit.bor, bit.lshift
+local bit	= require('bit')
+local  band	=  bit.band
+local  bor	=  bit.bor
+local  lshift	=  bit.lshift
 
-local Class	= require('useful.class').Class
+local class	= require('useful.class')
+local Class	=  class.Class
 local stdio	= require('useful.stdio')
-local sprintf	= stdio.sprintf
-local printf	= stdio.printf
+local  sprintf	=  stdio.sprintf
+local  printf	=  stdio.printf
+
+local  insert	=  table.insert
 
 -- This is a lujit module to read/write cpio files in "New ASCII Format"
 --
@@ -18,8 +23,6 @@ local printf	= stdio.printf
 --
 -- will describe the format.  It's going to be used for .tap logging as the
 -- tarfile python object cannot generate tar files to stdout.
-
-local insert	= table.insert
 
 function cpio.pad4(l)
 	return band(4 - band(l, 3), 3)

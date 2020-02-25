@@ -3,7 +3,7 @@
 --
 local command = { }
 
-local sprintf = string.format
+local  sprintf	=  string.format
 
 command.Command = function(commands, name, params, description, func)
 	local self = {
@@ -49,7 +49,7 @@ local function make_params(names, start)
 	return table.concat(params, ' ')
 end
 
-function command.cmd_script(command, file)
+function command.cmd_script(command, file) -- luacheck:ignore
 	local lines = { }
 	for line in io.open(file):lines() do
 		table.insert(lines, clean_line(line))
@@ -57,12 +57,12 @@ function command.cmd_script(command, file)
 	return command.commands.process(table.concat(lines, ' '))
 end
 
-function command.cmd_help(command)
+function command.cmd_help(command) -- luacheck:ignore
 	local log = command.log
 	local commands = command.commands
 	log('usage: %s [commands]*\n', commands.progname)
 	log('  commands:\n')
-	for _,command in ipairs(commands.command_list) do
+	for _,command in ipairs(commands.command_list) do -- luacheck:ignore
 		local sep = ''
 		if #command.params > 0 then
 			sep = ' '
@@ -115,7 +115,7 @@ command.Commands = function(log)
 			return error
 		end
 
-		local command = self.commands[name]
+		local command = self.commands[name] -- luacheck:ignore
 		if #args < #command.params then
 			local params = make_params(command.params, #args+1)
 			log('error: %s missing %s\n', name, params)
@@ -135,7 +135,7 @@ command.Commands = function(log)
 			log('usage: %s %s\n', name, make_params(command.params))
 		end
 
-		for i=1,#command.params do
+		for _=1,#command.params do
 			table.remove(args, 1)
 		end
 
@@ -160,11 +160,10 @@ command.Commands = function(log)
 
 	function self.main(args)
 		self.progname = args[0]
-		local rc = 0
 		if #args == 0 then
 			self.process({'help'})
 		end
-		rc = self.process(args)
+		local rc = self.process(args)
 		if rc < 0 then
 			self.log('use "help" command to see command list.\n')
 		end
@@ -186,4 +185,9 @@ local function main(args)
 	return command.Commands(printf).main(args)
 end
 
-return command
+local is_main	= require('useful.system').is_main
+if is_main() then
+	main()
+else
+	return command
+end

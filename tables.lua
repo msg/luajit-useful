@@ -3,10 +3,8 @@
 --
 local tables = { }
 
-local is_main	= require('useful.system').is_main
-
-local insert = table.insert
-local remove = table.remove
+local  insert	=  table.insert
+local  remove	=  table.remove
 
 local function is_identifier(s)
 	return s:match('^[_A-Za-z][_A-Za-z0-9]*$') ~= nil
@@ -298,6 +296,8 @@ end
 
 local function main()
 end
+
+local is_main	= require('useful.system').is_main
 
 if is_main() then
 	main()

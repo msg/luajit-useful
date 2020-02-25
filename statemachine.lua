@@ -3,9 +3,8 @@
 --
 local statemachine = { }
 
-local is_main = require('useful.system').is_main
-
-local Class = require('useful.class').Class
+local class	= require('useful.class')
+local  Class	=  class.Class
 
 statemachine.StateMachine = Class()
 
@@ -86,6 +85,8 @@ end
 
 local function main()
 end
+
+local is_main = require('useful.system').is_main
 
 if is_main() then
 	main()

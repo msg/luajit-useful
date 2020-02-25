@@ -3,13 +3,11 @@
 --
 local socket = { }
 
-local is_main	= require('useful.system').is_main
-
 local ffi		= require('ffi')
-local C			= ffi.C
+local  C		=  ffi.C
 
 local bit		= require('bit')
-local bor		= bit.bor
+local  bor		=  bit.bor
 
 local unistd		= require('posix.unistd') -- luacheck: ignore
 local fcntl		= require('posix.fcntl')
@@ -23,10 +21,10 @@ local netinet_in	= require('posix.netinet.in')
 local netinet_tcp	= require('posix.netinet.tcp') -- luacheck: ignore
 
 local class		= require('useful.class')
-local Class		= class.Class
+local  Class		=  class.Class
 local stdio		= require('useful.stdio')
-local sprintf		= stdio.sprintf
-local printf		= stdio.printf
+local  sprintf		=  stdio.sprintf
+local  printf		=  stdio.printf
 
 function socket.syserror(call)
 	return sprintf("%s: %s\n", call, ffi.string(C.strerror(ffi.errno())))
@@ -230,6 +228,8 @@ socket.UDP = Class(socket.Socket, {
 
 local function main()
 end
+
+local is_main	= require('useful.system').is_main
 
 if is_main() then
 	main()

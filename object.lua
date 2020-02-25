@@ -4,9 +4,8 @@
 --
 local object = {}
 
-local is_main	= require('useful.system').is_main
-
-local Class	= require('useful.class').Class
+local class	= require('useful.class')
+local  Class	=  class.Class
 
 function object.is_object(o)
 	return type(o) == 'table' and o._class ~= nil
@@ -20,7 +19,7 @@ function object.verify_type(v, _type)
 	end
 end
 
-function object.verify_class(v, class)
+function object.verify_class(v, class) -- luacheck:ignore
 	if object.is_object(v) and v:is_a(class) then
 		return true
 	else
@@ -56,7 +55,7 @@ local declarations_mt = {
 local ObjectClass = function(...)
 	local object_class = Class(...)
 
-	local new = function(class, ...)
+	local new = function(class, ...) -- luacheck:ignore
 		local instance = { _class=class }
 		-- run the new method if it's there
 
@@ -231,6 +230,8 @@ local function main()
 	print('', pcall(set_member, o, 'method', 'try to change method'))
 	o:method('a', 'b', 1, 2, 3)
 end
+
+local is_main	= require('useful.system').is_main
 
 if is_main() then
 	main()

@@ -3,27 +3,23 @@
 --
 local slop = { }
 
-local is_main	= require('useful.system').is_main
-
 local ffi	= require('ffi')
-
-local strings	= require('useful.strings')
-local tables	= require('useful.tables')
-local socket	= require('useful.socket')
-local stream	= require('useful.stream')
 
 local class	= require('useful.class')
 local Class	= class.Class
+local strings	= require('useful.strings')
+local  strip	=  strings.strip
+local  split	=  strings.split
+local  ljust	=  strings.ljust
+local socket	= require('useful.socket')
+local stream	= require('useful.stream')
+local tables	= require('useful.tables')
 
-local strip	= strings.strip
-local split	= strings.split
-local ljust	= strings.ljust
+local  format	=  string.format
 
-local format	= string.format
-
-local insert	= table.insert
-local remove	= table.remove
-local join	= table.concat
+local  insert	=  table.insert
+local  remove	=  table.remove
+local  join	=  table.concat
 
 local line_limit	= 256
 local multi_limit	= 256
@@ -397,6 +393,8 @@ local function main()
 
 	return server:process()
 end
+
+local is_main	= require('useful.system').is_main
 
 if is_main() then
 	main()

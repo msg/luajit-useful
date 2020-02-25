@@ -6,7 +6,8 @@ local pointers = { }
 local ffi	= require('ffi')
 local bit	= require('bit')
 
-local sprintf	= require('useful.stdio').sprintf
+local stdio	= require('useful.stdio')
+local  sprintf	=  stdio.stdio
 
 local pointer_size = ffi.sizeof('void *')
 ffi.cdef(sprintf([[

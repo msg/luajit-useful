@@ -5,9 +5,11 @@ local log = { }
 
 local ffi	= require('ffi')
 
-local sprintf	= require('useful.stdio').sprintf
+local class	= require('useful.class')
+local  Class	=  class.Class
+local stdio	= require('useful.stdio')
+local  sprintf	=  stdio.sprintf
 local socket	= require('useful.socket')
-local Class	= require('useful.class').Class
 
 log.NONE	= 0
 log.ERROR	= 1

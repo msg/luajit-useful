@@ -3,9 +3,11 @@
 --
 
 local lj = { }
-local ffi = require('ffi')
-local luajit = ffi.load('luajit-5.1.so')
-lj.luajit = luajit
+
+local ffi	= require('ffi')
+local luajit	= ffi.load('luajit-5.1.so')
+
+lj.luajit	= luajit
 
 ffi.cdef [[
 	typedef ptrdiff_t		LUA_INTEGER;
@@ -265,7 +267,7 @@ function lj.lua_getglobal(L, s)
 end
 
 function lj.lua_tostring(L, i)
-	return luajit.lua_tolstring(L, i, null)
+	return luajit.lua_tolstring(L, i, nil)
 end
 
 --[[
@@ -284,6 +286,7 @@ function lj.lua_getgccount(L)
 	return luajit.lua_gc(L, luajit.LUA_GCCOUNT, 0);
 end
 
+local s -- luacheck:ignore
 s = [[
 	/*
 	#define lua_Chunkreader lua_Reader
@@ -363,10 +366,10 @@ s = [[
 ]]
 
 function lj.luaL_getn(L, i)
-	return lua_objlen(L, i)
+	return luajit.lua_objlen(L, i)
 end
 
-function lj.luaL_estn(L, i, j)
+function lj.luaL_estn(L, i, j) -- luacheck:ignore
 	-- no op!
 end
 
@@ -462,13 +465,13 @@ function lj.luaL_optstring(L, n, d)
 	return luajit.luaL_optlstring(L, n, d, nil)
 end
 
-luaL_checkint	= luaL_checkinteger
-luaL_optint	= luaL_optinteger
-luaL_checklong	= luaL_checkinteger
-luaL_optlong	= luaL_optinteger
+lj.luaL_checkint	= luajit.luaL_checkinteger
+lj.luaL_optint		= luajit.luaL_optinteger
+lj.luaL_checklong	= luajit.luaL_checkinteger
+lj.luaL_optlong		= luajit.luaL_optinteger
 
 function lj.luaL_typename(L, i)
-	return lua_typename(L, lua_type(L, i))
+	return luajit.lua_typename(L, luajit.lua_type(L, i))
 end
 
 function lj.luaL_dofile(L, fn)
@@ -479,7 +482,7 @@ function lj.luaL_dofile(L, fn)
 	return rc
 end
 
-function lj.luaL_dostring(L, s)
+function lj.luaL_dostring(L, s) -- luacheck:ignore
 	local rc = luajit.luaL_loadstring(L, s)
 	if rc == 0 then
 		rc = luajit.lua_pcall(L, 0, luajit.LUA_MULTRET, 0)
@@ -579,8 +582,8 @@ ffi.cdef [[
 ]]
 
 function lj.lj_tostring(L, i)
-	local sp = luajit.lua_tolstring(L, i, null)
-	if sp ~= null then
+	local sp = luajit.lua_tolstring(L, i, nil)
+	if sp ~= nil then
 		sp = ffi.string(sp)
 	end
 	return sp
@@ -588,7 +591,7 @@ end
 
 function lj.lj_typename(L, i)
 	local sp = lj.luaL_typename(L, i)
-	if sp ~= null then
+	if sp ~= nil then
 		sp = ffi.string(sp)
 	end
 	return sp

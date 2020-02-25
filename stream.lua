@@ -3,13 +3,11 @@
 --
 local stream = { }
 
-local is_main	= require('useful.system').is_main
-
 local ffi	= require('ffi')
-local C		= ffi.C
+local  C	=  ffi.C
 
 local bit	= require('bit')
-local bor	= bit.bor
+local  bor	=  bit.bor
 
 local sys_types = require('posix.sys.types') -- luacheck: ignore
 local unistd	= require('posix.unistd') -- luacheck: ignore
@@ -18,11 +16,11 @@ local fcntl	= require('posix.fcntl')
 local pstring	= require('posix.string') -- luacheck: ignore
 local errno	= require('posix.errno')
 
-local socket	= require('useful.socket')
 local class	= require('useful.class')
-local Class	= class.Class
+local  Class	=  class.Class
+local socket	= require('useful.socket')
 
-local min = math.min
+local  min	=  math.min
 
 stream.NOFD = -1 -- when the Stream has no file descriptor
 
@@ -306,6 +304,8 @@ stream.TCPStream = Class(stream.Stream, {
 
 local function main()
 end
+
+local is_main	= require('useful.system').is_main
 
 if is_main() then
 	main()

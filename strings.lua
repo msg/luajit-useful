@@ -4,12 +4,18 @@
 local strings = { }
 
 local bit		= require('bit')
-local bor, band		= bit.bor, bit.band
-local lshift, rshift	= bit.lshift, bit.rshift
-local insert		= table.insert
-local byte, char	= string.byte, string.char
-local gsub, rep		= string.gsub, string.rep
+local  bor		=  bit.bor
+local  band		=  bit.band
+local  lshift		=  bit.lshift
+local  rshift		=  bit.rshift
+
 local tables		= require('useful.tables')
+
+local  insert		=  table.insert
+
+local 	byte		=  string.byte
+local 	char		=  string.char
+local 	rep		=  string.rep
 
 function strings.lstrip(s) return s:gsub('^%s*', '') end
 function strings.rstrip(s) return s:gsub('%s*$', '') end

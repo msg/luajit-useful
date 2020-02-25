@@ -4,7 +4,7 @@
 local path = { }
 
 local ffi	= require('ffi')
-local C		= ffi.C
+local  C	=  ffi.C
 
 local strings	= require('useful.strings')
 
