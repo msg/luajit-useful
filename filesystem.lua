@@ -105,7 +105,7 @@ filesystem.symlinkattributes = function(filepath, arg)
 end
 
 filesystem.exists = function(path)
-	return pcall(filesystem.attributes(path, 'mode'))
+	return pcall(filesystem.attributes, path, 'mode')
 end
 
 local function is_mode(path, what_mode)
