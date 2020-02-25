@@ -4,8 +4,9 @@
 local path = { }
 
 local ffi	= require('ffi')
-local strings	= require('useful.strings')
 local C		= ffi.C
+
+local strings	= require('useful.strings')
 
 ffi.cdef([[
 	char *dirname(char *path);
