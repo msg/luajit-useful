@@ -6,6 +6,7 @@ local filesystem = { }
 local ffi	= require('ffi')
 local  C	=  ffi.C
 local bit	= require('bit')
+local  band	=  bit.band
 
 		  require('posix.dirent')
 local stat	= require('posix.sys.stat')
@@ -20,7 +21,7 @@ local function convert_permissions(st)
 	local all_permissions = 'xwr'--'rwxrwxrwx'
 	local permissions = ''
 	for i=0,8 do
-		if bit.band(st.st_mode, bit.lshift(1,i)) ~= 0 then
+		if band(st.st_mode, bit.lshift(1,i)) ~= 0 then
 			local flag = all_permissions:sub((i%3)+1,(i%3)+1)
 			permissions = flag..permissions
 		else
@@ -40,7 +41,7 @@ local attribute_modes = {
 }
 
 local function convert_mode(st)
-	return attribute_modes[bit.band(st.st_mode, stat.S_IFMT)]
+	return attribute_modes[band(st.st_mode, stat.S_IFMT)]
 end
 
 local function make_convert(name)
@@ -136,6 +137,8 @@ end
 local dir_iter = function(state)
 	state.ent = C.readdir(state.dir)
 	if state.ent == nil then
+		C.closedir(state.dir)
+		state.dir = nil
 		return nil
 	end
 	return ffi.string(state.ent.d_name)
@@ -146,12 +149,14 @@ filesystem.dir = function(path)
 		dir = C.opendir(path),
 		ent = nil,
 	}
-	state.dir = ffi.gc(state.dir, function()
-		C.closedir(state.dir)
-	end)
 	if state.dir == nil then
 		error(strerror())
 	end
+	state.dir = ffi.gc(state.dir, function()
+		if state.dir ~= nil then
+			C.closedir(state.dir)
+		end
+	end)
 	return dir_iter, state
 end
 
@@ -221,29 +226,27 @@ filesystem.mkdirp = function(path, permissions)
 	end
 end
 
-filesystem.ftw = function(path, func)
-	local function dir(path) -- luacheck:ignore
-		local entries = { }
-		for entry in filesystem.dir(path) do
-			table.insert(entries, entry)
-		end
-		table.sort(entries)
-		return entries
-	end
-	local ok, entries = pcall(dir, path)
+local ftw
+ftw = function(path, func)
+	local ok, entries = pcall(filesystem.list, path)
 	if not ok then -- ignore failed paths
 		return true
 	end
-	local entry_stat = { }
+	local attributes = filesystem.symlinkattributes
 	for _,entry in ipairs(entries) do
 		if entry ~= '.' and entry ~= '..' then
 			entry = path .. '/' .. entry
-			filesystem.symlinkattributes(entry, entry_stat)
+			local entry_stat = { }
+			ok = pcall(attributes, entry, entry_stat)
+			if not ok then
+				entry_stat = nil
+			end
 			if func(entry, entry_stat) == false then
 				return false
 			end
-			if entry_stat.mode == 'directory' then
-				if filesystem.ftw(entry, func) == false then
+			if not entry_stat then -- luacheck:ignore
+			elseif entry_stat.mode == 'directory' then
+				if ftw(entry, func) == false then
 					return false
 				end
 			end
@@ -251,5 +254,6 @@ filesystem.ftw = function(path, func)
 	end
 	return true
 end
+filesystem.ftw = ftw
 
 return filesystem
