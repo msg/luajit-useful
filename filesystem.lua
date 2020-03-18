@@ -13,6 +13,8 @@ local stat	= require('posix.sys.stat')
 		  require('posix.string')
 		  require('posix.unistd')
 
+local path	= require('useful.path')
+
 local function strerror(errno)
 	return ffi.string(C.strerror(errno or ffi.errno()))
 end
@@ -213,14 +215,14 @@ end
 filesystem.mkdirp = function(path, permissions)
 	permissions = permissions or tonumber(0755, 8)
 	local dir = path.dirpath(path)
-	while not path.path_exists(dir) do
-		local rc = path.mkdirp(dir, permissions)
+	while not filesystem.exists(dir) do
+		local rc = filesystem.mkdirp(dir, permissions)
 		if rc < 0 then
 			return rc
 		end
 	end
-	if not path.path_exists(path) then
-		return C.mkdir(path, permissions)
+	if not filesystem.exists(path) then
+		return filesystem.mkdir(path, permissions)
 	else
 		return 0
 	end
