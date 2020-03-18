@@ -165,7 +165,9 @@ end
 filesystem.list = function(path)
 	local list = { }
 	for name in filesystem.dir(path) do
-		table.insert(list, name)
+		if name ~= '.' and name ~= '..' then
+			table.insert(list, name)
+		end
 	end
 	table.sort(list)
 	return list
@@ -228,8 +230,7 @@ filesystem.mkdirp = function(path, permissions)
 	end
 end
 
-local ftw
-ftw = function(path, func)
+local ftw = function(path, func)
 	local ok, entries = pcall(filesystem.list, path)
 	if not ok then -- ignore failed paths
 		return true
