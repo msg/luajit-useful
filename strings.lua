@@ -17,9 +17,9 @@ local 	byte		=  string.byte
 local 	char		=  string.char
 local 	rep		=  string.rep
 
-function strings.lstrip(s) return s:gsub('^%s*', '') end
-function strings.rstrip(s) return s:gsub('%s*$', '') end
-function strings.strip(s) return s:gsub('^%s*([^%s]*)%s*$', '%1') end
+function strings.lstrip(s) return (s:gsub('^%s*', '')) end
+function strings.rstrip(s) return (s:gsub('%s*$', '')) end
+function strings.strip(s) return strings.lstrip(strings.rstrip(s)) end
 strings.join = table.concat -- join(s, sep)
 
 function strings.capitalize(s)
