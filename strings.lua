@@ -141,5 +141,44 @@ function strings.binary_to_hex(s, sep)
 	return strings.join(out)
 end
 
+function strings.hexdump(bytes, addr)
+	local sprintf = string.format
+
+	local function hex_data(bytes, at_most)
+		local hex = { }
+		at_most = at_most or 16
+		for i=1,math.min(#bytes, at_most) do
+			local hexs
+			hexs = sprintf("%02x", string.byte(bytes:sub(i,i)))
+			table.insert(hex, hexs)
+		end
+		return table.concat(hex, ' ')
+	end
+
+	local function char_data(bytes)
+		local s = ''
+		for i=1,math.min(#bytes, 16) do
+			local c = bytes:sub(i,i)
+			if string.byte(c) < 32 or 127 < string.byte(c) then
+				c = '.'
+			end
+			s = s .. c
+		end
+		return s
+	end
+
+	local lines = { }
+	addr = addr or 0
+	for off=1,#bytes,16 do
+		local line
+		line = sprintf("%06x: %-23s  %-23s | %s", addr + off -1,
+			hex_data(bytes:sub(off,off+8-1), 8),
+			hex_data(bytes:sub(off+8,off+16-1), 8),
+			char_data(bytes:sub(off,off+16-1)))
+		table.insert(lines, line)
+	end
+	return table.concat(lines, '\n')
+end
+
 return strings
 
