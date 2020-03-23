@@ -29,7 +29,6 @@ typedef struct proc {
 typedef struct manager {
 	lua_State *lua;
 	pthread_mutex_t mutex;
-	proc *prev, *next;
 } manager;
 
 void stack_dump(lua_State *lua) {
