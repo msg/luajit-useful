@@ -7,7 +7,7 @@ local ffi	= require('ffi')
 local bit	= require('bit')
 
 local stdio	= require('useful.stdio')
-local  sprintf	=  stdio.stdio
+local  sprintf	=  stdio.sprintf
 
 local pointer_size = ffi.sizeof('void *')
 ffi.cdef(sprintf([[
