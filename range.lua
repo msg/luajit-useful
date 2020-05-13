@@ -105,7 +105,7 @@ function range.range_type(declaration)
 	function rmt.to_vla(self)
 		local size	= self:size()
 		local sizeof	= ffi.sizeof(self.declaration)
-		local array	= rmt.array(size)
+		local array	= rmt.vla(size)
 		ffi.copy(array, self.front, size * sizeof)
 		return array
 	end
