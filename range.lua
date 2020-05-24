@@ -38,6 +38,10 @@ function range.range_type(declaration)
 		return type_range(cast(type_range.pointer, self.front),
 				cast(type_range.pointer, self.back))
 	end
+	rmt.set		= function(self, from)
+		self.front = cast(rmt.pointer, from.front)
+		self.back = cast(rmt.pointer, from.back)
+	end
 	rmt.swap	= function(value)
 		value = cast('int64_t',value)
 		return rshift(bswap(value), 64-rmt.sizeof*8)
