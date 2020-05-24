@@ -7,6 +7,7 @@ local range = { }
 local ffi	= require('ffi')
 local  cast	=  ffi.cast
 local  copy	=  ffi.copy
+local  fstring	=  ffi.string
 local  metatype	=  ffi.metatype
 local  new	=  ffi.new
 local  sizeof	=  ffi.sizeof
@@ -110,9 +111,9 @@ function range.range_type(declaration)
 	end
 	function rmt.to_vla(self)
 		local size	= self:size()
-		local sizeof	= sizeof(self.declaration)
+		local size1	= sizeof(self.declaration)
 		local array	= rmt.vla(size)
-		copy(array, self.front, size * sizeof)
+		copy(array, self.front, size * size1)
 		return array
 	end
 	function rmt.from_string(s)
@@ -120,7 +121,7 @@ function range.range_type(declaration)
 		return rmt.meta(p, p + #s)
 	end
 	function rmt.to_string(self)
-		return ffi.string(self.front, self:size())
+		return fstring(self.front, self:size())
 	end
 
 	range_types[declaration] = rmt.meta
@@ -136,10 +137,6 @@ range.float  = range.range_type('float')
 range.double = range.range_type('double')
 
 local function main()
-	local function printf(...)
-		io.stdout:write(string.format(...))
-	end
-
 	local a = { }
 	for i=1,256 do a[i] = i end
 	local s = range.int8.vla(256, a)

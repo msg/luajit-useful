@@ -5,6 +5,12 @@ local socket = { }
 
 local ffi		= require('ffi')
 local  C		=  ffi.C
+local  cast		=  ffi.cast
+local  errno		=  ffi.errno
+local  fstring		=  ffi.string
+local  gc		=  ffi.gc
+local  new		=  ffi.new
+local  sizeof		=  ffi.sizeof
 
 local bit		= require('bit')
 local  bor		=  bit.bor
@@ -27,12 +33,12 @@ local  sprintf		=  stdio.sprintf
 local  printf		=  stdio.printf
 
 function socket.syserror(call)
-	return sprintf("%s: %s\n", call, ffi.string(C.strerror(ffi.errno())))
+	return sprintf("%s: %s\n", call, fstring(C.strerror(errno())))
 end
 
 function socket.getaddrinfo(host, port, protocol)
-	local hint		= ffi.new('struct addrinfo [1]')
-	local ai		= ffi.new('struct addrinfo *[1]')
+	local hint		= new('struct addrinfo [1]')
+	local ai		= new('struct addrinfo *[1]')
 	hint[0].ai_flags	= netdb.AI_CANONNAME
 	if host == '*' then
 		host = '0.0.0.0'
@@ -40,7 +46,7 @@ function socket.getaddrinfo(host, port, protocol)
 	local ret = C.getaddrinfo(host, tostring(port), hint, ai)
 	if ret ~= 0 then
 		printf('getaddrinfo(%s %s) error: %d %s\n', host, port,
-			ret, ffi.string(C.gai_strerror(ret)))
+			ret, fstring(C.gai_strerror(ret)))
 		os.exit(-1)
 	end
 
@@ -50,9 +56,9 @@ function socket.getaddrinfo(host, port, protocol)
 			a = a.ai_next
 		end
 	end
-	local addr = ffi.new('struct sockaddr_in [1]')
+	local addr = new('struct sockaddr_in [1]')
 	if a ~= nil then
-		local sinp = ffi.cast('struct sockaddr_in *', a.ai_addr)
+		local sinp = cast('struct sockaddr_in *', a.ai_addr)
 		addr[0].sin_addr.s_addr	= sinp.sin_addr.s_addr
 		addr[0].sin_port	= sinp.sin_port
 	else
@@ -74,7 +80,7 @@ socket.Socket = Class({
 		if self.fd < 0 then
 			return -1
 		end
-		valuelen = valuelen or ffi.sizeof(value)
+		valuelen = valuelen or sizeof(value)
 		local rc = C.setsockopt(self.fd, level, option, value, valuelen)
 		if rc < 0 then
 			return nil, socket.syserror('setsockopt')
@@ -86,7 +92,7 @@ socket.Socket = Class({
 		if self.fd < 0 then
 			return -1
 		end
-		valuelen = valuelen or ffi.sizeof(value)
+		valuelen = valuelen or sizeof(value)
 		return C.getsockopt(self.fd, level, option, value, valuelen)
 	end,
 
@@ -99,34 +105,34 @@ socket.Socket = Class({
 	end,
 
 	reuseaddr = function(self)
-		local value = ffi.new('int[1]', 1)
+		local value = new('int[1]', 1)
 		return self:setsockopt(sys_socket.SOL_SOCKET,
 				sys_socket.SO_REUSEADDR, value)
 	end,
 
 	rcvbuf = function(self, size)
-		local value = ffi.new('int[1]', size)
+		local value = new('int[1]', size)
 		return self:setsockopt(sys_socket.SOL_SOCKET,
 				sys_socket.SO_RCVBUF, value)
 	end,
 
 	sndbuf = function(self, size)
-		local value = ffi.new('int[1]', size)
+		local value = new('int[1]', size)
 		return self:setsockopt(sys_socket.SOL_SOCKET,
 				sys_socket.SO_SNDBUF, value)
 	end,
 
 	rcvtimeo = function(self, timeout)
 		local sec, frac = math.modf(timeout, 1.0)
-		local tv = ffi.new('struct timeval[1]', {{sec, frac*1e6}})
+		local tv = new('struct timeval[1]', {{sec, frac*1e6}})
 		return self:setsockopt(sys_socket.SOL_SOCKET,
-				sys_socket.SO_RCVTIMEO, tv, ffi.sizeof(tv[0]))
+				sys_socket.SO_RCVTIMEO, tv, sizeof(tv[0]))
 	end,
 
 	bind = function(self, address, port)
 		local addr = socket.getaddrinfo(address, port)
-		local addrp = ffi.cast('struct sockaddr *', addr)
-		local rc = C.bind(self.fd, addrp, ffi.sizeof(addr[0]))
+		local addrp = cast('struct sockaddr *', addr)
+		local rc = C.bind(self.fd, addrp, sizeof(addr[0]))
 		if rc < 0 then
 			return nil, socket.syserror('bind')
 		end
@@ -150,8 +156,8 @@ socket.TCP = Class(socket.Socket, {
 		if self.fd < 0 then
 			return nil, socket.syserror("socket")
 		end
-		self.fdgc = ffi.cast('void *', self.fd)
-		self.fdgc = ffi.gc(self.fdgc, function() C.close(self.fd) end)
+		self.fdgc = cast('void *', self.fd)
+		self.fdgc = gc(self.fdgc, function() C.close(self.fd) end)
 	end,
 
 	listen = function(self, backlog)
@@ -163,9 +169,9 @@ socket.TCP = Class(socket.Socket, {
 	end,
 
 	accept = function(self, timeout)
-		local from	= ffi.new('struct sockaddr_in[1]')
-		local fromp	= ffi.cast('struct sockaddr *', from)
-		local size	= ffi.new('socklen_t[1]', ffi.sizeof(from))
+		local from	= new('struct sockaddr_in[1]')
+		local fromp	= cast('struct sockaddr *', from)
+		local size	= new('socklen_t[1]', sizeof(from))
 		self:rcvtimeo(timeout)
 		local rc = C.accept(self.fd, fromp, size)
 		return rc, from[0]
@@ -173,8 +179,8 @@ socket.TCP = Class(socket.Socket, {
 
 	connect = function(self, host, port)
 		local addr	= socket.getaddrinfo(host, port)
-		local addrp	= ffi.cast('struct sockaddr *', addr)
-		local size	= ffi.sizeof(addr)
+		local addrp	= cast('struct sockaddr *', addr)
+		local size	= sizeof(addr)
 		local rc = C.connect(self.fd, addrp, size)
 		if rc < 0 then
 			return nil, socket.syserror('connect')
@@ -190,39 +196,39 @@ socket.UDP = Class(socket.Socket, {
 		if self.fd < 0 then
 			return nil, socket.syserror("socket")
 		end
-		self.fdgc = ffi.cast('void *', self.fd)
-		self.fdgc = ffi.gc(self.fdgc, function() C.close(self.fd) end)
+		self.fdgc = cast('void *', self.fd)
+		self.fdgc = gc(self.fdgc, function() C.close(self.fd) end)
 	end,
 
 	recvfrom = function(self, buf, len)
-		local from	= ffi.new('struct sockaddr_in[1]')
-		local fromp	= ffi.cast('struct sockaddr *', from)
-		local size	= ffi.new('uint32_t[1]', ffi.sizeof(from))
+		local from	= new('struct sockaddr_in[1]')
+		local fromp	= cast('struct sockaddr *', from)
+		local size	= new('uint32_t[1]', sizeof(from))
 		local ret = C.recvfrom(self.fd, buf, len, 0, fromp, size)
 		return ret, from[0]
 	end,
 
 	sendto = function(self, buf, len, addr)
-		local addrp	= ffi.cast('struct sockaddr *', addr)
-		return C.sendto(self.fd, buf, len, 0, addrp, ffi.sizeof(addr))
+		local addrp	= cast('struct sockaddr *', addr)
+		return C.sendto(self.fd, buf, len, 0, addrp, sizeof(addr))
 	end,
 
 	add_membership = function(self, addr, port)
 		addr		= socket.getaddrinfo(addr, port)
-		local imreq	= ffi.new('struct ip_mreq[1]')
+		local imreq	= new('struct ip_mreq[1]')
 		imreq.imr_multiaddr = addr
 		return self:setsockopt(netinet_in.IPPROTO_IP,
 				netinet_in.IP_ADD_MEMBERSHIP,
-				imreq, ffi.sizeof(imreq))
+				imreq, sizeof(imreq))
 	end,
 
 	drop_membership = function(self, addr, port)
 		addr		= socket.getaddrinfo(addr, port)
-		local imreq	= ffi.new('struct ip_mreq[1]')
+		local imreq	= new('struct ip_mreq[1]')
 		imreq.imr_multiaddr = addr
 		return self:setsockopt(netinet_in.IPPROTO_IP,
 				netinet_in.IP_DROP_MEMBERSHIP,
-				imreq, ffi.sizeof(imreq))
+				imreq, sizeof(imreq))
 	end,
 })
 

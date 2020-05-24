@@ -4,6 +4,10 @@
 local slop = { }
 
 local ffi	= require('ffi')
+local  cast	=  ffi.cast
+local  fstring	=  ffi.string
+local  new	=  ffi.new
+
 
 local class	= require('useful.class')
 local Class	= class.Class
@@ -98,7 +102,7 @@ slop.Transaction = Class({
 	end,
 
 	write = function(self, data)
-		self.out:write(ffi.cast('char *', data), #data)
+		self.out:write(cast('char *', data), #data)
 	end,
 
 	send = function(self, leader, message)
@@ -157,7 +161,7 @@ slop.Transaction = Class({
 
 	readline = function(self, inp) -- luacheck: ignore
 		local rc
-		local buf = ffi.new('char[?]', self.line_limit)
+		local buf = new('char[?]', self.line_limit)
 		rc = inp:readline(buf, self.line_limit)
 		if rc <= 0 then
 			return ''
@@ -165,7 +169,7 @@ slop.Transaction = Class({
 		if string.char(buf[rc-1]) ~= '\n' then
 			return ''
 		end
-		return ffi.string(buf, rc)
+		return fstring(buf, rc)
 	end,
 
 	process_status = function(self)

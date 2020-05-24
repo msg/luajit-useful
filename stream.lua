@@ -5,6 +5,8 @@ local stream = { }
 
 local ffi	= require('ffi')
 local  C	=  ffi.C
+local  cast	=  ffi.cast
+local  new	=  ffi.new
 
 local bit	= require('bit')
 local  bor	=  bit.bor
@@ -30,9 +32,9 @@ stream.Stream = Class({
 		self.fd		= fd
 		self.size	= size
 		self.unget_size	= unget_size
-		self.in_buffer	= ffi.new('char[?]', size + unget_size + 1)
-		self.out_buffer	= ffi.new('char[?]', size)
-		self.out_next	= ffi.cast('char *', self.out_buffer)
+		self.in_buffer	= new('char[?]', size + unget_size + 1)
+		self.out_buffer	= new('char[?]', size)
+		self.out_next	= cast('char *', self.out_buffer)
 		self:set_timeout(timeout)
 		self:flush_read()
 	end,
@@ -88,7 +90,7 @@ stream.Stream = Class({
 	end,
 
 	stream_poll = function(self, fd, events, timeout) -- luacheck: ignore self
-		local pfd	= ffi.new('struct pollfd[1]')
+		local pfd	= new('struct pollfd[1]')
 		pfd[0].fd	= fd
 		pfd[0].events	= events
 		local rc = C.poll(pfd, 1, timeout * 1000)
