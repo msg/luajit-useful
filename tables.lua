@@ -5,12 +5,13 @@ local tables = { }
 
 local  insert	=  table.insert
 local  remove	=  table.remove
+local  concat	=  table.concat
 
 local function is_identifier(s)
 	return s:match('^[_A-Za-z][_A-Za-z0-9]*$') ~= nil
 end
 
-function tables.serialize(o, indent, sp, nl, visited)
+local function serialize(o, indent, sp, nl, visited)
 	local new = {}
 	visited = visited or { }
 	sp = sp or ' '
@@ -46,17 +47,16 @@ function tables.serialize(o, indent, sp, nl, visited)
 					k = '['..k..']'..sp..'='..sp
 				end
 			end
-			v = tables.serialize(v, indent .. sp, sp, nl, visited)
-			insert(new, table.concat({
-				indent, sp, k, v, ','
-			}, ''))
+			v = serialize(v, indent .. sp, sp, nl, visited)
+			insert(new, concat({ indent, sp, k, v, ',' }, ''))
 		end
 		insert(new, indent .. '}')
 	else
 		error('cannot serialize a ' ..type(o))
 	end
-	return table.concat(new, nl)
+	return concat(new, nl)
 end
+tables.serialize = serialize
 
 function tables.deserialize(t)
 	local func, err = loadstring('return ' .. t) -- luacheck: ignore
