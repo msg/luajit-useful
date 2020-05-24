@@ -5,6 +5,12 @@
 local range = { }
 
 local ffi	= require('ffi')
+local  cast	=  ffi.cast
+local  copy	=  ffi.copy
+local  metatype	=  ffi.metatype
+local  new	=  ffi.new
+local  sizeof	=  ffi.sizeof
+local  typeof	=  ffi.typeof
 local bit	= require('bit')
 local  rshift	=  bit.rshift
 local  bswap	=  bit.bswap
@@ -23,16 +29,16 @@ function range.range_type(declaration)
 
 	rmt.__index	= rmt
 	rmt.declaration	= declaration
-	rmt.sizeof	= ffi.sizeof(declaration)
-	rmt.pointer	= ffi.typeof(rmt.declaration .. '*')
-	rmt.struct	= ffi.typeof('struct { $ front, back; }', rmt.pointer)
-	rmt.meta	= ffi.metatype(rmt.struct, rmt)
+	rmt.sizeof	= sizeof(declaration)
+	rmt.pointer	= typeof(rmt.declaration .. '*')
+	rmt.struct	= typeof('struct { $ front, back; }', rmt.pointer)
+	rmt.meta	= metatype(rmt.struct, rmt)
 	rmt.cast	= function(self, type_range)
-		return type_range(ffi.cast(type_range.pointer, self.front),
-				ffi.cast(type_range.pointer, self.back))
+		return type_range(cast(type_range.pointer, self.front),
+				cast(type_range.pointer, self.back))
 	end
 	rmt.swap	= function(value)
-		value = ffi.cast('int64_t',value)
+		value = cast('int64_t',value)
 		return rshift(bswap(value), 64-rmt.sizeof*8)
 	end
 
@@ -97,20 +103,20 @@ function range.range_type(declaration)
 	end
 	-- array manipulation functions
 	function rmt.vla(size, ...)
-		return ffi.new(rmt.declaration..'[?]', size, ...)
+		return new(rmt.declaration..'[?]', size, ...)
 	end
 	function rmt.from_vla(array)
-		return rmt.meta(array, array + ffi.sizeof(array))
+		return rmt.meta(array, array + sizeof(array))
 	end
 	function rmt.to_vla(self)
 		local size	= self:size()
-		local sizeof	= ffi.sizeof(self.declaration)
+		local sizeof	= sizeof(self.declaration)
 		local array	= rmt.vla(size)
-		ffi.copy(array, self.front, size * sizeof)
+		copy(array, self.front, size * sizeof)
 		return array
 	end
 	function rmt.from_string(s)
-		local p = ffi.cast('char *', s)
+		local p = cast('char *', s)
 		return rmt.meta(p, p + #s)
 	end
 	function rmt.to_string(self)
