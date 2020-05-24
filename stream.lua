@@ -266,7 +266,7 @@ stream.Stream = Class({
 	readline = function(self, buf, len)
 		local rc, d
 
-		-- -3 below because eol could be two chars plus the terminating \0.
+		-- -3 below because eol could be 2 chars plus the \0.
 		rc = self:read_delims(buf, len-3, "\r\n");
 		if rc <= 0 then
 			return rc
@@ -288,7 +288,8 @@ stream.Stream = Class({
 
 stream.TCPStream = Class(stream.Stream, {
 	new = function(self, fd, size, timeout, unget_size)
-		self.tcp = socket.TCP() -- must be first, Stream:new calls set_timeout()
+		-- socket.TCP() must be first, Stream:new calls set_timeout()
+		self.tcp = socket.TCP()
 		stream.Stream.new(self, fd, size, timeout, unget_size)
 	end,
 
