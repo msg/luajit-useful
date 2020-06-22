@@ -86,8 +86,6 @@ function range.range_type(declaration)
 			j = self:size()
 		elseif j < 0 then
 			j = self:size() - j
-		elseif j > self:size() then
-			j = self:size()
 		end
 		return rmt.meta(self.front + i, self.front + j)
 	end
