@@ -111,11 +111,6 @@ stream.Stream = Class({
 	end,
 
 	stream_write = function(self, buf, len)
-		local rc
-		rc = self:stream_poll(self.fd, poll.POLLOUT, self.timeout)
-		if rc < 0 then
-			return rc
-		end
 		return C.write(self.fd, buf, len)
 	end,
 
@@ -295,13 +290,7 @@ stream.TCPStream = Class(stream.Stream, {
 
 	set_timeout = function(self, timeout)
 		stream.Stream.set_timeout(self, timeout)
-		self.tcp.fd = self.fd
 		self.tcp:rcvtimeo(timeout)
-	end,
-
-	stream_write = function(self, buf, len)
-		-- no polling needed because of SO_RCV_TIMEO
-		return C.write(self.fd, buf, len)
 	end,
 })
 
