@@ -309,7 +309,7 @@ slop.TCPSlopServer = Class(slop.Slop, {
 		slop.Slop.new(self)
 		self.stream = stream.TCPStream(stream.NOFD, 32768, 5)
 
-		self.tcp = socket.TCP()
+		self.tcp = self.stream.tcp
 		self.tcp:reuseaddr()
 		self.tcp:bind('*', port)
 		self.tcp:listen()
