@@ -76,6 +76,7 @@ function range.range_type(declaration)
 	function rmt.save(self) return rmt.meta(self.front, self.back) end
 	-- random access range api
 	function rmt.size(self) return self.back - self.front end
+	rmt.__len = rmt.size
 	function rmt.slice(self, i, j)
 		if not i then
 			i = 0
@@ -137,6 +138,160 @@ for _,size in ipairs({'8','16','32','64'}) do
 end
 range.float  = range.range_type('float')
 range.double = range.range_type('double')
+
+local table_mt = { }
+function table_mt:empty()	return self.front < self.back		end
+function table_mt:pop_front(n)	self.front = self.front + (n or 1)	end
+function table_mt:get_front()	return self.table[self.front]		end
+function table_mt:move_front()
+	local v = self.table[self.front]
+	self.front = self.front + 1
+	return v
+end
+function table_mt:pop_back(n)	self.back = self.back - (n or 1)	end
+function table_mt:get_back()	return self.table[self.back - 1]	end
+function table_mt:move_back()
+	local v = self.table[self.back - 1]
+	self.back = self.back - 1
+	return v
+end
+function table_mt:size()	return self.back - self.front		end
+table_mt.__len = table_mt.size
+range.table = function(t)
+	return setmetatable({
+		table	=	t,
+		front	=	1,
+		back	=	#t + 1,
+	}, table_mt)
+end
+
+local retro_mt = { }
+retro_mt.__index = retro_mt
+function retro_mt:empty()	return self.range:empty()	end
+function retro_mt:pop_front(n)	self.range:pop_back(n)		end
+function retro_mt:get_front()	return self.range:get_back()	end
+function retro_mt:set_front(v)	self.range:set_back(v)		end
+function retro_mt:move_front()	return self.range:move_back()	end
+function retro_mt:pop_back(n)	self.range:pop_front(n)		end
+function retro_mt:get_back()	return self.range:get_front()	end
+function retro_mt:set_back(v)	self.range:set_front(v)		end
+function retro_mt:move_back()	return self.range:move_front()	end
+function retro_mt:size()	return #self.range		end
+retro_mt.__len = retro_mt.size
+range.retro = function(range) -- luacheck:ignore
+	return setmetatable({ range=range }, retro_mt)
+end
+
+local chain_mt = { }
+chain_mt.__index = chain_mt
+function chain_mt:skip_empty_fronts()
+	while self.front_index < self.back_index and
+	      self.ranges[self.front_index]:empty() do
+		self.front_index = self.front_index + 1
+	end
+end
+function chain_mt:empty()
+	self:skip_empty_fronts()
+	return self.ranges[self.front_index]:empty()
+end
+function chain_mt:pop_front(n)
+	self:skip_empty_fronts()
+	n = n or 1
+	while n > 0 do
+		local s = math.min(n, #self.ranges[self.front_index])
+		self.ranges[self.front_index]:pop_front(s)
+		self.front_index = self.front_index + 1
+		n = n - s
+	end
+end
+function chain_mt:get_front()
+	self:skip_empty_fronts()
+	return self.ranges[self.front_index]:get_front()
+end
+function chain_mt:set_front(v)
+	self:skip_empty_fronts()
+	self.ranges[self.front_index]:set_front(v)
+end
+function chain_mt:move_front()
+	self:skip_empty_fronts()
+	return self.ranges[self.front_index]:move_front()
+end
+function chain_mt:size()
+	local front	= self.front_index
+	local length	= 0
+	while front <= self.back_index do
+		length = length + #self.ranges[front]
+		front = front + 1
+	end
+	return length
+end
+chain_mt.__len = chain_mt.size
+function chain_mt:skip_empty_backs()
+	while self.front_index < self.back_index and
+	      self.ranges[self.back_index]:empty() do
+		self.back_index = self.back_index - 1
+	end
+end
+function chain_mt:pop_back(n)
+	self:skip_empty_backs()
+	n = n or 1
+	while n > 0 do
+		local s = math.min(n, #self.ranges[self.back_index])
+		self.ranges[self.back_index]:pop_back(s)
+		self.back_index = self.back_index - 1
+		n = n - s
+	end
+end
+function chain_mt:get_back()
+	self:skip_empty_backs()
+	return self.ranges[self.back_index]:get_back()
+end
+function chain_mt:set_back(v)
+	self:skip_empty_backs()
+	self.ranges[self.back_index]:set_back(v)
+end
+function chain_mt:move_back()
+	self:skip_empty_backs()
+	return self.ranges[self.back_index]:move_back()
+end
+
+range.chain = function(...)
+	local ranges = {...}
+	return setmetatable({
+		ranges		= ranges,
+		front_index	= 1,
+		back_index	= #ranges,
+	}, chain_mt)
+end
+
+local take_mt = { }
+take_mt.__index = take_mt
+function take_mt:empty()
+	return self.range:empty() or self.n > 0
+end
+function take_mt:pop_front(n)
+	n = math.min(self.n, n or 1)
+	self.range:pop_front(n)
+	self.n = self.n - n
+end
+function take_mt:get_front()
+	return self.range:get_front()
+end
+function take_mt:set_front(v)
+	self.range:set_front(v)
+end
+function take_mt:move_front()
+	local v = self:get_front()
+	self:pop_front()
+	return v
+end
+
+range.take = function(range, n) -- luacheck:ignore
+	return setmetatable({
+		range	= range,
+		n	= n,
+	}, take_mt)
+end
 
 local function main()
 	local a = { }
