@@ -144,18 +144,18 @@ end
 function strings.hexdump(bytes, addr)
 	local sprintf = string.format
 
-	local function hex_data(bytes, at_most)
+	local function hex_data(bytes, at_most) -- luacheck:ignore
 		local hex = { }
 		at_most = at_most or 16
 		for i=1,math.min(#bytes, at_most) do
-			local hexs
-			hexs = sprintf("%02x", string.byte(bytes:sub(i,i)))
-			table.insert(hex, hexs)
+			local s -- luacheck:ignore
+			s = sprintf("%02x", string.byte(bytes:sub(i,i)))
+			table.insert(hex, s)
 		end
 		return table.concat(hex, ' ')
 	end
 
-	local function char_data(bytes)
+	local function char_data(bytes) -- luacheck:ignore
 		local s = ''
 		for i=1,math.min(#bytes, 16) do
 			local c = bytes:sub(i,i)

@@ -107,11 +107,11 @@ filesystem.symlinkattributes = function(filepath, arg)
 	return unpack(result)
 end
 
-filesystem.exists = function(path)
+filesystem.exists = function(path) -- luacheck:ignore
 	return pcall(filesystem.attributes, path, 'mode')
 end
 
-local function is_mode(path, what_mode)
+local function is_mode(path, what_mode) -- luacheck:ignore
 	local ok, mode = filesystem.exists(path)
 	if not ok then
 		return false
@@ -120,19 +120,19 @@ local function is_mode(path, what_mode)
 	end
 end
 
-filesystem.is_block_device = function(path)
+filesystem.is_block_device = function(path) -- luacheck:ignore
 	return is_mode(path, 'block device')
 end
 
-filesystem.is_char_device = function(path)
+filesystem.is_char_device = function(path) -- luacheck:ignore
 	return is_mode(path, 'char device')
 end
 
-filesystem.is_directory = function(path)
+filesystem.is_directory = function(path) -- luacheck:ignore
 	return is_mode(path, 'directory')
 end
 
-filesystem.is_file = function(path)
+filesystem.is_file = function(path) -- luacheck:ignore
 	return is_mode(path, 'file')
 end
 
@@ -146,7 +146,7 @@ local dir_iter = function(state)
 	return ffi.string(state.ent.d_name)
 end
 
-filesystem.dir = function(path)
+filesystem.dir = function(path) -- luacheck:ignore
 	local state = {
 		dir = C.opendir(path),
 		ent = nil,
@@ -162,7 +162,7 @@ filesystem.dir = function(path)
 	return dir_iter, state
 end
 
-filesystem.list = function(path)
+filesystem.list = function(path) -- luacheck:ignore
 	local list = { }
 	for name in filesystem.dir(path) do
 		if name ~= '.' and name ~= '..' then
@@ -173,7 +173,7 @@ filesystem.list = function(path)
 	return list
 end
 
-filesystem.chdir = function(path)
+filesystem.chdir = function(path) -- luacheck:ignore
 	local rc = C.chdir(path)
 	if rc < 0 then
 		error(strerror())
@@ -214,23 +214,24 @@ filesystem.rmdir = function(dirname)
 	end
 end
 
-filesystem.mkdirp = function(path, permissions)
+filesystem.mkdirp = function(_path, permissions)
 	permissions = permissions or tonumber(0755, 8)
-	local dir = path.dirpath(path)
+	local dir = path.dirpath(_path)
 	while not filesystem.exists(dir) do
 		local rc = filesystem.mkdirp(dir, permissions)
 		if rc < 0 then
 			return rc
 		end
 	end
-	if not filesystem.exists(path) then
-		return filesystem.mkdir(path, permissions)
+	if not filesystem.exists(_path) then
+		return filesystem.mkdir(_path, permissions)
 	else
 		return 0
 	end
 end
 
-local ftw = function(path, func)
+local ftw
+ftw = function(path, func) -- luacheck:ignore
 	local ok, entries = pcall(filesystem.list, path)
 	if not ok then -- ignore failed paths
 		return true

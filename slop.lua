@@ -15,7 +15,7 @@ local strings	= require('useful.strings')
 local  strip	=  strings.strip
 local  split	=  strings.split
 local  ljust	=  strings.ljust
-local socket	= require('useful.socket')
+		  require('useful.socket')
 local stream	= require('useful.stream')
 local tables	= require('useful.tables')
 

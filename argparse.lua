@@ -830,7 +830,9 @@ function ElementState:invoke(alias)
       if self.element._overwrite then
          self.overwrite = true
       else
-         self:error("%s must be used %s", self.name, bound("time", self.element._mincount, self.element._maxcount, true))
+         self:error("%s must be used %s", self.name,
+                    bound("time", self.element._mincount,
+                          self.element._maxcount, true))
       end
    else
       self.invocations = self.invocations + 1
@@ -888,7 +890,9 @@ function ElementState:close()
          args = args[1]
       end
 
-      if self.element._maxargs == 1 and self.element._minargs == 0 and self.element._mincount ~= self.element._maxcount then
+      if self.element._maxargs == 1 and
+         self.element._minargs == 0 and
+         self.element._mincount ~= self.element._maxcount then
          args = self.args
       end
 

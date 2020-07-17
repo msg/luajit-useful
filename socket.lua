@@ -129,7 +129,7 @@ socket.Socket = Class({
 				sys_socket.SO_RCVTIMEO, tv, sizeof(tv[0]))
 	end,
 
-	sndtimeo = function(self, timtout)
+	sndtimeo = function(self, timeout)
 		local sec, frac = math.modf(timeout, 1.0)
 		local tv = new('struct timeval[1]', {{sec, frac*1e6}})
 		return self:setsockopt(sys_socket.SOL_SOCKET,
