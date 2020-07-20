@@ -7,6 +7,11 @@ local  insert	=  table.insert
 local  remove	=  table.remove
 local  concat	=  table.concat
 
+local system	= require('useful.system')
+local  is_main	=  system.is_main
+local  setfenv	=  system.setfenv
+local  unpack	=  system.unpack
+
 local function is_identifier(s)
 	return s:match('^[_A-Za-z][_A-Za-z0-9]*$') ~= nil
 end
@@ -296,8 +301,6 @@ end
 
 local function main()
 end
-
-local is_main	= require('useful.system').is_main
 
 if is_main() then
 	main()

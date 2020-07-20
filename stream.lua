@@ -21,6 +21,8 @@ local errno	= require('posix.errno')
 local class	= require('useful.class')
 local  Class	=  class.Class
 local socket	= require('useful.socket')
+local system	= require('useful.system')
+local  is_main	=  system.is_main
 
 local  min	=  math.min
 
@@ -296,8 +298,6 @@ stream.TCPStream = Class(stream.Stream, {
 
 local function main()
 end
-
-local is_main	= require('useful.system').is_main
 
 if is_main() then
 	main()

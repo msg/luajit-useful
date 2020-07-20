@@ -14,6 +14,8 @@ local stat	= require('posix.sys.stat')
 		  require('posix.unistd')
 
 local path	= require('useful.path')
+local system	= require('useful.system')
+local  unpack	=  system.unpack
 
 local function strerror(errno)
 	return ffi.string(C.strerror(errno or ffi.errno()))

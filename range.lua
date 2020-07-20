@@ -18,6 +18,8 @@ local  bswap	=  bit.bswap
 
 local stdio	= require('useful.stdio')
 local  printf	=  stdio.printf
+local system	= require('usefule.system')
+local  is_main	=  system.is_main
 
 local range_types = { }
 
@@ -357,10 +359,6 @@ local function main()
 		printf('%s front=%s\n', r8.declaration,
 				string.char(r8:move_front()))
 	end
-end
-
-local function is_main(level)
-        return debug.getinfo(4 + (level or 0)) == nil
 end
 
 if is_main() then

@@ -31,6 +31,8 @@ local  Class		=  class.Class
 local stdio		= require('useful.stdio')
 local  sprintf		=  stdio.sprintf
 local  printf		=  stdio.printf
+local system		= require('useful.system')
+local  is_main		=  system.is_main
 
 function socket.syserror(call)
 	return sprintf("%s: %s\n", call, fstring(C.strerror(errno())))
@@ -241,8 +243,6 @@ socket.UDP = Class(socket.Socket, {
 
 local function main()
 end
-
-local is_main	= require('useful.system').is_main
 
 if is_main() then
 	main()

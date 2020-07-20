@@ -4,6 +4,13 @@
 --
 local sandbox = { }
 
+local system		= require('useful.system')
+local  is_main		=  system.is_main
+local  getfenv		=  system.getfenv
+local  setfenv		=  system.setfenv
+local  unpack		=  system.unpack
+local  loadstring	= system.loadstring
+
 function sandbox.export(to_table, name, from_table)
 	local table = { }
 	for n,v in pairs(from_table) do
@@ -93,7 +100,6 @@ local function main(args)
 	end
 end
 
-local is_main = require('useful.system').is_main
 if is_main() then
 	main(arg)
 else

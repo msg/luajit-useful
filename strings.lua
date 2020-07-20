@@ -9,6 +9,8 @@ local  band		=  bit.band
 local  lshift		=  bit.lshift
 local  rshift		=  bit.rshift
 
+local system		= require('useful.system')
+local  unpack		=  system.unpack
 local tables		= require('useful.tables')
 
 local  insert		=  table.insert

@@ -3,6 +3,9 @@
 --
 local functions = { }
 
+local system		= require('useful.system')
+local  loadstring	=  system.loadstring
+
 function functions.callable(obj)
 	return type(obj) == 'function' or getmetatable(obj) and
 			getmetatable(obj).__call

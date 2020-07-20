@@ -4,18 +4,21 @@
 --
 local cpio = { }
 
-local bit	= require('bit')
-local  band	=  bit.band
-local  bor	=  bit.bor
-local  lshift	=  bit.lshift
+local bit		= require('bit')
+local  band		=  bit.band
+local  bor		=  bit.bor
+local  lshift		=  bit.lshift
 
-local class	= require('useful.class')
-local Class	=  class.Class
-local stdio	= require('useful.stdio')
-local  sprintf	=  stdio.sprintf
-local  printf	=  stdio.printf
+local class		= require('useful.class')
+local Class		=  class.Class
+local stdio		= require('useful.stdio')
+local  sprintf		=  stdio.sprintf
+local  printf		=  stdio.printf
+local system		= require('useful.system')
+local  is_main		=  system.is_main
+local  loadstring	=  system.loadstring
 
-local  insert	=  table.insert
+local  insert		=  table.insert
 
 -- This is a lujit module to read/write cpio files in "New ASCII Format"
 --
@@ -228,7 +231,6 @@ local function main()
 	f:close()
 end
 
-local is_main = require('useful.system').is_main
 if is_main() then
 	main()
 else

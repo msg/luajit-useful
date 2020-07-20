@@ -17,6 +17,9 @@ local  split	=  strings.split
 local  ljust	=  strings.ljust
 		  require('useful.socket')
 local stream	= require('useful.stream')
+local system	= require('useful.system')
+local  is_main	=  system.is_main
+local  unpack	=  system.unpack
 local tables	= require('useful.tables')
 
 local  format	=  string.format
@@ -397,8 +400,6 @@ local function main()
 
 	return server:process()
 end
-
-local is_main	= require('useful.system').is_main
 
 if is_main() then
 	main()

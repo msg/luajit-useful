@@ -5,6 +5,10 @@ local command = { }
 
 local  sprintf	=  string.format
 
+local system	= require('useful.system')
+local  is_main	=  system.is_main
+local  unpack	=  system.unpack
+
 command.Command = function(commands, name, params, description, func)
 	local self = {
 		commands	= commands,
@@ -185,7 +189,6 @@ local function main(args)
 	return command.Commands(printf).main(args)
 end
 
-local is_main	= require('useful.system').is_main
 if is_main() then
 	main()
 else
