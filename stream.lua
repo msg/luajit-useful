@@ -285,14 +285,8 @@ stream.Stream = Class({
 
 stream.TCPStream = Class(stream.Stream, {
 	new = function(self, fd, size, timeout, unget_size)
-		-- socket.TCP() must be first, Stream:new calls set_timeout()
 		self.tcp = socket.TCP()
 		stream.Stream.new(self, fd, size, timeout, unget_size)
-	end,
-
-	set_timeout = function(self, timeout)
-		stream.Stream.set_timeout(self, timeout)
-		self.tcp:rcvtimeo(timeout)
 	end,
 })
 
