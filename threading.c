@@ -247,6 +247,7 @@ static int ll_receive(lua_State *lua) {
 		// man->lua stack: queue[1], queue, channel
 
 		// move man->lua queue[2..#queue] to queue[1..#queue-1]
+		// i.e. table.remove(queue, 1)
 
 		n = lua_objlen(man->lua, -2);
 		for (i = 1; i <= n; i++) {
