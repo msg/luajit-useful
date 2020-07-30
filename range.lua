@@ -138,8 +138,9 @@ for _,size in ipairs({'8','16','32','64'}) do
 	range['int'..size] = range.range_type('int'..size..'_t')
 	range['uint'..size] = range.range_type('uint'..size..'_t')
 end
-range.float  = range.range_type('float')
-range.double = range.range_type('double')
+range.char	= range.int8
+range.float	= range.range_type('float')
+range.double	= range.range_type('double')
 
 local table_mt = { }
 function table_mt:empty()	return self.front < self.back		end
