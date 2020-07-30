@@ -18,7 +18,7 @@ local  bswap	=  bit.bswap
 
 local stdio	= require('useful.stdio')
 local  printf	=  stdio.printf
-local system	= require('usefule.system')
+local system	= require('useful.system')
 local  is_main	=  system.is_main
 
 local range_types = { }
