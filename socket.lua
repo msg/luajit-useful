@@ -8,7 +8,6 @@ local  C		=  ffi.C
 local  cast		=  ffi.cast
 local  errno		=  ffi.errno
 local  fstring		=  ffi.string
-local  gc		=  ffi.gc
 local  new		=  ffi.new
 local  sizeof		=  ffi.sizeof
 
@@ -184,8 +183,6 @@ socket.TCP = Class(socket.Socket, {
 		if self.fd < 0 then
 			return nil, socket.syserror("socket")
 		end
-		self.fdgc = cast('void *', self.fd)
-		self.fdgc = gc(self.fdgc, function() C.close(self.fd) end)
 	end,
 
 	listen = function(self, backlog)
@@ -228,8 +225,6 @@ socket.UDP = Class(socket.Socket, {
 		if self.fd < 0 then
 			return nil, socket.syserror("socket")
 		end
-		self.fdgc = cast('void *', self.fd)
-		self.fdgc = gc(self.fdgc, function() C.close(self.fd) end)
 	end,
 
 	recvfrom = function(self, buf, len)
