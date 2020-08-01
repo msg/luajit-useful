@@ -6,7 +6,6 @@ local socket = { }
 local ffi		= require('ffi')
 local  C		=  ffi.C
 local  cast		=  ffi.cast
-local  errno		=  ffi.errno
 local  fstring		=  ffi.string
 local  new		=  ffi.new
 local  sizeof		=  ffi.sizeof
@@ -36,7 +35,7 @@ local system		= require('useful.system')
 local  is_main		=  system.is_main
 
 function socket.syserror(call)
-	return sprintf("%s: %s\n", call, fstring(C.strerror(errno())))
+	return sprintf("%s: %s\n", call, fstring(C.strerror(ffi.errno())))
 end
 
 function socket.getaddrinfo(host, port, protocol)
