@@ -103,6 +103,8 @@ static void push_channel_and_queue(lua_State *lua, const char *channel) {
 	lua_getfield(lua, -1, "queue"); // push queue also
 }
 
+static int copy_table(lua_State *to_lua, lua_State *from_lua, int index);
+
 static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
 	int type = lua_type(from_lua, index);
 	switch(type) {
@@ -118,11 +120,32 @@ static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
 		lua_pushlstring(to_lua, p, size);
 		break;
 	}
+	case LUA_TTABLE:
+		copy_table(to_lua, from_lua, index);
+		break;
 	default:
 		lua_settop(from_lua, 0);
-		lua_pushstring(from_lua, "only booleans, numbers, and strings "
+		lua_pushstring(from_lua, "only booleans, numbers, "
+				"strings and non-recurive tables "
 				"supported");
 		return -1;
+	}
+	return 0;
+}
+
+static int copy_table(lua_State *to_lua, lua_State *from_lua, int index) {
+	int to_top;
+	lua_newtable(to_lua);
+	to_top = lua_gettop(to_lua);
+	lua_pushnil(from_lua); /* first key */
+	while (lua_next(from_lua, index) != 0) {
+		copy_value(to_lua, from_lua, -2);
+		if (lua_type(from_lua, -1) == LUA_TTABLE)
+			copy_table(to_lua, from_lua, lua_gettop(from_lua));
+		else
+			copy_value(to_lua, from_lua, -2);
+		lua_settable(to_lua, to_top);
+		lua_pop(from_lua, 1);
 	}
 	return 0;
 }
@@ -393,16 +416,16 @@ static int ll_manager(lua_State *lua) {
 	}
 }
 
-static int ll_data_mt_index(lua_State *lua) {
-	const char *name = luaL_checkstring(lua, 2);
+static int ll_get(lua_State *lua) {
+	const char *name = luaL_checkstring(lua, 1);
 	manager *man = get_manager(lua, RAISE_ERROR);
 
 	pthread_mutex_lock(&man->mutex);
 
 	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
 	lua_getfield(man->lua, -1, name);
-	if (!lua_isnil(man->lua, -1))
-		copy_value(lua, man->lua, -1);
+	if (!lua_isnil(man->lua, 2))
+		copy_value(lua, man->lua, 2);
 	else
 		lua_pushnil(lua);
 	lua_settop(man->lua, 0);
@@ -411,31 +434,25 @@ static int ll_data_mt_index(lua_State *lua) {
 	return 1;
 }
 
-static int ll_data_mt_newindex(lua_State *lua) {
-	const char *name = luaL_checkstring(lua, 2);
+static int ll_set(lua_State *lua) {
+	const char *name = luaL_checkstring(lua, 1);
 	manager *man = get_manager(lua, RAISE_ERROR);
 
 	pthread_mutex_lock(&man->mutex);
 
 	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
-	if (copy_value(man->lua, lua, 3)) {
+	if (copy_value(man->lua, lua, 2)) {
 		copy_value(lua, man->lua, 1);
 		// lua_error() calls longjmp() so mutex must be unlocked.
 		pthread_mutex_unlock(&man->mutex);
 		lua_error(lua);
 	}
-	lua_setfield(man->lua, -2, name);
+	lua_setfield(man->lua, 1, name);
 	lua_settop(man->lua, 0);
 
 	pthread_mutex_unlock(&man->mutex);
 	return 0;
 }
-
-static const struct luaL_Reg ll_data_mt_funcs[] = {
-	{ "__index",	ll_data_mt_index },
-	{ "__newindex",	ll_data_mt_newindex },
-	{ NULL,		NULL },
-};
 
 static const struct luaL_Reg ll_funcs[] = {
 	{ "manager",	ll_manager },
@@ -443,6 +460,8 @@ static const struct luaL_Reg ll_funcs[] = {
 	{ "setname",	ll_setname },
 	{ "send", 	ll_send },
 	{ "receive",	ll_receive },
+	{ "set",	ll_set },
+	{ "get",	ll_get },
 	{ "exit",	ll_exit },
 	{ NULL,		NULL },
 };
@@ -490,12 +509,6 @@ int MODULE(lua_State *lua) {
 		luaL_openlibs(man->lua);
 
 	}
-
-	lua_createtable(lua, 0, 0);
-	luaL_newmetatable(lua, "_data_mt");
-	luaL_register(lua, NULL, ll_data_mt_funcs);
-	lua_setmetatable(lua, -2);
-	lua_setfield(lua, -2, "data");
 
 	return 1;
 }
