@@ -417,17 +417,20 @@ static int ll_manager(lua_State *lua) {
 }
 
 static int ll_get(lua_State *lua) {
-	const char *name = luaL_checkstring(lua, 1);
+	const char *name = luaL_optstring(lua, 1, NULL);
 	manager *man = get_manager(lua, RAISE_ERROR);
 
 	pthread_mutex_lock(&man->mutex);
 
 	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
-	lua_getfield(man->lua, -1, name);
-	if (!lua_isnil(man->lua, 2))
-		copy_value(lua, man->lua, 2);
-	else
-		lua_pushnil(lua);
+	if (name != NULL) {
+		lua_getfield(man->lua, -1, name);
+		if (!lua_isnil(man->lua, 2))
+			copy_value(lua, man->lua, 2);
+		else
+			lua_pushnil(lua);
+	} else
+		copy_value(lua, man->lua, 1);
 	lua_settop(man->lua, 0);
 
 	pthread_mutex_unlock(&man->mutex);
@@ -507,7 +510,6 @@ int MODULE(lua_State *lua) {
 		lua_setfield(man->lua, LUA_GLOBALSINDEX, "data");
 
 		luaL_openlibs(man->lua);
-
 	}
 
 	return 1;
