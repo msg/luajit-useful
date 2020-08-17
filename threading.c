@@ -143,7 +143,7 @@ static int copy_table(lua_State *to_lua, lua_State *from_lua, int index) {
 		if (lua_type(from_lua, -1) == LUA_TTABLE)
 			copy_table(to_lua, from_lua, lua_gettop(from_lua));
 		else
-			copy_value(to_lua, from_lua, -2);
+			copy_value(to_lua, from_lua, -1);
 		lua_settable(to_lua, to_top);
 		lua_pop(from_lua, 1);
 	}
