@@ -197,21 +197,6 @@ static int ll_send(lua_State *lua) {
 	return 0;
 }
 
-static int move_itable(lua_State *to_lua, lua_State *from_lua) {
-	int i, rc;
-
-	int n = lua_objlen(from_lua, -1);
-	for (i = 1; i <= n; i++) {
-		lua_rawgeti(from_lua, -1, i);
-		rc = copy_value(to_lua, from_lua, -1);
-		lua_pop(from_lua, 1);
-		if (rc < 0)
-			return rc;
-		lua_rawseti(to_lua, -2, lua_objlen(to_lua, -2) + 1);
-	}
-	return rc;
-}
-
 static void timespec_add(struct timespec *ts, double dt) {
 	int iseconds = (int)dt;
 	dt -= iseconds;
@@ -280,7 +265,7 @@ static int ll_receive(lua_State *lua) {
 		}
 
 		lua_createtable(lua, 1, 0);
-		move_itable(lua, man->lua);
+		copy_table(lua, man->lua, lua_gettop(lua));
 		lua_rawseti(lua, -2, 1);
 	}
 
