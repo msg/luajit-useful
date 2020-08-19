@@ -172,7 +172,7 @@ static void notify_receivers(manager *man) {
 	}
 }
 
-static int ll_send(lua_State *lua) {
+static int send_(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);
 	const char *channel = luaL_checkstring(lua, 1);
 	int rc;
@@ -224,12 +224,23 @@ static int wait_for_queue(manager *man, proc *p, double timeout) {
 	return 0;
 }
 
-static int ll_receive(lua_State *lua) {
+static void pop_front(lua_State *lua, int index) {
+	int i, n = lua_objlen(lua, index);
+	lua_rawgeti(lua, index, 1);
+	for (i = 1; i <= n; i++) {
+		// lua_rawgeti > n will push nil which is what we want
+		lua_rawgeti(lua, index-1, i+1);
+		lua_rawseti(lua, index-2, i);
+	}
+}
+
+static int receive_(lua_State *lua) {
 	proc *p = get_self(lua);
 	manager *man = get_manager(lua, RAISE_ERROR);
 	const char *channel = luaL_checkstring(lua, 1);
 	double timeout = luaL_checknumber(lua, 2);
-	int i, n;
+	size_t count = 1;
+	size_t max = luaL_optinteger(lua, 3, 1);
 
 	pthread_mutex_lock(&man->mutex);
 
@@ -249,24 +260,15 @@ static int ll_receive(lua_State *lua) {
 
 	// man->lua stack: queue, channel
 	lua_createtable(lua, 0, 0);
+
 	// lua stack: new_table
-	if (lua_objlen(man->lua, -1) > 0) {
-		lua_rawgeti(man->lua, -1, 1);
+	while (lua_objlen(man->lua, -1) > 0 && count <= max) {
 		// man->lua stack: queue[1], queue, channel
-
 		// move man->lua queue[2..#queue] to queue[1..#queue-1]
-		// i.e. table.remove(queue, 1)
-
-		n = lua_objlen(man->lua, -2);
-		for (i = 1; i <= n; i++) {
-			// lua_rawgeti > n will push nil which is what we want
-			lua_rawgeti(man->lua, -2, i+1);
-			lua_rawseti(man->lua, -3, i);
-		}
-
-		lua_createtable(lua, 1, 0);
-		copy_table(lua, man->lua, lua_gettop(lua));
-		lua_rawseti(lua, -2, 1);
+		pop_front(man->lua, -1); // i.e. table.remove(queue, 1)
+		copy_table(lua, man->lua, lua_gettop(man->lua));
+		lua_pop(man->lua, 1);
+		lua_rawseti(lua, -2, count++);
 	}
 
 	lua_settop(man->lua, 0);
@@ -276,7 +278,54 @@ static int ll_receive(lua_State *lua) {
 	return 1;
 }
 
-static void *ll_thread(void *arg) {
+static int queues_(lua_State *lua) {
+	manager *man = get_manager(lua, RAISE_ERROR);
+	int index;
+	int count = 1;
+
+	lua_createtable(lua, 0, 0);
+
+	pthread_mutex_lock(&man->mutex);
+
+	lua_getfield(man->lua, LUA_GLOBALSINDEX, "channels");
+	index = lua_gettop(man->lua);
+	lua_pushnil(man->lua); /* first key */
+	while (lua_next(man->lua, index) != 0) {
+		int n;
+		lua_getfield(man->lua, -1, "queue");
+		// key at -3, value at -2, '.queue' at -1
+		n = lua_objlen(man->lua, -1);
+		lua_createtable(lua, 2, 0);
+		lua_pushstring(lua, lua_tostring(man->lua, -3));
+		lua_rawseti(lua, -2, 1);
+		lua_pushinteger(lua, n);
+		lua_rawseti(lua, -2, 2);
+		lua_rawseti(lua, -2, count++);
+		// remove 'value'
+		lua_pop(man->lua, 2);
+	}
+	lua_settop(man->lua, 0);
+
+	pthread_mutex_unlock(&man->mutex);
+
+	return 1;
+}
+
+static int flush_(lua_State *lua) {
+	manager *man = get_manager(lua, RAISE_ERROR);
+	const char *channel = luaL_checkstring(lua, 1);
+
+	pthread_mutex_lock(&man->mutex);
+
+	lua_getfield(man->lua, LUA_GLOBALSINDEX, "channels");
+	lua_pushnil(man->lua);
+	lua_setfield(man->lua, -2, channel);	// clear channels[channel]
+
+	pthread_mutex_unlock(&man->mutex);
+	return 0;
+}
+
+static void *thread_(void *arg) {
 	lua_State *lua = (lua_State *)arg;
 	int n = lua_gettop(lua);
 
@@ -338,7 +387,7 @@ static void load_function(lua_State *to_lua, lua_State *from_lua) {
 	lua_insert(to_lua, 1); // move function to bottom of stack
 }
 
-static int ll_start(lua_State *lua) {
+static int start_(lua_State *lua) {
 	int i, n;
 	lua_State *new_lua;
 
@@ -363,26 +412,26 @@ static int ll_start(lua_State *lua) {
 	load_function(new_lua, lua);
 
 	pthread_t thread;
-	if (pthread_create(&thread, NULL, ll_thread, new_lua) != 0)
+	if (pthread_create(&thread, NULL, thread_, new_lua) != 0)
 		luaL_error(lua, "unable to create new thread");
 
 	pthread_detach(thread);
 	return 0;
 }
 
-static int ll_exit(lua_State *lua) {
+static int exit_(lua_State *lua) {
 	(void)lua;
 	pthread_exit(NULL);
 	return 0;
 }
 
-static int ll_setname(lua_State *lua) {
+static int setname_(lua_State *lua) {
 	const char *name = luaL_checkstring(lua, 1);
 	pthread_setname_np(pthread_self(), name);
 	return 0;
 }
 
-static int ll_manager(lua_State *lua) {
+static int manager_(lua_State *lua) {
 	manager *man;
 	if (lua_gettop(lua) > 0) {
 		// set manager
@@ -401,7 +450,7 @@ static int ll_manager(lua_State *lua) {
 	}
 }
 
-static int ll_get(lua_State *lua) {
+static int get_(lua_State *lua) {
 	const char *name = luaL_optstring(lua, 1, NULL);
 	manager *man = get_manager(lua, RAISE_ERROR);
 
@@ -422,7 +471,7 @@ static int ll_get(lua_State *lua) {
 	return 1;
 }
 
-static int ll_set(lua_State *lua) {
+static int set_(lua_State *lua) {
 	const char *name = luaL_checkstring(lua, 1);
 	manager *man = get_manager(lua, RAISE_ERROR);
 
@@ -443,14 +492,16 @@ static int ll_set(lua_State *lua) {
 }
 
 static const struct luaL_Reg ll_funcs[] = {
-	{ "manager",	ll_manager },
-	{ "start", 	ll_start },
-	{ "setname",	ll_setname },
-	{ "send", 	ll_send },
-	{ "receive",	ll_receive },
-	{ "set",	ll_set },
-	{ "get",	ll_get },
-	{ "exit",	ll_exit },
+	{ "manager",	manager_ },
+	{ "start", 	start_ },
+	{ "setname",	setname_ },
+	{ "send", 	send_ },
+	{ "receive",	receive_ },
+	{ "queues",	queues_ },
+	{ "flush",	flush_ },
+	{ "set",	set_ },
+	{ "get",	get_ },
+	{ "exit",	exit_ },
 	{ NULL,		NULL },
 };
 
