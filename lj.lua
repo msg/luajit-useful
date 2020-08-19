@@ -5,9 +5,7 @@
 local lj = { }
 
 local ffi	= require('ffi')
-local luajit	= ffi.load('luajit-5.1.so')
-
-lj.luajit	= luajit
+local C		= ffi.C
 
 ffi.cdef [[
 	typedef ptrdiff_t		LUA_INTEGER;
@@ -201,6 +199,9 @@ ffi.cdef [[
 	lua_Alloc lua_getallocf(lua_State *L, void **ud);
 	void lua_setallocf(lua_State *L, lua_Alloc f, void *ud);
 
+	int (luaopen_bit)(lua_State *L);
+	int (luaopen_ffi)(lua_State *L);
+	int (luaopen_jit)(lua_State *L);
 ]]
 
 --[[
@@ -210,64 +211,64 @@ ffi.cdef [[
 ]]--
 
 function lj.lua_pop(L, n)
-	luajit.lua_settop(L, -n-1)
+	C.lua_settop(L, -n-1)
 end
 
 function lj.lua_newtable(L)
-	luajit.lua_createtable(L, 0, 0)
+	C.lua_createtable(L, 0, 0)
 end
 
 function lj.lua_register(L, s, f)
-	luajit.lua_pushcfunction(L, f)
-	luajit.lua_setglobal(L, s)
+	lj.lua_pushcfunction(L, f)
+	lj.lua_setglobal(L, s)
 end
 
 function lj.lua_pushcfunction(L, f)
-	return luajit.lua_pushcclosure(L, f, 0)
+	return C.lua_pushcclosure(L, f, 0)
 end
 
 function lj.lua_strlen(L, i)
-	return luajit.lua_objlen(L, i)
+	return C.lua_objlen(L, i)
 end
 
 function lj.lua_isfunction(L, n)
-	return luajit.lua_type(L, n) == luajit.LUA_TFUNCTION
+	return C.lua_type(L, n) == C.LUA_TFUNCTION
 end
 function lj.lua_istable(L, n)
-	return luajit.lua_type(L, n) == luajit.LUA_TTABLE
+	return C.lua_type(L, n) == C.LUA_TTABLE
 end
 function lj.lua_islightuserdata(L, n)
-	return luajit.lua_type(L, n) == luajit.LUA_TLIGHTUSERDATA
+	return C.lua_type(L, n) == C.LUA_TLIGHTUSERDATA
 end
 function lj.lua_isnil(L, n)
-	return luajit.lua_type(L, n) == luajit.LUA_TNIL
+	return C.lua_type(L, n) == C.LUA_TNIL
 end
 function lj.lua_isboolean(L, n)
-	return luajit.lua_type(L, n) == luajit.LUA_TBOOLEAN
+	return C.lua_type(L, n) == C.LUA_TBOOLEAN
 end
 function lj.lua_isthread(L, n)
-	return luajit.lua_type(L, n) == luajit.LUA_TTHREAD
+	return C.lua_type(L, n) == C.LUA_TTHREAD
 end
 function lj.lua_isnone(L, n)
-	return luajit.lua_type(L, n) == luajit.LUA_TNONE
+	return C.lua_type(L, n) == C.LUA_TNONE
 end
 function lj.lua_isnoneornil(L, n)
-	return luajit.lua_type(L, n) <= 0
+	return C.lua_type(L, n) <= 0
 end
 
 function lj.lua_pushliteral(L, s)
-	luajit.lua_pushlstring(L, s, #s)
+	C.lua_pushlstring(L, s, #s)
 end
 
 function lj.lua_setglobal(L, s)
-	luajit.lua_setfield(L, luajit.LUA_GLOBALSINDEX, s)
+	C.lua_setfield(L, C.LUA_GLOBALSINDEX, s)
 end
 function lj.lua_getglobal(L, s)
-	luajit.lua_getfield(L, luajit.LUA_GLOBALSINDEX, s)
+	C.lua_getfield(L, C.LUA_GLOBALSINDEX, s)
 end
 
 function lj.lua_tostring(L, i)
-	return luajit.lua_tolstring(L, i, nil)
+	return C.lua_tolstring(L, i, nil)
 end
 
 --[[
@@ -275,15 +276,15 @@ end
 ]]--
 
 function lj.lua_open()
-	return luajit.luaL_newstate()
+	return C.luaL_newstate()
 end
 
 function lj.lua_getregistry(L)
-	luajit.lua_pushvalue(L, luajit.LUA_REGISTRYINDEX)
+	C.lua_pushvalue(L, C.LUA_REGISTRYINDEX)
 end
 
 function lj.lua_getgccount(L)
-	return luajit.lua_gc(L, luajit.LUA_GCCOUNT, 0);
+	return C.lua_gc(L, C.LUA_GCCOUNT, 0);
 end
 
 local s -- luacheck:ignore
@@ -366,7 +367,7 @@ s = [[
 ]]
 
 function lj.luaL_getn(L, i)
-	return luajit.lua_objlen(L, i)
+	return C.lua_objlen(L, i)
 end
 
 function lj.luaL_estn(L, i, j) -- luacheck:ignore
@@ -453,45 +454,45 @@ s = [[
 
 function lj.luaL_argcheck(L, cond, numarg, extramsg)
 	if cond then
-		luajit.luaL_argerror(L, numarg, extramsg)
+		C.luaL_argerror(L, numarg, extramsg)
 	end
 end
 
 function lj.luaL_checkstring(L, n)
-	return luajit.luaL_checklstring(L, n, nil)
+	return C.luaL_checklstring(L, n, nil)
 end
 
 function lj.luaL_optstring(L, n, d)
-	return luajit.luaL_optlstring(L, n, d, nil)
+	return C.luaL_optlstring(L, n, d, nil)
 end
 
-lj.luaL_checkint	= luajit.luaL_checkinteger
-lj.luaL_optint		= luajit.luaL_optinteger
-lj.luaL_checklong	= luajit.luaL_checkinteger
-lj.luaL_optlong		= luajit.luaL_optinteger
+lj.luaL_checkint	= C.luaL_checkinteger
+lj.luaL_optint		= C.luaL_optinteger
+lj.luaL_checklong	= C.luaL_checkinteger
+lj.luaL_optlong		= C.luaL_optinteger
 
 function lj.luaL_typename(L, i)
-	return luajit.lua_typename(L, luajit.lua_type(L, i))
+	return C.lua_typename(L, C.lua_type(L, i))
 end
 
 function lj.luaL_dofile(L, fn)
-	local rc = luajit.luaL_loadfile(L, fn)
+	local rc = C.luaL_loadfile(L, fn)
 	if rc == 0 then
-		rc = luajit.lua_pcall(L, 0, luajit.LUA_MULTRET, 0)
+		rc = C.lua_pcall(L, 0, C.LUA_MULTRET, 0)
 	end
 	return rc
 end
 
 function lj.luaL_dostring(L, s) -- luacheck:ignore
-	local rc = luajit.luaL_loadstring(L, s)
+	local rc = C.luaL_loadstring(L, s)
 	if rc == 0 then
-		rc = luajit.lua_pcall(L, 0, luajit.LUA_MULTRET, 0)
+		rc = C.lua_pcall(L, 0, C.LUA_MULTRET, 0)
 	end
 	return rc
 end
 
 function lj.luaLopt(L, f, n, d)
-	if luajit.lua_isnoneornil(L, n) then
+	if C.lua_isnoneornil(L, n) then
 		return d
 	else
 		return f(L, n)
@@ -582,7 +583,7 @@ ffi.cdef [[
 ]]
 
 function lj.lj_tostring(L, i)
-	local sp = luajit.lua_tolstring(L, i, nil)
+	local sp = C.lua_tolstring(L, i, nil)
 	if sp ~= nil then
 		sp = ffi.string(sp)
 	end
@@ -601,7 +602,7 @@ local pc = pcall
 setmetatable(lj, {
 	__index = function(t, k)
 		local ok,v = pc(function()
-			return lj.luajit[k]
+			return C[k]
 		end)
 		if ok == true then
 			return v
