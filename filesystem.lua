@@ -77,13 +77,7 @@ local attribute_convert = {
 	change		= make_convert_time('st_ctim'),
 }
 
-filesystem.attributes = function(filepath, arg, stat_func)
-	local st = ffi.new('struct stat')
-	local rc = (stat_func or stat.stat)(filepath, st)
-	if rc < 0 then
-		error(strerror())
-	end
-
+local stat_to_attributes = function(stat, arg)
 	local attributes = { }
 	if type(arg) == 'table' then
 		attributes = arg
@@ -96,9 +90,19 @@ filesystem.attributes = function(filepath, arg, stat_func)
 	end
 	return attributes
 end
+filesystem.stat_to_attributes = stat_to_attributes
+
+filesystem.attributes = function(filepath, arg, stat_func)
+	local st = ffi.new('struct stat')
+	local rc = (stat_func or stat.stat)(filepath, st)
+	if rc < 0 then
+		error(strerror())
+	end
+	return stat_to_attributes(st, arg)
+end
 
 filesystem.symlinkattributes = function(filepath, arg)
-	local result = {filesystem.attributes(filepath, arg, stat.lstat)}
+	local result = { filesystem.attributes(filepath, arg, stat.lstat) }
 	if result[1] ~= nil then
 		local buf = ffi.new('char[4096]')
 		local rc = C.readlink(filepath, buf, 4096)
