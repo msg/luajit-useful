@@ -108,6 +108,9 @@ static int copy_table(lua_State *to_lua, lua_State *from_lua, int index);
 static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
 	int type = lua_type(from_lua, index);
 	switch(type) {
+	case LUA_TNIL:
+		lua_pushnil(to_lua);
+		break;
 	case LUA_TBOOLEAN:
 		lua_pushboolean(to_lua, lua_toboolean(from_lua, index));
 		break;
@@ -125,7 +128,7 @@ static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
 		break;
 	default:
 		lua_settop(from_lua, 0);
-		lua_pushstring(from_lua, "only booleans, numbers, "
+		lua_pushstring(from_lua, "only nil, booleans, numbers, "
 				"strings and non-recurive tables "
 				"supported");
 		return -1;
@@ -281,7 +284,6 @@ static int receive_(lua_State *lua) {
 static int queues_(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);
 	int index;
-	int count = 1;
 
 	lua_createtable(lua, 0, 0);
 
@@ -295,12 +297,9 @@ static int queues_(lua_State *lua) {
 		lua_getfield(man->lua, -1, "queue");
 		// key at -3, value at -2, '.queue' at -1
 		n = lua_objlen(man->lua, -1);
-		lua_createtable(lua, 2, 0);
 		lua_pushstring(lua, lua_tostring(man->lua, -3));
-		lua_rawseti(lua, -2, 1);
 		lua_pushinteger(lua, n);
-		lua_rawseti(lua, -2, 2);
-		lua_rawseti(lua, -2, count++);
+		lua_settable(lua, -3);
 		// remove 'value'
 		lua_pop(man->lua, 2);
 	}
