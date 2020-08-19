@@ -293,12 +293,10 @@ static int queues_(lua_State *lua) {
 	index = lua_gettop(man->lua);
 	lua_pushnil(man->lua); /* first key */
 	while (lua_next(man->lua, index) != 0) {
-		int n;
 		lua_getfield(man->lua, -1, "queue");
-		// key at -3, value at -2, '.queue' at -1
-		n = lua_objlen(man->lua, -1);
+		// man->lua key at -3, value at -2, '.queue' at -1
 		lua_pushstring(lua, lua_tostring(man->lua, -3));
-		lua_pushinteger(lua, n);
+		lua_pushinteger(lua, lua_objlen(man->lua, -1));
 		lua_settable(lua, -3);
 		// remove 'value'
 		lua_pop(man->lua, 2);
