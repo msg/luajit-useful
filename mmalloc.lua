@@ -19,8 +19,8 @@ function mmalloc.align(sz)
 end
 
 function mmalloc.mmalloc(sz)
-	local prot	= bor(sys_mman.PROT_READ, sys_mman.PROT_WRITE)
-	local map	= bor(sys_mman.MAP_PRIVATE, sys_mman.MAP_ANONYMOUS)
+	local prot	= bor(C.PROT_READ, C.PROT_WRITE)
+	local map	= bor(C.MAP_PRIVATE, C.MAP_ANONYMOUS)
 	local msz	= mmalloc.align(sz)
 	local p		= C.mmap(nil, msz, prot, map, 0, 0)
 	if p == sys_mman.MAP_FAILED then

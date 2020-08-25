@@ -14,9 +14,9 @@ local  bor	=  bit.bor
 local sys_types = require('posix.sys.types') -- luacheck: ignore
 local unistd	= require('posix.unistd') -- luacheck: ignore
 local poll	= require('posix.poll')
-local fcntl	= require('posix.fcntl')
+		  require('posix.fcntl')
 local pstring	= require('posix.string') -- luacheck: ignore
-local errno	= require('posix.errno')
+		  require('posix.errno')
 
 local class	= require('useful.class')
 local  Class	=  class.Class
@@ -43,9 +43,9 @@ stream.Stream = Class({
 
 	set_timeout = function(self, timeout)
 		if self.fd ~= stream.NOFD then
-			local fl = C.fcntl(self.fd, fcntl.F_GETFL)
-			fl = bor(fl, fcntl.O_NONBLOCK)
-			C.fcntl(self.fd, fcntl.F_SETFL, fl)
+			local fl = C.fcntl(self.fd, C.F_GETFL)
+			fl = bor(fl, C.O_NONBLOCK)
+			C.fcntl(self.fd, C.F_SETFL, fl)
 		end
 		self.timeout = timeout
 	end,
@@ -97,7 +97,7 @@ stream.Stream = Class({
 		pfd[0].events	= events
 		local rc = C.poll(pfd, 1, timeout * 1000)
 		if rc <= 0 then
-			ffi.errno(errno.EAGAIN)
+			ffi.errno(C.EAGAIN)
 			return rc
 		end
 		return 0
@@ -131,7 +131,7 @@ stream.Stream = Class({
 			end
 			self.in_end = self.in_next + rc
 			self.in_end[0] = 0
-			if ffi.errno() ~= errno.EINTR then
+			if ffi.errno() ~= C.EINTR then
 				return rc
 			end
 		end

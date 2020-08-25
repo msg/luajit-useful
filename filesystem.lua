@@ -36,16 +36,16 @@ local function convert_permissions(st)
 end
 
 local attribute_modes = {
-	[stat.S_IFDIR] = 'directory',
-	[stat.S_IFCHR] = 'char device',
-	[stat.S_IFBLK] = 'block device',
-	[stat.S_IFREG] = 'file',
-	[stat.S_IFLNK] = 'link',
-	[stat.S_IFSOCK] = 'socket',
+	[C.S_IFDIR] = 'directory',
+	[C.S_IFCHR] = 'char device',
+	[C.S_IFBLK] = 'block device',
+	[C.S_IFREG] = 'file',
+	[C.S_IFLNK] = 'link',
+	[C.S_IFSOCK] = 'socket',
 }
 
 local function convert_mode(st)
-	return attribute_modes[band(st.st_mode, stat.S_IFMT)]
+	return attribute_modes[band(st.st_mode, C.S_IFMT)]
 end
 
 local function make_convert(name)
@@ -77,7 +77,7 @@ local attribute_convert = {
 	change		= make_convert_time('st_ctim'),
 }
 
-local stat_to_attributes = function(stat, arg)
+local stat_to_attributes = function(st, arg)
 	local attributes = { }
 	if type(arg) == 'table' then
 		attributes = arg

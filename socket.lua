@@ -13,18 +13,18 @@ local  sizeof		=  ffi.sizeof
 local bit		= require('bit')
 local  bor		=  bit.bor
 
-local errno		= require('posix.errno')
+			  require('posix.errno')
 local unistd		= require('posix.unistd') -- luacheck: ignore
-local fcntl		= require('posix.fcntl')
+			  require('posix.fcntl')
 local sys_types		= require('posix.sys.types') -- luacheck: ignore
 local sys_time		= require('posix.sys.time') -- luacheck: ignore
-local sys_socket	= require('posix.sys.socket')
+			  require('posix.sys.socket')
 local posix_string	= require('posix.string') -- luacheck: ignore
 local arpa_inet		= require('posix.arpa.inet') -- luacheck: ignore
-local netdb		= require('posix.netdb')
+			  require('posix.netdb')
 local netinet_in	= require('posix.netinet.in')
 local netinet_tcp	= require('posix.netinet.tcp') -- luacheck: ignore
-local poll		= require('posix.poll')
+			  require('posix.poll')
 
 local class		= require('useful.class')
 local  Class		=  class.Class
@@ -41,7 +41,7 @@ end
 function socket.getaddrinfo(host, port, protocol)
 	local hint		= new('struct addrinfo [1]')
 	local ai		= new('struct addrinfo *[1]')
-	hint[0].ai_flags	= netdb.AI_CANONNAME
+	hint[0].ai_flags	= C.AI_CANONNAME
 	if host == '*' then
 		host = '0.0.0.0'
 	end
@@ -67,7 +67,7 @@ function socket.getaddrinfo(host, port, protocol)
 		addr[0].sin_addr.s_addr	= netinet_in.INADDR_ANY
 		addr[0].sin_port	= C.htons(port)
 	end
-	addr[0].sin_family = sys_socket.AF_INET
+	addr[0].sin_family = C.AF_INET
 	C.freeaddrinfo(ai[0])
 	return addr
 end
@@ -102,8 +102,8 @@ socket.Socket = Class({
 		if self.fd < 0 then
 			return -1
 		end
-		local ret = C.fcntl(self.fd, fcntl.F_GETFL)
-		return C.fcntl(self.fd, bor(ret, fcntl.O_NONBLOCK))
+		local ret = C.fcntl(self.fd, C.F_GETFL)
+		return C.fcntl(self.fd, bor(ret, C.O_NONBLOCK))
 	end,
 
 	poll = function(self, events, timeout)
@@ -112,41 +112,38 @@ socket.Socket = Class({
 		pfd[0].events	= events
 		local rc = C.poll(pfd, 1, timeout * 1000)
 		if rc <= 0 then
-			ffi.errno(errno.EAGAIN)
+			ffi.errno(C.EAGAIN)
 		end
 		return rc
 	end,
 
 	reuseaddr = function(self)
 		local value = new('int[1]', 1)
-		return self:setsockopt(sys_socket.SOL_SOCKET,
-				sys_socket.SO_REUSEADDR, value)
+		return self:setsockopt(C.SOL_SOCKET, C.SO_REUSEADDR, value)
 	end,
 
 	rcvbuf = function(self, size)
 		local value = new('int[1]', size)
-		return self:setsockopt(sys_socket.SOL_SOCKET,
-				sys_socket.SO_RCVBUF, value)
+		return self:setsockopt(C.SOL_SOCKET, C.SO_RCVBUF, value)
 	end,
 
 	sndbuf = function(self, size)
 		local value = new('int[1]', size)
-		return self:setsockopt(sys_socket.SOL_SOCKET,
-				sys_socket.SO_SNDBUF, value)
+		return self:setsockopt(C.SOL_SOCKET, C.SO_SNDBUF, value)
 	end,
 
 	rcvtimeo = function(self, timeout)
 		local sec, frac = math.modf(timeout, 1.0)
 		local tv = new('struct timeval[1]', {{sec, frac*1e6}})
-		return self:setsockopt(sys_socket.SOL_SOCKET,
-				sys_socket.SO_RCVTIMEO, tv, sizeof(tv[0]))
+		return self:setsockopt(C.SOL_SOCKET,
+				C.SO_RCVTIMEO, tv, sizeof(tv[0]))
 	end,
 
 	sndtimeo = function(self, timeout)
 		local sec, frac = math.modf(timeout, 1.0)
 		local tv = new('struct timeval[1]', {{sec, frac*1e6}})
-		return self:setsockopt(sys_socket.SOL_SOCKET,
-				sys_socket.SO_SNDTIMEO, tv, sizeof(tv[0]))
+		return self:setsockopt(C.SOL_SOCKET,
+				C.SO_SNDTIMEO, tv, sizeof(tv[0]))
 	end,
 
 	bind = function(self, address, port)
@@ -173,11 +170,10 @@ socket.Socket = Class({
 })
 
 socket.TCP = Class(socket.Socket, {
-	new = function(self, fd)
+	new = function(self, fd, port)
 		socket.Socket.new(self, fd, port)
 		if fd == nil then
-			self.fd = C.socket(sys_socket.AF_INET,
-					sys_socket.SOCK_STREAM, 0)
+			self.fd = C.socket(C.AF_INET, C.SOCK_STREAM, 0)
 		end
 		if self.fd < 0 then
 			return nil, socket.syserror("socket")
@@ -196,7 +192,7 @@ socket.TCP = Class(socket.Socket, {
 		local from	= new('struct sockaddr_in[1]')
 		local fromp	= cast('struct sockaddr *', from)
 		local size	= new('socklen_t[1]', sizeof(from))
-		local rc	= self:poll(poll.POLLIN, timeout)
+		local rc	= self:poll(C.POLLIN, timeout)
 		if rc > 0 then
 			rc = C.accept(self.fd, fromp, size)
 		else
@@ -220,7 +216,7 @@ socket.TCP = Class(socket.Socket, {
 socket.UDP = Class(socket.Socket, {
 	new = function(self)
 		socket.Socket.new(self)
-		self.fd = C.socket(sys_socket.AF_INET, sys_socket.SOCK_DGRAM, 0)
+		self.fd = C.socket(C.AF_INET, C.SOCK_DGRAM, 0)
 		if self.fd < 0 then
 			return nil, socket.syserror("socket")
 		end
@@ -243,8 +239,7 @@ socket.UDP = Class(socket.Socket, {
 		addr		= socket.getaddrinfo(addr, port)
 		local imreq	= new('struct ip_mreq[1]')
 		imreq.imr_multiaddr = addr
-		return self:setsockopt(netinet_in.IPPROTO_IP,
-				netinet_in.IP_ADD_MEMBERSHIP,
+		return self:setsockopt(C.IPPROTO_IP, C.IP_ADD_MEMBERSHIP,
 				imreq, sizeof(imreq))
 	end,
 
@@ -252,8 +247,7 @@ socket.UDP = Class(socket.Socket, {
 		addr		= socket.getaddrinfo(addr, port)
 		local imreq	= new('struct ip_mreq[1]')
 		imreq.imr_multiaddr = addr
-		return self:setsockopt(netinet_in.IPPROTO_IP,
-				netinet_in.IP_DROP_MEMBERSHIP,
+		return self:setsockopt(C.IPPROTO_IP, C.IP_DROP_MEMBERSHIP,
 				imreq, sizeof(imreq))
 	end,
 })
