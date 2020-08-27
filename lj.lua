@@ -7,6 +7,9 @@ local lj = { }
 local ffi	= require('ffi')
 local C		= ffi.C
 
+local stdio	= require('useful.stdio')
+local  printf	=  stdio.printf
+
 ffi.cdef [[
 	typedef ptrdiff_t		LUA_INTEGER;
 	enum { LUA_IDSIZE		= 60 };
@@ -596,6 +599,29 @@ function lj.lj_typename(L, i)
 		sp = ffi.string(sp)
 	end
 	return sp
+end
+
+function lj.stack_dump(lua)
+	local top = lj.lua_gettop(lua)
+	for i=1,top do
+		local t = lj.lua_type(lua, i)
+		if t == lj.LUA_TTABLE then		printf('t:')
+		elseif t == lj.LUA_TNIL then		printf('0:')
+		elseif t == lj.LUA_TFUNCTION then	printf('f:')
+		elseif t == lj.LUA_TSTRING then
+			printf("s:'%s'", lj.lj_tostring(lua, i))
+		elseif t == lj.LUA_TBOOLEAN then
+			printf('b:%s', lj.lua_toboolean(lua, i) and
+					'true' or 'false')
+		elseif t == lj.LUA_TNUMBER then
+			printf('n:%g', lj.lua_tonumber(lua, i))
+		else
+			printf('u(%d):%s', t, lj.lj_typename(lua, i))
+			printf(' %s', lj.lua_topointer(lua, i))
+		end
+		printf('  ')
+	end
+	printf('\n')
 end
 
 local pc = pcall
