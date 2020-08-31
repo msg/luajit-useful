@@ -5,7 +5,7 @@
 local lj = { }
 
 local ffi	= require('ffi')
-local C		= ffi.C
+local  C	=  ffi.C
 
 local stdio	= require('useful.stdio')
 local  printf	=  stdio.printf
