@@ -10,6 +10,7 @@ local  new	=  ffi.new
 local  sizeof	=  ffi.sizeof
 
 local bit	= require('bit')
+local  tohex	=  bit.tohex
 
 local stdio	= require('useful.stdio')
 local  sprintf	=  stdio.sprintf
@@ -32,13 +33,7 @@ function pointers.string_to_pointer(s, type)
 end
 
 function pointers.pointer_to_hex(p)
-	local np = new('pointer')
-	np.voidp = p
-	local s = '0x'
-	for i=0,pointer_size do
-		s = s .. string.format('%02x', bit.band(np.bytes[i], 0xff))
-	end
-	return s
+	return '0x'..tohex(p)..'LL'
 end
 
 return pointers
