@@ -131,7 +131,7 @@ static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
 		lua_pushstring(from_lua, "only nil, booleans, numbers, "
 				"strings and non-recurive tables "
 				"supported");
-		return -1;
+		lua_error(from_lua);
 	}
 	return 0;
 }
