@@ -81,9 +81,8 @@ static manager *get_manager(lua_State *lua, int handle_error) {
 	lua_getfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
 	man = (manager *)lua_touserdata(lua, -1);
 	lua_pop(lua, 1);
-	if (handle_error == RAISE_ERROR && man == NULL) {
+	if (handle_error == RAISE_ERROR && man == NULL)
 		luaL_error(lua, "manager NULL");
-	}
 	return man;
 }
 
