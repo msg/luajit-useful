@@ -102,7 +102,23 @@ static void push_channel_and_queue(lua_State *lua, const char *channel) {
 	lua_getfield(lua, -1, "queue"); // push queue also
 }
 
-static int copy_table(lua_State *to_lua, lua_State *from_lua, int index);
+static int copy_value(lua_State *to_lua, lua_State *from_lua, int index);
+
+static int copy_table(lua_State *to_lua, lua_State *from_lua, int index) {
+	int to_top;
+	lua_newtable(to_lua);
+	to_top = lua_gettop(to_lua);
+	lua_pushnil(from_lua); /* first key */
+	while (lua_next(from_lua, index) != 0) {
+		if (copy_value(to_lua, from_lua, -2))
+			return -1;
+		else if (copy_value(to_lua, from_lua, -1))
+			return -1;
+		lua_settable(to_lua, to_top);
+		lua_pop(from_lua, 1);
+	}
+	return 0;
+}
 
 static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
 	int type = lua_type(from_lua, index);
@@ -123,46 +139,28 @@ static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
 		break;
 	}
 	case LUA_TTABLE:
-		copy_table(to_lua, from_lua, index);
+		return copy_table(to_lua, from_lua, index);
 		break;
 	default:
 		lua_settop(from_lua, 0);
 		lua_pushstring(from_lua, "only nil, booleans, numbers, "
 				"strings and non-recurive tables "
 				"supported");
-		lua_error(from_lua);
-	}
-	return 0;
-}
-
-static int copy_table(lua_State *to_lua, lua_State *from_lua, int index) {
-	int to_top;
-	lua_newtable(to_lua);
-	to_top = lua_gettop(to_lua);
-	lua_pushnil(from_lua); /* first key */
-	while (lua_next(from_lua, index) != 0) {
-		copy_value(to_lua, from_lua, -2);
-		if (lua_type(from_lua, -1) == LUA_TTABLE)
-			copy_table(to_lua, from_lua, lua_gettop(from_lua));
-		else
-			copy_value(to_lua, from_lua, -1);
-		lua_settable(to_lua, to_top);
-		lua_pop(from_lua, 1);
+		return -1;
 	}
 	return 0;
 }
 
 static int stack_to_new_table(lua_State *to_lua, lua_State *from_lua) {
-	int i, rc;
+	int i;
 	int n = lua_gettop(from_lua);
 	lua_createtable(to_lua, 0, 0);
 	for (i = 2; i <= n; i++) {
-		rc = copy_value(to_lua, from_lua, i);
-		if (rc < 0)
-			return rc;
+		if (copy_value(to_lua, from_lua, i))
+			return -1;
 		lua_rawseti(to_lua, -2, lua_objlen(to_lua, -2) + 1);
 	}
-	return rc;
+	return 0;
 }
 
 static void notify_receivers(manager *man) {
@@ -243,6 +241,7 @@ static int receive_(lua_State *lua) {
 	double timeout = luaL_checknumber(lua, 2);
 	size_t count = 1;
 	size_t max = luaL_optinteger(lua, 3, 1);
+	int rc = 0;
 
 	pthread_mutex_lock(&man->mutex);
 
@@ -268,7 +267,10 @@ static int receive_(lua_State *lua) {
 		// man->lua stack: queue[1], queue, channel
 		// move man->lua queue[2..#queue] to queue[1..#queue-1]
 		pop_front(man->lua, -1); // i.e. table.remove(queue, 1)
-		copy_table(lua, man->lua, lua_gettop(man->lua));
+		// use lua_gettop below not -1 for proper indexing
+		rc = copy_value(lua, man->lua, lua_gettop(man->lua));
+		if (rc)
+			break;
 		lua_pop(man->lua, 1);
 		lua_rawseti(lua, -2, count++);
 	}
@@ -276,6 +278,9 @@ static int receive_(lua_State *lua) {
 	lua_settop(man->lua, 0);
 
 	pthread_mutex_unlock(&man->mutex);
+
+	if (rc)
+		lua_error(lua);
 
 	return 1;
 }
@@ -400,7 +405,7 @@ static int start_(lua_State *lua) {
 
 	n = lua_gettop(lua);
 	for (i = 2; i <= n; i++) { // all but function
-		if (copy_value(new_lua, lua, i) < 0)
+		if (copy_value(new_lua, lua, i))
 			lua_error(lua);
 	}
 	lua_pushvalue(lua, 1); // push function on the top
@@ -412,12 +417,6 @@ static int start_(lua_State *lua) {
 		luaL_error(lua, "unable to create new thread");
 
 	pthread_detach(thread);
-	return 0;
-}
-
-static int exit_(lua_State *lua) {
-	(void)lua;
-	pthread_exit(NULL);
 	return 0;
 }
 
@@ -491,13 +490,14 @@ static const struct luaL_Reg ll_funcs[] = {
 	{ "manager",	manager_ },
 	{ "start", 	start_ },
 	{ "setname",	setname_ },
+
 	{ "send", 	send_ },
 	{ "receive",	receive_ },
 	{ "queues",	queues_ },
 	{ "flush",	flush_ },
 	{ "set",	set_ },
 	{ "get",	get_ },
-	{ "exit",	exit_ },
+
 	{ NULL,		NULL },
 };
 
@@ -506,6 +506,7 @@ static int manager_mt_gc(lua_State *lua) {
 	lua_getfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
 	man = (manager *)lua_touserdata(lua, -1);
 	lua_close(man->lua);
+	pthread_exit(NULL);
 	return 0;
 }
 
