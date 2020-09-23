@@ -105,16 +105,14 @@ static void push_channel_and_queue(lua_State *lua, const char *channel) {
 static int copy_value(lua_State *to_lua, lua_State *from_lua, int index);
 
 static int copy_table(lua_State *to_lua, lua_State *from_lua, int index) {
-	int to_top;
 	lua_newtable(to_lua);
-	to_top = lua_gettop(to_lua);
 	lua_pushnil(from_lua); /* first key */
 	while (lua_next(from_lua, index) != 0) {
-		if (copy_value(to_lua, from_lua, -2))
+		if (copy_value(to_lua, from_lua, lua_gettop(from_lua)-1))
 			return -1;
-		else if (copy_value(to_lua, from_lua, -1))
+		if (copy_value(to_lua, from_lua, lua_gettop(from_lua)))
 			return -1;
-		lua_settable(to_lua, to_top);
+		lua_settable(to_lua, -3);
 		lua_pop(from_lua, 1);
 	}
 	return 0;
@@ -445,21 +443,35 @@ static int manager_(lua_State *lua) {
 	}
 }
 
+static int traverse_data(manager *man, lua_State *lua, int start, int end) {
+	int i;
+	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
+	for (i = start; i <= end; i++) {
+		if (copy_value(man->lua, lua, i)) {
+			copy_value(lua, man->lua, 1);
+			return -1;
+		}
+		lua_gettable(man->lua, -2);
+		if (lua_isnil(man->lua, -1)) {
+			lua_pushfstring(lua, "invalid key at index %d", i);
+			return -1;
+		}
+	}
+	return 0;
+}
+
 static int get_(lua_State *lua) {
-	const char *name = luaL_optstring(lua, 1, NULL);
 	manager *man = get_manager(lua, RAISE_ERROR);
+	int n = lua_gettop(lua);
 
 	pthread_mutex_lock(&man->mutex);
 
-	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
-	if (name != NULL) {
-		lua_getfield(man->lua, -1, name);
-		if (!lua_isnil(man->lua, 2))
-			copy_value(lua, man->lua, 2);
-		else
-			lua_pushnil(lua);
-	} else
-		copy_value(lua, man->lua, 1);
+	if (traverse_data(man, lua, 1, n)) {
+		// lua_error() calls longjmp() so mutex must be unlocked.
+		pthread_mutex_unlock(&man->mutex);
+		lua_error(lua);
+	}
+	copy_value(lua, man->lua, lua_gettop(man->lua));
 	lua_settop(man->lua, 0);
 
 	pthread_mutex_unlock(&man->mutex);
@@ -467,19 +479,23 @@ static int get_(lua_State *lua) {
 }
 
 static int set_(lua_State *lua) {
-	const char *name = luaL_checkstring(lua, 1);
 	manager *man = get_manager(lua, RAISE_ERROR);
+	int n = lua_gettop(lua);
 
 	pthread_mutex_lock(&man->mutex);
 
-	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
-	if (copy_value(man->lua, lua, 2)) {
+	if (traverse_data(man, lua, 1, n-2)) {
+		pthread_mutex_unlock(&man->mutex);
+		lua_error(lua);
+	}
+	if (copy_value(man->lua, lua, n-1) ||
+	    copy_value(man->lua, lua, n)) {
 		copy_value(lua, man->lua, 1);
 		// lua_error() calls longjmp() so mutex must be unlocked.
 		pthread_mutex_unlock(&man->mutex);
 		lua_error(lua);
 	}
-	lua_setfield(man->lua, 1, name);
+	lua_settable(man->lua, 1);
 	lua_settop(man->lua, 0);
 
 	pthread_mutex_unlock(&man->mutex);
