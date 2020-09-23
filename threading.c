@@ -453,7 +453,8 @@ static int traverse_data(manager *man, lua_State *lua, int start, int end) {
 		}
 		lua_gettable(man->lua, -2);
 		if (lua_isnil(man->lua, -1)) {
-			lua_pushfstring(lua, "invalid key at index %d", i);
+			lua_pushfstring(lua, "invalid key at index %d: %s", i,
+					lua_tostring(lua, i));
 			return -1;
 		}
 	}
@@ -495,7 +496,7 @@ static int set_(lua_State *lua) {
 		pthread_mutex_unlock(&man->mutex);
 		lua_error(lua);
 	}
-	lua_settable(man->lua, 1);
+	lua_settable(man->lua, -3);
 	lua_settop(man->lua, 0);
 
 	pthread_mutex_unlock(&man->mutex);
@@ -522,7 +523,6 @@ static int manager_mt_gc(lua_State *lua) {
 	lua_getfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
 	man = (manager *)lua_touserdata(lua, -1);
 	lua_close(man->lua);
-	pthread_exit(NULL);
 	return 0;
 }
 
