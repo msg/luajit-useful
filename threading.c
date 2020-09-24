@@ -1,8 +1,6 @@
 #define _GNU_SOURCE
 #include <pthread.h>
 #include <time.h>
-#include <string.h>
-#include <stdlib.h>
 #define LUA_COMPAT_ALL
 #include <luaconf.h>
 #include <lua.h>
@@ -18,7 +16,6 @@
 #define MODULE luaopen_useful_threading
 #endif
 int MODULE(lua_State *lua);
-
 
 typedef struct proc {
 	lua_State *lua;
@@ -105,12 +102,14 @@ static void push_channel_and_queue(lua_State *lua, const char *channel) {
 static int copy_value(lua_State *to_lua, lua_State *from_lua, int index);
 
 static int copy_table(lua_State *to_lua, lua_State *from_lua, int index) {
+	if (index < 0) /* index assumed to be positive for lua_next() */
+		index = lua_gettop(from_lua) + index + 1;
 	lua_newtable(to_lua);
 	lua_pushnil(from_lua); /* first key */
 	while (lua_next(from_lua, index) != 0) {
-		if (copy_value(to_lua, from_lua, lua_gettop(from_lua)-1))
+		if (copy_value(to_lua, from_lua, -2))
 			return -1;
-		if (copy_value(to_lua, from_lua, lua_gettop(from_lua)))
+		if (copy_value(to_lua, from_lua, -1))
 			return -1;
 		lua_settable(to_lua, -3);
 		lua_pop(from_lua, 1);
@@ -418,6 +417,12 @@ static int start_(lua_State *lua) {
 	return 0;
 }
 
+static int exit_(lua_State *lua) {
+	(void)lua;
+	pthread_exit(NULL);
+	return 0;
+}
+
 static int setname_(lua_State *lua) {
 	const char *name = luaL_checkstring(lua, 1);
 	pthread_setname_np(pthread_self(), name);
@@ -489,8 +494,7 @@ static int set_(lua_State *lua) {
 		pthread_mutex_unlock(&man->mutex);
 		lua_error(lua);
 	}
-	if (copy_value(man->lua, lua, n-1) ||
-	    copy_value(man->lua, lua, n)) {
+	if (copy_value(man->lua, lua, n-1) || copy_value(man->lua, lua, n)) {
 		copy_value(lua, man->lua, 1);
 		// lua_error() calls longjmp() so mutex must be unlocked.
 		pthread_mutex_unlock(&man->mutex);
@@ -507,6 +511,7 @@ static const struct luaL_Reg ll_funcs[] = {
 	{ "manager",	manager_ },
 	{ "start", 	start_ },
 	{ "setname",	setname_ },
+	{ "exit",	exit_ },
 
 	{ "send", 	send_ },
 	{ "receive",	receive_ },
