@@ -106,7 +106,7 @@ stream.Stream = Class({
 	stream_read = function(self, buf, len)
 		local rc
 		rc = self:stream_poll(self.fd, poll.POLLIN, self.timeout)
-		if rc < 0 then
+		if rc <= 0 then
 			return rc
 		end
 		return C.read(self.fd, buf, len)
