@@ -313,6 +313,7 @@ slop.TCPSlopServer = Class(slop.Slop, {
 		self.stream = stream.TCPStream(stream.NOFD, 32768, 5)
 
 		self.tcp = self.stream.tcp
+		self.tcp:nonblock()
 		self.tcp:reuseaddr()
 		self.tcp:bind('*', port)
 		self.tcp:listen()
@@ -320,7 +321,7 @@ slop.TCPSlopServer = Class(slop.Slop, {
 
 	process = function(self)
 		local inout = self.stream
-		local rc, from = self.tcp:accept(4) -- luacheck: ignore
+		local rc, from = self.tcp:accept(1) -- luacheck: ignore
 		if rc > 0 then
 			inout:reopen(rc)
 			while rc >= 0 do
@@ -398,7 +399,9 @@ local function main()
 	server:add('get', get, 'name*')
 	server:add('del', del, 'name+')
 
-	return server:process()
+	while true do
+		server:process()
+	end
 end
 
 if is_main() then
