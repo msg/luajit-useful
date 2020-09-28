@@ -73,7 +73,7 @@ function path.split_ext(path) -- luacheck: ignore path
 end
 
 function path.base_path(path) -- luacheck: ignore path
-	return select(2, split_path(path))
+	return select(2, split_path(path)):sub(2)
 end
 
 path.dir_path = split_path
