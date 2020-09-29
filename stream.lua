@@ -98,9 +98,8 @@ stream.Stream = Class({
 		local rc = C.poll(pfd, 1, timeout * 1000)
 		if rc <= 0 then
 			ffi.errno(C.EAGAIN)
-			return rc
 		end
-		return 0
+		return rc
 	end,
 
 	stream_read = function(self, buf, len)
