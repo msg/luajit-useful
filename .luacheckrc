@@ -3,5 +3,7 @@ std = 'luajit'
 
 include_files = {
 	"*.lua",
-	"testing/*.lua",
+	"devel/*.lua",
+	"test/*.lua",
+	"test/*.lua.test",
 }
