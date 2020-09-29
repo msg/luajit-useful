@@ -1,0 +1,118 @@
+
+-- vim: ft=lua
+
+-- This gets sourced in to the main lua state and any created threads with
+-- lua state.  It simplifies all the C stack manipulation and threading
+-- problems.
+
+-- The threading library creates an internal lua state for managing
+-- the resources between all threads.
+
+-- loaded has the module reference
+local threading = package.loaded['useful.threading']
+
+local remove	= table.remove
+
+local exec	= threading.exec
+local lock	= threading.lock
+local unlock	= threading.unlock
+
+local function setup()
+	if _G.data then
+		return
+	end
+
+	local min	= math.min
+	local insert	= table.insert
+	local remove	= table.remove
+
+	data		= { }
+	channels	= { }
+	threads		= { }
+	gett		= function(t, except, ...)
+		local n = select('#', ...)
+		for i=1,n-except do
+			t = t[select(i, ...)]
+		end
+		return t, n + 1
+	end
+
+	-- `data` is a global table
+	set_locked = function(...)
+		local t, n = gett(data, 2, ...)
+		t[select(n-2, ...)] = select(n-1, ...)
+	end
+
+	get_locked = function(...)
+		local t, n = gett(data, 1, ...)
+		return t[select(n-1, ...)]
+	end
+
+	-- `channels` is a global table
+	send_locked = function(name, ...)
+		-- NOTE: must use channels[name] instead of local channel = ...
+		if channels[name] == nil then
+			channels[name]	= { queue = {} }
+		end
+		insert(channels[name].queue, {...})
+		if channels[name].wait then
+			notify(channels[name].wait)
+		end
+	end
+
+	receive_locked = function(name, timeout, max)
+		-- NOTE: must use channels[name] instead of local channel = ...
+		if channels[name] == nil then
+			channels[name]	= { queue = {} }
+		end
+		if #channels[name].queue < 1 and timeout > 0 then
+			channels[name].wait = proc()
+			wait(channels[name].wait, timeout)
+			channels[name].wait = nil
+		end
+		local results = { }
+		local n = min(max or 1, #channels[name].queue)
+		for i=1,n do
+			insert(results, remove(channels[name].queue, 1))
+		end
+		return results
+	end
+
+	queues_locked = function()
+		local queues = {}
+		for name,_ in pairs(channels) do
+			table.insert(queues, name)
+		end
+		return queues
+	end
+
+	flush_locked = function(name)
+		channels[name] = nil
+	end
+
+end
+lock()
+exec(setup)
+unlock()
+
+local run = function(code, ...)
+	lock()
+	local result = { pcall(exec, code, ...) }
+	unlock()
+	if not remove(result, 1) then
+		error(result[1])
+	end
+	return unpack(result)
+end
+
+local wrap = function(code)
+	return function(...) return run(code, ...) end
+end
+
+threading.set		= wrap(function(...) return set_locked(...) end)
+threading.get		= wrap(function(...) return get_locked(...) end)
+threading.send		= wrap(function(...) return send_locked(...) end)
+threading.receive	= wrap(function(...) return receive_locked(...) end)
+threading.queues	= wrap(function(...) return queues_locked(...) end)
+threading.flush		= wrap(function(...) return flush_locked(...) end)
+threading.run		= run

@@ -7,6 +7,8 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include "threading.h"
+
 #define DEBUG(x, lua) \
 	printf("%s: %d " x " ", __FILE__, __LINE__); stack_dump(lua)
 
@@ -56,6 +58,9 @@ void stack_dump(lua_State *lua) {
                 case LUA_TFUNCTION:
                         printf("f:   ");
                         break;
+                case LUA_TLIGHTUSERDATA:
+                        printf("l: %p  ", lua_touserdata(lua, i));
+                        break;
                 default :
                         printf("u:'%s'  ", lua_typename(lua, i));
                         break;
@@ -81,22 +86,6 @@ static manager *get_manager(lua_State *lua, int handle_error) {
 	if (handle_error == RAISE_ERROR && man == NULL)
 		luaL_error(lua, "manager NULL");
 	return man;
-}
-
-static void push_channel_and_queue(lua_State *lua, const char *channel) {
-	// put `channels[channel]` on stack
-	lua_getfield(lua, LUA_GLOBALSINDEX, "channels");
-	lua_getfield(lua, -1, channel);
-	if (lua_isnil(lua, -1)) {
-		lua_pop(lua, 1);		// remove nil
-		lua_newtable(lua);		// channel table
-		lua_newtable(lua);		// queue table
-		lua_setfield(lua, -2, "queue");	// set channel.queue
-		lua_setfield(lua, -2, channel);	// set channels[channel]
-		lua_getfield(lua, -1, channel);	//   get it back
-	}
-	lua_remove(lua, -2);		// remove 'channels' from stack
-	lua_getfield(lua, -1, "queue"); // push queue also
 }
 
 static int copy_value(lua_State *to_lua, lua_State *from_lua, int index);
@@ -148,195 +137,13 @@ static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
 	return 0;
 }
 
-static int stack_to_new_table(lua_State *to_lua, lua_State *from_lua) {
-	int i;
-	int n = lua_gettop(from_lua);
-	lua_createtable(to_lua, 0, 0);
-	for (i = 2; i <= n; i++) {
+static int copy_stack(lua_State *to_lua, lua_State *from_lua, int start) {
+	int i, n = lua_gettop(from_lua);
+	for (i = start; i <= n; i++) {
 		if (copy_value(to_lua, from_lua, i))
 			return -1;
-		lua_rawseti(to_lua, -2, lua_objlen(to_lua, -2) + 1);
 	}
-	return 0;
-}
-
-static void notify_receivers(manager *man) {
-	// if `channels[channel].wait` the signal condition
-	lua_getfield(man->lua, -1, "wait");
-	if (!lua_isnil(man->lua, -1)) {
-		proc *p = (proc *)lua_touserdata(man->lua, -1);
-		pthread_cond_signal(&p->cond);
-	}
-}
-
-static int send_(lua_State *lua) {
-	manager *man = get_manager(lua, RAISE_ERROR);
-	const char *channel = luaL_checkstring(lua, 1);
-	int rc;
-
-	pthread_mutex_lock(&man->mutex);
-
-	push_channel_and_queue(man->lua, channel);
-
-	rc = stack_to_new_table(man->lua, lua);
-	if (rc == 0) // append table to channels[channel].queue table
-		lua_rawseti(man->lua, -2, lua_objlen(man->lua, -2) + 1);
-
-	notify_receivers(man);
-
-	lua_settop(man->lua, 0); // clean man->lua stack
-
-	pthread_mutex_unlock(&man->mutex);
-
-	if (rc < 0)
-		lua_error(lua);
-
-	return 0;
-}
-
-static void timespec_add(struct timespec *ts, double dt) {
-	int iseconds = (int)dt;
-	dt -= iseconds;
-	dt *= 1e9;
-	ts->tv_nsec += dt;
-	if (ts->tv_nsec >= 1000000000) {
-		ts->tv_sec++;
-		ts->tv_nsec -= 1000000000;
-	}
-	ts->tv_sec += iseconds;
-}
-
-static int wait_for_queue(manager *man, proc *p, double timeout) {
-	struct timespec ts[1];
-
-	lua_pushlightuserdata(man->lua, (void *)p);
-	lua_setfield(man->lua, -2, "wait");
-	lua_settop(man->lua, 0); // clear stack
-
-	clock_gettime(CLOCK_REALTIME, ts);
-	timespec_add(ts, timeout);
-
-	pthread_cond_timedwait(&p->cond, &man->mutex, ts);
-
-	return 0;
-}
-
-static void pop_front(lua_State *lua, int index) {
-	int i, n = lua_objlen(lua, index);
-	lua_rawgeti(lua, index, 1);
-	for (i = 1; i <= n; i++) {
-		// lua_rawgeti > n will push nil which is what we want
-		lua_rawgeti(lua, index-1, i+1);
-		lua_rawseti(lua, index-2, i);
-	}
-}
-
-static int receive_(lua_State *lua) {
-	proc *p = get_self(lua);
-	manager *man = get_manager(lua, RAISE_ERROR);
-	const char *channel = luaL_checkstring(lua, 1);
-	double timeout = luaL_checknumber(lua, 2);
-	size_t count = 1;
-	size_t max = luaL_optinteger(lua, 3, 1);
-	int rc = 0;
-
-	pthread_mutex_lock(&man->mutex);
-
-	push_channel_and_queue(man->lua, channel);
-
-	// wait for timeout seconds for a message
-	if (lua_objlen(man->lua, -1) < 1 && timeout > 0.0) {
-		wait_for_queue(man, p, timeout);
-
-		// wait_for_queue clears stack
-		push_channel_and_queue(man->lua, channel);
-
-		// clear wait
-		lua_pushnil(man->lua);
-		lua_setfield(man->lua, -3, "wait");
-	}
-
-	// man->lua stack: queue, channel
-	lua_createtable(lua, 0, 0);
-
-	// lua stack: new_table
-	while (lua_objlen(man->lua, -1) > 0 && count <= max) {
-		// man->lua stack: queue[1], queue, channel
-		// move man->lua queue[2..#queue] to queue[1..#queue-1]
-		pop_front(man->lua, -1); // i.e. table.remove(queue, 1)
-		// use lua_gettop below not -1 for proper indexing
-		rc = copy_value(lua, man->lua, lua_gettop(man->lua));
-		if (rc)
-			break;
-		lua_pop(man->lua, 1);
-		lua_rawseti(lua, -2, count++);
-	}
-
-	lua_settop(man->lua, 0);
-
-	pthread_mutex_unlock(&man->mutex);
-
-	if (rc)
-		lua_error(lua);
-
-	return 1;
-}
-
-static int queues_(lua_State *lua) {
-	manager *man = get_manager(lua, RAISE_ERROR);
-	int index;
-
-	lua_createtable(lua, 0, 0);
-
-	pthread_mutex_lock(&man->mutex);
-
-	lua_getfield(man->lua, LUA_GLOBALSINDEX, "channels");
-	index = lua_gettop(man->lua);
-	lua_pushnil(man->lua); /* first key */
-	while (lua_next(man->lua, index) != 0) {
-		lua_getfield(man->lua, -1, "queue");
-		// man->lua key at -3, value at -2, '.queue' at -1
-		lua_pushstring(lua, lua_tostring(man->lua, -3));
-		lua_pushinteger(lua, lua_objlen(man->lua, -1));
-		lua_settable(lua, -3);
-		// remove 'value'
-		lua_pop(man->lua, 2);
-	}
-	lua_settop(man->lua, 0);
-
-	pthread_mutex_unlock(&man->mutex);
-
-	return 1;
-}
-
-static int flush_(lua_State *lua) {
-	manager *man = get_manager(lua, RAISE_ERROR);
-	const char *channel = luaL_checkstring(lua, 1);
-
-	pthread_mutex_lock(&man->mutex);
-
-	lua_getfield(man->lua, LUA_GLOBALSINDEX, "channels");
-	lua_pushnil(man->lua);
-	lua_setfield(man->lua, -2, channel);	// clear channels[channel]
-
-	pthread_mutex_unlock(&man->mutex);
-	return 0;
-}
-
-static void *thread_(void *arg) {
-	lua_State *lua = (lua_State *)arg;
-	int n = lua_gettop(lua);
-
-	lua_getglobal(lua, "debug");
-	lua_getfield(lua, -1, "traceback");
-	lua_remove(lua, -2);
-	lua_insert(lua, 1);
-
-	if (lua_pcall(lua, n-1, 0, 1) != 0)
-		fprintf(stderr, "thread error: %s\n", lua_tostring(lua, -1));
-	pthread_cond_destroy(&get_self(lua)->cond);
-	lua_close(lua);
-	return NULL;
+	return n;
 }
 
 typedef struct chunk_move {
@@ -359,7 +166,7 @@ static const char *chunk_reader(lua_State *lua, void *ud, size_t *size) {
 	return cm->chunk;
 }
 
-static void load_function(lua_State *to_lua, lua_State *from_lua) {
+static void load_code(lua_State *to_lua, lua_State *from_lua) {
 	chunk_move cm[1];
 
 	if (lua_isstring(from_lua, -1)) {
@@ -385,8 +192,30 @@ static void load_function(lua_State *to_lua, lua_State *from_lua) {
 	lua_insert(to_lua, 1); // move function to bottom of stack
 }
 
+static void add_traceback(lua_State *lua) {
+	lua_getglobal(lua, "debug");
+	lua_getfield(lua, -1, "traceback");
+	lua_remove(lua, -2);
+	lua_insert(lua, 1);
+}
+
+static void *thread_(void *arg) {
+	lua_State *lua = (lua_State *)arg;
+	int n = lua_gettop(lua);
+
+	// must be called in thread to get man->lua thread setup properly:
+	lua_cpcall(lua, MODULE, NULL);
+	add_traceback(lua);
+	if (lua_pcall(lua, n-1, 0, 1) != 0)
+		fprintf(stderr, "thread error: %s\n", lua_tostring(lua, -1));
+	pthread_cond_destroy(&get_self(lua)->cond);
+	lua_close(lua);
+
+	return NULL;
+}
+
 static int start_(lua_State *lua) {
-	int i, n;
+	int n;
 	lua_State *new_lua;
 
 	new_lua = luaL_newstate();
@@ -398,16 +227,13 @@ static int start_(lua_State *lua) {
 	lua_setfield(new_lua, LUA_REGISTRYINDEX, "_MANAGER");
 
 	luaL_openlibs(new_lua);
-	lua_cpcall(new_lua, MODULE, NULL);
 
-	n = lua_gettop(lua);
-	for (i = 2; i <= n; i++) { // all but function
-		if (copy_value(new_lua, lua, i))
-			lua_error(lua);
-	}
+	n = copy_stack(new_lua, lua, 2);
+	if (n < 0)
+		lua_error(lua);
 	lua_pushvalue(lua, 1); // push function on the top
 
-	load_function(new_lua, lua);
+	load_code(new_lua, lua);
 
 	pthread_t thread;
 	if (pthread_create(&thread, NULL, thread_, new_lua) != 0)
@@ -448,63 +274,92 @@ static int manager_(lua_State *lua) {
 	}
 }
 
-static int traverse_data(manager *man, lua_State *lua, int start, int end) {
-	int i;
-	lua_getfield(man->lua, LUA_GLOBALSINDEX, "data");
-	for (i = start; i <= end; i++) {
-		if (copy_value(man->lua, lua, i)) {
-			copy_value(lua, man->lua, 1);
-			return -1;
-		}
-		lua_gettable(man->lua, -2);
-		if (lua_isnil(man->lua, -1)) {
-			lua_pushfstring(lua, "invalid key at index %d: %s", i,
-					lua_tostring(lua, i));
-			return -1;
-		}
-	}
+static int lock_(lua_State *lua) {
+	manager *man = get_manager(lua, RAISE_ERROR);
+	pthread_mutex_lock(&man->mutex);
 	return 0;
 }
 
-static int get_(lua_State *lua) {
+static int unlock_(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);
-	int n = lua_gettop(lua);
-
-	pthread_mutex_lock(&man->mutex);
-
-	if (traverse_data(man, lua, 1, n)) {
-		// lua_error() calls longjmp() so mutex must be unlocked.
-		pthread_mutex_unlock(&man->mutex);
-		lua_error(lua);
-	}
-	copy_value(lua, man->lua, lua_gettop(man->lua));
-	lua_settop(man->lua, 0);
-
 	pthread_mutex_unlock(&man->mutex);
+	return 0;
+}
+
+static int exec_(lua_State *lua) {
+	manager *man = get_manager(lua, RAISE_ERROR);
+	int rc, n = lua_gettop(lua);
+
+	copy_stack(man->lua, lua, 2);
+
+	lua_pushvalue(lua, 1); // push function on the top
+	lua_remove(lua, 1);
+	load_code(man->lua, lua);
+
+	add_traceback(man->lua);
+	rc = lua_pcall(man->lua, n-1, LUA_MULTRET, 1);
+	lua_remove(man->lua, 1); // remove error function
+	if (rc == 0) {
+		n = copy_stack(lua, man->lua, 1);
+		if (n < 0)
+			rc = -1;
+	} else
+		copy_value(lua, man->lua, -1);
+	lua_settop(man->lua, 0);
+	if (rc != 0)
+		lua_error(lua);
+
+	return n;
+}
+
+static int stack_(lua_State *lua) {
+	manager *man = get_manager(lua, RAISE_ERROR);
+	printf("man->lua: "); stack_dump(man->lua); fflush(stdout);
+	return 0;
+}
+
+static int man_notify_(lua_State *lua) {
+	manager *man = get_manager(lua, RAISE_ERROR);
+	proc *p = (proc *)lua_touserdata(lua, 1);
+	if (!lua_isnil(man->lua, -1)) {
+		lua_settop(man->lua, 0); // clear stack for threads
+		pthread_cond_signal(&p->cond);
+	}
+	lua_settop(man->lua, 0); // clear stack
+	return 0;
+}
+
+static void timespec_add(struct timespec *ts, double dt) {
+	int iseconds = (int)dt;
+	dt -= iseconds;
+	dt *= 1e9;
+	ts->tv_nsec += dt;
+	if (ts->tv_nsec >= 1000000000) {
+		ts->tv_sec++;
+		ts->tv_nsec -= 1000000000;
+	}
+	ts->tv_sec += iseconds;
+}
+
+static int man_wait_(lua_State *lua) {
+	// stack: table, timeout
+	manager *man = get_manager(lua, RAISE_ERROR);
+	struct timespec ts[1];
+	proc *self = (proc *)lua_touserdata(lua, 1);
+	double timeout = luaL_checknumber(lua, 2);
+	lua_settop(lua, 0); // clear stack for threads
+
+	clock_gettime(CLOCK_REALTIME, ts);
+	timespec_add(ts, timeout);
+	pthread_cond_timedwait(&self->cond, &man->mutex, ts);
+
+	return 0;
+}
+
+static int man_proc_(lua_State *lua) {
+	lua_getfield(lua, LUA_GLOBALSINDEX, "threads");
+	lua_rawgeti(lua, -1, pthread_self());
 	return 1;
-}
-
-static int set_(lua_State *lua) {
-	manager *man = get_manager(lua, RAISE_ERROR);
-	int n = lua_gettop(lua);
-
-	pthread_mutex_lock(&man->mutex);
-
-	if (traverse_data(man, lua, 1, n-2)) {
-		pthread_mutex_unlock(&man->mutex);
-		lua_error(lua);
-	}
-	if (copy_value(man->lua, lua, n-1) || copy_value(man->lua, lua, n)) {
-		copy_value(lua, man->lua, 1);
-		// lua_error() calls longjmp() so mutex must be unlocked.
-		pthread_mutex_unlock(&man->mutex);
-		lua_error(lua);
-	}
-	lua_settable(man->lua, -3);
-	lua_settop(man->lua, 0);
-
-	pthread_mutex_unlock(&man->mutex);
-	return 0;
 }
 
 static const struct luaL_Reg ll_funcs[] = {
@@ -513,12 +368,10 @@ static const struct luaL_Reg ll_funcs[] = {
 	{ "setname",	setname_ },
 	{ "exit",	exit_ },
 
-	{ "send", 	send_ },
-	{ "receive",	receive_ },
-	{ "queues",	queues_ },
-	{ "flush",	flush_ },
-	{ "set",	set_ },
-	{ "get",	get_ },
+	{ "lock",	lock_ },
+	{ "unlock",	unlock_ },
+	{ "exec",	exec_ },
+	{ "stack",	stack_ },
 
 	{ NULL,		NULL },
 };
@@ -557,14 +410,28 @@ int MODULE(lua_State *lua) {
 		lua_setmetatable(lua, -2);
 		lua_setfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
 
-		lua_createtable(man->lua, 0, 0);
-		lua_setfield(man->lua, LUA_GLOBALSINDEX, "channels");
-
-		lua_createtable(man->lua, 0, 0);
-		lua_setfield(man->lua, LUA_GLOBALSINDEX, "data");
+		lua_pushlightuserdata(man->lua, man);
+		lua_setfield(man->lua, LUA_REGISTRYINDEX, "_MANAGER");
 
 		luaL_openlibs(man->lua);
+
+		lua_pushcfunction(man->lua, man_notify_);
+		lua_setfield(man->lua, LUA_GLOBALSINDEX, "notify");
+		lua_pushcfunction(man->lua, man_wait_);
+		lua_setfield(man->lua, LUA_GLOBALSINDEX, "wait");
+		lua_pushcfunction(man->lua, man_proc_);
+		lua_setfield(man->lua, LUA_GLOBALSINDEX, "proc");
 	}
+	if (luaL_loadbuffer(lua, (const char *)luaJIT_BC_threading,
+				luaJIT_BC_threading_SIZE, NULL))
+		lua_error(lua);
+	if (lua_pcall(lua, 0, 0, 0) != 0)
+		fprintf(stderr, "error: %s\n", lua_tostring(lua, -1));
+
+	lua_getfield(man->lua, LUA_GLOBALSINDEX, "threads");
+	lua_pushlightuserdata(man->lua, self);
+	lua_rawseti(man->lua, -2, self->thread);
+	lua_settop(man->lua, 0);
 
 	return 1;
 }
