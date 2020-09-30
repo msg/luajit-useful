@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <pthread.h>
 #include <time.h>
+#include <errno.h>
 #define LUA_COMPAT_ALL
 #include <luaconf.h>
 #include <lua.h>
@@ -188,8 +189,8 @@ static void load_code(lua_State *to_lua, lua_State *from_lua) {
 			lua_tostring(from_lua, -1));
 	}
 
-	lua_remove(to_lua, -2); // remove dumped string
-	lua_insert(to_lua, 1); // move function to bottom of stack
+	lua_remove(to_lua, -2); // remove code
+	lua_pop(from_lua, 1);
 }
 
 static void add_traceback(lua_State *lua) {
@@ -203,6 +204,7 @@ static void *thread_(void *arg) {
 	lua_State *lua = (lua_State *)arg;
 	int n = lua_gettop(lua);
 
+	luaL_openlibs(lua);
 	// must be called in thread to get man->lua thread setup properly:
 	lua_cpcall(lua, MODULE, NULL);
 	add_traceback(lua);
@@ -226,14 +228,12 @@ static int start_(lua_State *lua) {
 	lua_pushlightuserdata(new_lua, man);
 	lua_setfield(new_lua, LUA_REGISTRYINDEX, "_MANAGER");
 
-	luaL_openlibs(new_lua);
+	lua_pushvalue(lua, 1); // push function on the top
+	load_code(new_lua, lua);
 
 	n = copy_stack(new_lua, lua, 2);
 	if (n < 0)
 		lua_error(lua);
-	lua_pushvalue(lua, 1); // push function on the top
-
-	load_code(new_lua, lua);
 
 	pthread_t thread;
 	if (pthread_create(&thread, NULL, thread_, new_lua) != 0)
@@ -290,11 +290,10 @@ static int exec_(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);
 	int rc, n = lua_gettop(lua);
 
-	copy_stack(man->lua, lua, 2);
-
 	lua_pushvalue(lua, 1); // push function on the top
-	lua_remove(lua, 1);
 	load_code(man->lua, lua);
+
+	copy_stack(man->lua, lua, 2);
 
 	add_traceback(man->lua);
 	rc = lua_pcall(man->lua, n-1, LUA_MULTRET, 1);
@@ -303,8 +302,8 @@ static int exec_(lua_State *lua) {
 		n = copy_stack(lua, man->lua, 1);
 		if (n < 0)
 			rc = -1;
-	} else
-		copy_value(lua, man->lua, -1);
+	} else if (copy_value(lua, man->lua, -1))
+			rc = -1;
 	lua_settop(man->lua, 0);
 	if (rc != 0)
 		lua_error(lua);
@@ -319,13 +318,12 @@ static int stack_(lua_State *lua) {
 }
 
 static int man_notify_(lua_State *lua) {
-	manager *man = get_manager(lua, RAISE_ERROR);
 	proc *p = (proc *)lua_touserdata(lua, 1);
-	if (!lua_isnil(man->lua, -1)) {
-		lua_settop(man->lua, 0); // clear stack for threads
+	if (!lua_isnil(lua, -1)) {
+		lua_settop(lua, 0); // clear stack for threads
 		pthread_cond_signal(&p->cond);
 	}
-	lua_settop(man->lua, 0); // clear stack
+	lua_settop(lua, 0); // clear stack for threads
 	return 0;
 }
 
@@ -343,17 +341,23 @@ static void timespec_add(struct timespec *ts, double dt) {
 
 static int man_wait_(lua_State *lua) {
 	// stack: table, timeout
-	manager *man = get_manager(lua, RAISE_ERROR);
-	struct timespec ts[1];
+	manager *man = get_manager(lua, IGNORE_ERROR);
+	struct timespec ts[3];
 	proc *self = (proc *)lua_touserdata(lua, 1);
 	double timeout = luaL_checknumber(lua, 2);
-	lua_settop(lua, 0); // clear stack for threads
+	double dt;
 
-	clock_gettime(CLOCK_REALTIME, ts);
+	lua_settop(lua, 0); // clear the stack for threads
+	clock_gettime(CLOCK_REALTIME, &ts[0]);
+	ts[1] = ts[0];
 	timespec_add(ts, timeout);
-	pthread_cond_timedwait(&self->cond, &man->mutex, ts);
-
-	return 0;
+	pthread_cond_timedwait(&self->cond, &man->mutex, &ts[0]);
+	clock_gettime(CLOCK_REALTIME, &ts[2]);
+	dt = (ts[2].tv_sec - ts[1].tv_sec) +
+		  (ts[2].tv_nsec - ts[1].tv_nsec) / 1e9;
+	timeout = timeout - dt;
+	lua_pushnumber(lua, timeout);
+	return 1;
 }
 
 static int man_proc_(lua_State *lua) {
