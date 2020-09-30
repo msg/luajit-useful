@@ -29,7 +29,8 @@ local function setup()
 	data		= { }
 	channels	= { }
 	threads		= { }
-	gett		= function(t, except, ...)
+
+	gett = function(t, except, ...)
 		local n = select('#', ...)
 		for i=1,n-except do
 			t = t[select(i, ...)]
@@ -50,30 +51,31 @@ local function setup()
 
 	-- `channels` is a global table
 	send_locked = function(name, ...)
-		-- NOTE: must use channels[name] instead of local channel = ...
+		local args = {...}
+		local channel = channels[name] or { queue = { } }
 		if channels[name] == nil then
-			channels[name]	= { queue = {} }
+			channels[name]	= channel
 		end
-		insert(channels[name].queue, {...})
-		if channels[name].wait then
-			notify(channels[name].wait)
+		insert(channel.queue, args)
+		if channel.wait then
+			notify(channel.wait)
 		end
 	end
 
 	receive_locked = function(name, timeout, max)
-		-- NOTE: must use channels[name] instead of local channel = ...
+		local channel = channels[name] or { queue = { } }
 		if channels[name] == nil then
-			channels[name]	= { queue = {} }
+			channels[name]	= channel
 		end
-		if #channels[name].queue < 1 and timeout > 0 then
-			channels[name].wait = proc()
-			wait(channels[name].wait, timeout)
-			channels[name].wait = nil
+		while #channel.queue < 1 and timeout > 0 do
+			channel.wait = proc()
+			timeout = wait(channel.wait, timeout)
+			channel.wait = nil
 		end
 		local results = { }
-		local n = min(max or 1, #channels[name].queue)
+		local n = min(max or 1, #channel.queue)
 		for i=1,n do
-			insert(results, remove(channels[name].queue, 1))
+			insert(results, remove(channel.queue, 1))
 		end
 		return results
 	end
