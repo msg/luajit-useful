@@ -8,4 +8,4 @@ threading.h: threading.luac
 	luajit -b $< $@
 
 clean:
-	rm -f threading.so
+	rm -f threading.so threading.h
