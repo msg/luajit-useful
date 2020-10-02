@@ -1,7 +1,8 @@
 #define _GNU_SOURCE
-#include <pthread.h>
-#include <time.h>
 #include <errno.h>
+#include <pthread.h>
+#include <signal.h>
+#include <time.h>
 #define LUA_COMPAT_ALL
 #include <luaconf.h>
 #include <lua.h>
@@ -128,11 +129,15 @@ static int copy_value(lua_State *to_lua, lua_State *from_lua, int index) {
 	case LUA_TTABLE:
 		return copy_table(to_lua, from_lua, index);
 		break;
+	case LUA_TLIGHTUSERDATA: {
+		void *p = lua_touserdata(from_lua, index);
+		lua_pushlightuserdata(to_lua, p);
+		break;
+	}
 	default:
-		lua_settop(from_lua, 0);
-		lua_pushstring(from_lua, "only nil, booleans, numbers, "
+		lua_pushfstring(from_lua, "only nil, booleans, numbers, "
 				"strings and non-recurive tables "
-				"supported");
+				"supported got type %d", type);
 		return -1;
 	}
 	return 0;
@@ -238,8 +243,8 @@ static int start_(lua_State *lua) {
 	pthread_t thread;
 	if (pthread_create(&thread, NULL, thread_, new_lua) != 0)
 		luaL_error(lua, "unable to create new thread");
-
 	pthread_detach(thread);
+
 	return 0;
 }
 
@@ -293,9 +298,10 @@ static int exec_(lua_State *lua) {
 	lua_pushvalue(lua, 1); // push function on the top
 	load_code(man->lua, lua);
 
+	add_traceback(man->lua);
+
 	copy_stack(man->lua, lua, 2);
 
-	add_traceback(man->lua);
 	rc = lua_pcall(man->lua, n-1, LUA_MULTRET, 1);
 	lua_remove(man->lua, 1); // remove error function
 	if (rc == 0) {
@@ -317,13 +323,30 @@ static int stack_(lua_State *lua) {
 	return 0;
 }
 
-static int man_notify_(lua_State *lua) {
-	proc *p = (proc *)lua_touserdata(lua, 1);
-	if (!lua_isnil(lua, -1)) {
-		lua_settop(lua, 0); // clear stack for threads
-		pthread_cond_signal(&p->cond);
+static pthread_cond_t *get_condition_locked(manager *man, const char *name) {
+	lua_getfield(man->lua, LUA_GLOBALSINDEX, "conditions");
+	lua_getfield(man->lua, -1, name);
+	pthread_cond_t *cond = (pthread_cond_t *)lua_touserdata(man->lua, -1);
+	lua_settop(man->lua, 0);
+	return cond;
+}
+
+static void set_condition_locked(manager *man, const char *name,
+		pthread_cond_t *cond) {
+	lua_getfield(man->lua, LUA_GLOBALSINDEX, "conditions");
+	lua_pushlightuserdata(man->lua, cond);
+	lua_setfield(man->lua, -2, name);
+	lua_settop(man->lua, 0);
+}
+
+static int signal_locked_(lua_State *lua) {
+	manager *man = get_manager(lua, RAISE_ERROR);
+	const char *name = luaL_checkstring(lua, 1);
+	pthread_cond_t *cond = get_condition_locked(man, name);
+	if (cond != NULL) {
+		set_condition_locked(man, name, NULL);
+		pthread_cond_signal(cond);
 	}
-	lua_settop(lua, 0); // clear stack for threads
 	return 0;
 }
 
@@ -339,31 +362,31 @@ static void timespec_add(struct timespec *ts, double dt) {
 	ts->tv_sec += iseconds;
 }
 
-static int man_wait_(lua_State *lua) {
-	// stack: table, timeout
-	manager *man = get_manager(lua, IGNORE_ERROR);
-	struct timespec ts[3];
-	proc *self = (proc *)lua_touserdata(lua, 1);
+#define ts_cmp(a, b, CMP)			\
+	(((a)->tv_sec == (b)->tv_sec)		\
+	 ? ((a)->tv_nsec CMP (b)->tv_nsec)	\
+	 : ((a)->tv_sec CMP (b)->tv_sec))
+
+static int wait_locked_(lua_State *lua) {
+	manager *man = get_manager(lua, RAISE_ERROR);
+	const char *name = luaL_checkstring(lua, 1);
 	double timeout = luaL_checknumber(lua, 2);
-	double dt;
+	proc *self = get_self(lua);
+	pthread_cond_t *cond = &self->cond;
+	struct timespec ts[2];
 
-	lua_settop(lua, 0); // clear the stack for threads
-	clock_gettime(CLOCK_REALTIME, &ts[0]);
-	ts[1] = ts[0];
+	set_condition_locked(man, name, cond);
+	clock_gettime(CLOCK_REALTIME, ts);
 	timespec_add(ts, timeout);
-	pthread_cond_timedwait(&self->cond, &man->mutex, &ts[0]);
-	clock_gettime(CLOCK_REALTIME, &ts[2]);
-	dt = (ts[2].tv_sec - ts[1].tv_sec) +
-		  (ts[2].tv_nsec - ts[1].tv_nsec) / 1e9;
-	timeout = timeout - dt;
-	lua_pushnumber(lua, timeout);
-	return 1;
-}
 
-static int man_proc_(lua_State *lua) {
-	lua_getfield(lua, LUA_GLOBALSINDEX, "threads");
-	lua_rawgeti(lua, -1, pthread_self());
-	return 1;
+	while (cond != NULL) {
+		pthread_cond_timedwait(cond, &man->mutex, ts);
+		clock_gettime(CLOCK_REALTIME, ts + 1);
+		if (ts_cmp(ts + 1, ts, >=))
+			break;
+		cond = get_condition_locked(man, name);
+	}
+	return 0;
 }
 
 static const struct luaL_Reg ll_funcs[] = {
@@ -374,6 +397,8 @@ static const struct luaL_Reg ll_funcs[] = {
 
 	{ "lock",	lock_ },
 	{ "unlock",	unlock_ },
+	{ "signal",	signal_locked_ },
+	{ "wait",	wait_locked_ },
 	{ "exec",	exec_ },
 	{ "stack",	stack_ },
 
@@ -418,13 +443,6 @@ int MODULE(lua_State *lua) {
 		lua_setfield(man->lua, LUA_REGISTRYINDEX, "_MANAGER");
 
 		luaL_openlibs(man->lua);
-
-		lua_pushcfunction(man->lua, man_notify_);
-		lua_setfield(man->lua, LUA_GLOBALSINDEX, "notify");
-		lua_pushcfunction(man->lua, man_wait_);
-		lua_setfield(man->lua, LUA_GLOBALSINDEX, "wait");
-		lua_pushcfunction(man->lua, man_proc_);
-		lua_setfield(man->lua, LUA_GLOBALSINDEX, "proc");
 	}
 	if (luaL_loadbuffer(lua, (const char *)luaJIT_BC_threading,
 				luaJIT_BC_threading_SIZE, NULL))
@@ -432,9 +450,6 @@ int MODULE(lua_State *lua) {
 	if (lua_pcall(lua, 0, 0, 0) != 0)
 		fprintf(stderr, "error: %s\n", lua_tostring(lua, -1));
 
-	lua_getfield(man->lua, LUA_GLOBALSINDEX, "threads");
-	lua_pushlightuserdata(man->lua, self);
-	lua_rawseti(man->lua, -2, self->thread);
 	lua_settop(man->lua, 0);
 
 	return 1;

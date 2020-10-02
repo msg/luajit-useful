@@ -28,7 +28,7 @@ local function setup()
 
 	data		= { }
 	channels	= { }
-	threads		= { }
+	conditions	= { }
 
 	gett = function(t, except, ...)
 		local n = select('#', ...)
@@ -45,33 +45,27 @@ local function setup()
 	end
 
 	get_locked = function(...)
-		local t, n = gett(data, 1, ...)
+		local results = { pcall(gett, data, 1, ...) }
+		if table.remove(results, 1) == false then
+			return nil
+		end
+		local t, n = unpack(results)
 		return t[select(n-1, ...)]
 	end
 
-	-- `channels` is a global table
-	send_locked = function(name, ...)
-		local args = {...}
+	channel_locked = function(name)
 		local channel = channels[name] or { queue = { } }
-		if channels[name] == nil then
-			channels[name]	= channel
-		end
-		insert(channel.queue, args)
-		if channel.wait then
-			notify(channel.wait)
-		end
+		channels[name] = channel
+		return channel
 	end
 
-	receive_locked = function(name, timeout, max)
-		local channel = channels[name] or { queue = { } }
-		if channels[name] == nil then
-			channels[name]	= channel
-		end
-		while #channel.queue < 1 and timeout > 0 do
-			channel.wait = proc()
-			timeout = wait(channel.wait, timeout)
-			channel.wait = nil
-		end
+	enqueue_locked = function(name, ...)
+		local channel = channel_locked(name)
+		insert(channel.queue, {...})
+	end
+
+	dequeue_locked = function(name, max)
+		local channel = channel_locked(name)
 		local results = { }
 		local n = min(max or 1, #channel.queue)
 		for i=1,n do
@@ -91,7 +85,6 @@ local function setup()
 	flush_locked = function(name)
 		channels[name] = nil
 	end
-
 end
 lock()
 exec(setup)
@@ -113,8 +106,35 @@ end
 
 threading.set		= wrap(function(...) return set_locked(...) end)
 threading.get		= wrap(function(...) return get_locked(...) end)
-threading.send		= wrap(function(...) return send_locked(...) end)
-threading.receive	= wrap(function(...) return receive_locked(...) end)
 threading.queues	= wrap(function(...) return queues_locked(...) end)
 threading.flush		= wrap(function(...) return flush_locked(...) end)
 threading.run		= run
+
+local wait	= threading.wait
+local signal	= threading.signal
+
+threading.send = function(name, ...)
+	lock()
+	exec(function(name, ...)
+		enqueue_locked(name, ...)
+	end, name, ...)
+	signal(name)
+	unlock()
+end
+
+threading.receive = function(name, timeout, max)
+	lock()
+	max = max or 1
+	local size = exec(function(name)
+		return #channel_locked(name).queue
+	end, name)
+	if size == 0 then
+		wait(name, timeout)
+	end
+	local result = exec(function(name, max)
+		return dequeue_locked(name, max)
+	end, name, max)
+	unlock()
+	return result
+end
+
