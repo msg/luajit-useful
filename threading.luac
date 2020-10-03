@@ -30,7 +30,7 @@ local function setup()
 	channels	= { }
 	conditions	= { }
 
-	gett = function(t, except, ...)
+	traverse_locked = function(t, except, ...)
 		local n = select('#', ...)
 		for i=1,n-except do
 			t = t[select(i, ...)]
@@ -40,12 +40,12 @@ local function setup()
 
 	-- `data` is a global table
 	set_locked = function(...)
-		local t, n = gett(data, 2, ...)
+		local t, n = traverse_locked(data, 2, ...)
 		t[select(n-2, ...)] = select(n-1, ...)
 	end
 
 	get_locked = function(...)
-		local results = { pcall(gett, data, 1, ...) }
+		local results = { pcall(traverse_locked, data, 1, ...) }
 		if table.remove(results, 1) == false then
 			return nil
 		end
