@@ -167,8 +167,8 @@ static int chunk_writer(lua_State *lua, const void *p, size_t sz, void *ud) {
 
 static const char *chunk_reader(lua_State *lua, void *ud, size_t *size) {
 	(void)lua;
-	chunk_move *cm = (chunk_move *)ud;
-	*size = cm->size;
+	chunk_move *cm	= (chunk_move *)ud;
+	*size		= cm->size;
 	return cm->chunk;
 }
 
@@ -222,7 +222,6 @@ static void *thread_(void *arg) {
 }
 
 static int start_(lua_State *lua) {
-	int n;
 	lua_State *new_lua;
 
 	new_lua = luaL_newstate();
@@ -236,8 +235,7 @@ static int start_(lua_State *lua) {
 	lua_pushvalue(lua, 1); // push function on the top
 	load_code(new_lua, lua);
 
-	n = copy_stack(new_lua, lua, 2);
-	if (n < 0)
+	if (copy_stack(new_lua, lua, 2) < 0)
 		lua_error(lua);
 
 	pthread_t thread;
@@ -260,25 +258,6 @@ static int setname_(lua_State *lua) {
 	return 0;
 }
 
-static int manager_(lua_State *lua) {
-	manager *man;
-	if (lua_gettop(lua) > 0) {
-		// set manager
-		const char *p = lua_tostring(lua, -1);
-		sscanf(p, "%p", (void **)&man);
-		lua_pushlightuserdata(lua, man);
-		lua_setfield(lua, LUA_REGISTRYINDEX, "_MANAGER");
-		return 0;
-	} else {
-		// get manager
-		char pointer[128];
-		man = get_manager(lua, RAISE_ERROR);
-		int l = sprintf(pointer, "%p", man);
-		lua_pushlstring(lua, pointer, l);
-		return 1;
-	}
-}
-
 static int lock_(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);
 	pthread_mutex_lock(&man->mutex);
@@ -297,19 +276,16 @@ static int exec_(lua_State *lua) {
 
 	lua_pushvalue(lua, 1); // push function on the top
 	load_code(man->lua, lua);
-
 	add_traceback(man->lua);
-
 	copy_stack(man->lua, lua, 2);
 
 	rc = lua_pcall(man->lua, n-1, LUA_MULTRET, 1);
 	lua_remove(man->lua, 1); // remove error function
-	if (rc == 0) {
-		n = copy_stack(lua, man->lua, 1);
-		if (n < 0)
-			rc = -1;
-	} else if (copy_value(lua, man->lua, -1))
-			rc = -1;
+
+	if (rc != 0) // error, copy the error message.
+		copy_value(lua, man->lua, -1);
+	else if ((n = copy_stack(lua, man->lua, 1)) < 0) // copy results
+		rc = -1;
 	lua_settop(man->lua, 0);
 	if (rc != 0)
 		lua_error(lua);
@@ -334,15 +310,18 @@ static pthread_cond_t *get_condition_locked(manager *man, const char *name) {
 static void set_condition_locked(manager *man, const char *name,
 		pthread_cond_t *cond) {
 	lua_getfield(man->lua, LUA_GLOBALSINDEX, "conditions");
-	lua_pushlightuserdata(man->lua, cond);
+	if (cond != NULL)
+		lua_pushlightuserdata(man->lua, cond);
+	else
+		lua_pushnil(man->lua);
 	lua_setfield(man->lua, -2, name);
 	lua_settop(man->lua, 0);
 }
 
 static int signal_locked_(lua_State *lua) {
-	manager *man = get_manager(lua, RAISE_ERROR);
-	const char *name = luaL_checkstring(lua, 1);
-	pthread_cond_t *cond = get_condition_locked(man, name);
+	manager *man		= get_manager(lua, RAISE_ERROR);
+	const char *name	= luaL_checkstring(lua, 1);
+	pthread_cond_t *cond	= get_condition_locked(man, name);
 	if (cond != NULL) {
 		set_condition_locked(man, name, NULL);
 		pthread_cond_signal(cond);
@@ -368,11 +347,11 @@ static void timespec_add(struct timespec *ts, double dt) {
 	 : ((a)->tv_sec CMP (b)->tv_sec))
 
 static int wait_locked_(lua_State *lua) {
-	manager *man = get_manager(lua, RAISE_ERROR);
-	const char *name = luaL_checkstring(lua, 1);
-	double timeout = luaL_checknumber(lua, 2);
-	proc *self = get_self(lua);
-	pthread_cond_t *cond = &self->cond;
+	manager *man		= get_manager(lua, RAISE_ERROR);
+	const char *name	= luaL_checkstring(lua, 1);
+	double timeout		= luaL_checknumber(lua, 2);
+	proc *self		= get_self(lua);
+	pthread_cond_t *cond	= &self->cond;
 	struct timespec ts[2];
 
 	set_condition_locked(man, name, cond);
@@ -390,7 +369,6 @@ static int wait_locked_(lua_State *lua) {
 }
 
 static const struct luaL_Reg ll_funcs[] = {
-	{ "manager",	manager_ },
 	{ "start", 	start_ },
 	{ "setname",	setname_ },
 	{ "exit",	exit_ },
@@ -421,10 +399,10 @@ static const struct luaL_Reg manager_mt_funcs[] = {
 int MODULE(lua_State *lua) {
 	luaL_register(lua, "useful.threading", ll_funcs);
 
-	proc *self = (proc *)lua_newuserdata(lua, sizeof(proc));
+	proc *self	= (proc *)lua_newuserdata(lua, sizeof(proc));
 	lua_setfield(lua, LUA_REGISTRYINDEX, "_SELF");
-	self->lua = lua;
-	self->thread = pthread_self();
+	self->lua	= lua;
+	self->thread	= pthread_self();
 	pthread_cond_init(&self->cond, NULL);
 
 	manager *man = get_manager(lua, IGNORE_ERROR);
