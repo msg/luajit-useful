@@ -31,6 +31,7 @@ function range.range_type(declaration)
 	local rmt	= { }
 
 	rmt.__index	= rmt
+	rmt.rmt		= rmt
 	rmt.declaration	= declaration
 	rmt.sizeof	= sizeof(declaration)
 	rmt.pointer	= typeof(rmt.declaration .. '*')
@@ -54,25 +55,19 @@ function range.range_type(declaration)
 	function rmt.pop_front(self, n) self.front = self.front + (n or 1) end
 	function rmt.get_front(self) return self.front[0] end
 	function rmt.set_front(self, v) self.front[0] = v end
-	function rmt.move_front(self)
+	function rmt.read_front(self)
 		local e = self:get_front()
 		self:pop_front()
 		return e
-	end
-	function rmt.move_front_swap(self)
-		return rmt.swap(self:move_front())
 	end
 	-- bi-directional range api
 	function rmt.pop_back(self, n) self.back = self.back - (n or 1) end
 	function rmt.get_back(self) return self.back[-1] end
 	function rmt.set_back(self, v) self.back[-1] = v end
-	function rmt.move_back(self)
+	function rmt.read_back(self)
 		local e = self:get_back()
 		self:pop_back()
 		return e
-	end
-	function rmt.move_back_swap(self)
-		return rmt.swap(self:move_back())
 	end
 	-- forward range api
 	function rmt.save(self) return rmt.meta(self.front, self.back) end
@@ -93,19 +88,14 @@ function range.range_type(declaration)
 		return rmt.meta(self.front + i, self.front + j)
 	end
 	-- output range api
-	function rmt.put_front(self, v)
+	function rmt.write_front(self, v)
 		self.front[0] = v
 		self:pop_front()
 	end
-	function rmt.put_back(self, v)
+	function rmt.write_back(self, v)
 		self.back[-1] = v
+		self:set_back(v)
 		self:pop_back()
-	end
-	function rmt.put_front_swap(self, v)
-		self:put_front(rmt.swap(v))
-	end
-	function rmt.put_back_swap(self, v)
-		self:put_back(rmt.swap(v))
 	end
 	-- array manipulation functions
 	function rmt.vla(size, ...)
@@ -146,17 +136,25 @@ local table_mt = { }
 function table_mt:empty()	return self.front < self.back		end
 function table_mt:pop_front(n)	self.front = self.front + (n or 1)	end
 function table_mt:get_front()	return self.table[self.front]		end
-function table_mt:move_front()
+function table_mt:read_front()
 	local v = self.table[self.front]
 	self.front = self.front + 1
 	return v
 end
+function table_mt:write_front(v)
+	self.front[0] = v
+	self.front = self.front + 1
+end
 function table_mt:pop_back(n)	self.back = self.back - (n or 1)	end
 function table_mt:get_back()	return self.table[self.back - 1]	end
-function table_mt:move_back()
+function table_mt:read_back()
 	local v = self.table[self.back - 1]
 	self.back = self.back - 1
 	return v
+end
+function table_mt:write_back(v)
+	self.table[self.back - 1] = v
+	self.back = self.back - 1
 end
 function table_mt:size()	return self.back - self.front		end
 function table_mt:save()
@@ -180,8 +178,13 @@ function string_mt:pop_front(n)	self.front = self.front + (n or 1)	end
 function string_mt:get_front()
 	return self.string:sub(self.front, self.front)
 end
-function string_mt:move_front()
+function string_mt:read_front()
 	local v = self:get_front()
+	self.front = self.front + 1
+	return v
+end
+function string_mt:write_front(v)
+	self.set_front(v)
 	self.front = self.front + 1
 	return v
 end
@@ -189,8 +192,13 @@ function string_mt:pop_back(n)	self.back = self.back - (n or 1)	end
 function string_mt:get_back()
 	return self.string:sub(self.back - 1, self.back - 1)
 end
-function string_mt:move_back()
-	local v = self.get_back()
+function string_mt:read_back()
+	local v = self:get_back()
+	self.back = self.back - 1
+	return v
+end
+function string_mt:write_back(v)
+	self:set_back(v)
 	self.back = self.back - 1
 	return v
 end
@@ -216,11 +224,11 @@ function retro_mt:empty()	return self.range:empty()	end
 function retro_mt:pop_front(n)	self.range:pop_back(n)		end
 function retro_mt:get_front()	return self.range:get_back()	end
 function retro_mt:set_front(v)	self.range:set_back(v)		end
-function retro_mt:move_front()	return self.range:move_back()	end
+function retro_mt:read_front()	return self.range:read_back()	end
 function retro_mt:pop_back(n)	self.range:pop_front(n)		end
 function retro_mt:get_back()	return self.range:get_front()	end
 function retro_mt:set_back(v)	self.range:set_front(v)		end
-function retro_mt:move_back()	return self.range:move_front()	end
+function retro_mt:read_back()	return self.range:read_front()	end
 function retro_mt:size()	return #self.range		end
 retro_mt.__len = retro_mt.size
 range.retro = function(range) -- luacheck:ignore
@@ -257,9 +265,13 @@ function chain_mt:set_front(v)
 	self:skip_empty_fronts()
 	self.ranges[self.front_index]:set_front(v)
 end
-function chain_mt:move_front()
+function chain_mt:read_front()
 	self:skip_empty_fronts()
-	return self.ranges[self.front_index]:move_front()
+	return self.ranges[self.front_index]:read_front()
+end
+function chain_mt:write_front(v)
+	self:skip_empty_fronts()
+	self.ranges[self.front_index]:write_front(v)
 end
 function chain_mt:size()
 	local front	= self.front_index
@@ -295,9 +307,13 @@ function chain_mt:set_back(v)
 	self:skip_empty_backs()
 	self.ranges[self.back_index]:set_back(v)
 end
-function chain_mt:move_back()
+function chain_mt:read_back()
 	self:skip_empty_backs()
-	return self.ranges[self.back_index]:move_back()
+	return self.ranges[self.back_index]:read_back()
+end
+function chain_mt:write_back(v)
+	self:skip_empty_backs()
+	return self.ranges[self.back_index]:write_back(v)
 end
 
 range.chain = function(...)
@@ -325,10 +341,14 @@ end
 function take_mt:set_front(v)
 	self.range:set_front(v)
 end
-function take_mt:move_front()
+function take_mt:read_front()
 	local v = self:get_front()
 	self:pop_front()
 	return v
+end
+function take_mt:write_front(v)
+	self:set_front(v)
+	self:pop_front()
 end
 
 range.take = function(range, n) -- luacheck:ignore
@@ -350,15 +370,15 @@ local function main()
 	for _,type in ipairs(types) do
 		local r = r8:cast(type)
 		while not r:empty() do
-			printf("move_front_swap(%s)=0x%s\n", r.declaration,
-					bit.tohex(r:move_front_swap()))
+			printf("swap:read_front(%s))=0x%s\n", r.declaration,
+					bit.tohex(r.swap(r:read_front())))
 		end
 	end
 	s = 'testing 1 2 3'
 	r8 = range.int8.from_string(s)
 	while not r8:empty() do
 		printf('%s front=%s\n', r8.declaration,
-				string.char(r8:move_front()))
+				string.char(r8:read_front()))
 	end
 end
 
