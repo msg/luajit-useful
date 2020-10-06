@@ -13,8 +13,8 @@ local  new	=  ffi.new
 local  sizeof	=  ffi.sizeof
 local  typeof	=  ffi.typeof
 local bit	= require('bit')
-local  rshift	=  bit.rshift
 local  bswap	=  bit.bswap
+local  rshift	=  bit.rshift
 
 local stdio	= require('useful.stdio')
 local  printf	=  stdio.printf
@@ -94,7 +94,6 @@ function range.range_type(declaration)
 	end
 	function rmt.write_back(self, v)
 		self.back[-1] = v
-		self:set_back(v)
 		self:pop_back()
 	end
 	-- array manipulation functions
