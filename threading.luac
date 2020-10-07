@@ -35,6 +35,7 @@ local function setup()
 		for i=1,n-except do
 			t = t[select(i, ...)]
 		end
+		assert(t ~= nil, 'table nil')
 		return t, n + 1
 	end
 
