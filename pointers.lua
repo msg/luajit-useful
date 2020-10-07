@@ -36,4 +36,8 @@ function pointers.pointer_to_hex(p)
 	return '0x'..tohex(ffi.cast('int64_t', p))..'LL'
 end
 
+function pointers.hex_to_pointer(hex, type)
+	return cast(type or 'void *', assert(load('return '..hex))())
+end
+
 return pointers
