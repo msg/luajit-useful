@@ -34,6 +34,7 @@ function range.range_type(declaration)
 	rmt.rmt		= rmt
 	rmt.declaration	= declaration
 	rmt.sizeof	= sizeof(declaration)
+	rmt.sizemask	= rmt.sizeof - 1
 	rmt.pointer	= typeof(rmt.declaration .. '*')
 	rmt.struct	= typeof('struct { $ front, back; }', rmt.pointer)
 	rmt.meta	= metatype(rmt.struct, rmt)
