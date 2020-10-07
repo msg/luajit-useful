@@ -33,7 +33,7 @@ function pointers.string_to_pointer(s, type)
 end
 
 function pointers.pointer_to_hex(p)
-	return '0x'..tohex(ffi.cast('int64_t', p))..'LL'
+	return '0x'..tohex(cast('int64_t', cast('void *', p)))..'LL'
 end
 
 function pointers.hex_to_pointer(hex, type)
