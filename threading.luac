@@ -46,11 +46,7 @@ local function setup()
 	end
 
 	get_locked = function(...)
-		local results = { pcall(traverse_locked, data, 1, ...) }
-		if table.remove(results, 1) == false then
-			return nil
-		end
-		local tbl, n = unpack(results)
+		local tbl, n = traverse_locked(data, 2, ...)
 		return tbl[select(n-1, ...)]
 	end
 
