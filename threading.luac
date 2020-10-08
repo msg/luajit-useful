@@ -46,7 +46,7 @@ local function setup()
 	end
 
 	get_locked = function(...)
-		local tbl, n = traverse_locked(data, 2, ...)
+		local tbl, n = traverse_locked(data, 1, ...)
 		return tbl[select(n-1, ...)]
 	end
 
