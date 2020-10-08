@@ -30,19 +30,19 @@ local function setup()
 	channels	= { }
 	conditions	= { }
 
-	traverse_locked = function(t, except, ...)
+	traverse_locked = function(tbl, except, ...)
 		local n = select('#', ...)
 		for i=1,n-except do
-			t = t[select(i, ...)]
+			tbl = tbl[select(i, ...)]
 		end
-		assert(t ~= nil, 'table nil')
-		return t, n + 1
+		assert(tbl ~= nil, 'table nil')
+		return tbl, n + 1
 	end
 
 	-- `data` is a global table
 	set_locked = function(...)
-		local t, n = traverse_locked(data, 2, ...)
-		t[select(n-2, ...)] = select(n-1, ...)
+		local tbl, n = traverse_locked(data, 2, ...)
+		tbl[select(n-2, ...)] = select(n-1, ...)
 	end
 
 	get_locked = function(...)
@@ -50,8 +50,8 @@ local function setup()
 		if table.remove(results, 1) == false then
 			return nil
 		end
-		local t, n = unpack(results)
-		return t[select(n-1, ...)]
+		local tbl, n = unpack(results)
+		return tbl[select(n-1, ...)]
 	end
 
 	channel_locked = function(name)
