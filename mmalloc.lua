@@ -22,7 +22,7 @@ function mmalloc.mmalloc(sz)
 	local prot	= bor(C.PROT_READ, C.PROT_WRITE)
 	local map	= bor(C.MAP_PRIVATE, C.MAP_ANONYMOUS)
 	local msz	= mmalloc.align(sz)
-	local p		= C.mmap(nil, msz, prot, map, 0, 0)
+	local p		= C.mmap(nil, msz, prot, map, -1, 0)
 	if p == sys_mman.MAP_FAILED then
 		return ffi.cast('void *', nil)
 	else
@@ -33,6 +33,5 @@ end
 function mmalloc.mfree(p, sz)
 	return C.munmap(p, sz)
 end
-
 
 return mmalloc
