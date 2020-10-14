@@ -50,6 +50,16 @@ local function setup()
 		return tbl[select(n-1, ...)]
 	end
 
+	insert_locked = function(...)
+		local tbl, n = traverse_locked(data, 2, ...)
+		table.insert(tbl, select(n-2))
+	end
+
+	remove_locked = function(...)
+		local tbl, n = traverse_locked(data, 1, ...)
+		table.remove(tbl, select(n-1, ...))
+	end
+
 	channel_locked = function(name)
 		local channel = channels[name] or { queue = { } }
 		channels[name] = channel
@@ -103,6 +113,8 @@ end
 
 threading.set		= wrap(function(...) return set_locked(...) end)
 threading.get		= wrap(function(...) return get_locked(...) end)
+threading.insert	= wrap(function(...) return insert_locked(...) end)
+threading.remove	= wrap(function(...) return remove_locked(...) end)
 threading.queues	= wrap(function(...) return queues_locked(...) end)
 threading.flush		= wrap(function(...) return flush_locked(...) end)
 threading.run		= run
