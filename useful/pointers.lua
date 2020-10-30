@@ -4,13 +4,17 @@
 local pointers = { }
 
 local ffi	= require('ffi')
+local  C	=  ffi.C
 local  cast	=  ffi.cast
+local  gc	=  ffi.gc
 local  fstring	=  ffi.string
 local  new	=  ffi.new
 local  sizeof	=  ffi.sizeof
 
 local bit	= require('bit')
 local  tohex	=  bit.tohex
+
+		  require('useful.stdlib')
 
 local stdio	= require('useful.stdio')
 local  sprintf	=  stdio.sprintf
@@ -38,6 +42,11 @@ end
 
 function pointers.hex_to_pointer(hex, type)
 	return cast(type or 'void *', assert(load('return '..hex))())
+end
+
+function pointers.new(type, size)
+	local p = C.malloc(size or sizeof(type))
+	return gc(cast(type..'*', p), function() C.free(p) end)
 end
 
 return pointers
