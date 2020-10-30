@@ -28,7 +28,7 @@ package() {
 
 	lmod="$pkgdir$(pkg-config --variable=INSTALL_LMOD luajit)"
 	for i in *.lua; do
-		install -D -m644 "$i" "$lmod/useful/$i"
+		install -D -m644 "useful/$i" "$lmod/useful/$i"
 	done
 
 	cmod="$pkgdir$(pkg-config --variable=INSTALL_CMOD luajit)"
