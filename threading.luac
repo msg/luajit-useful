@@ -26,9 +26,11 @@ local function setup()
 	local insert	= table.insert
 	local remove	= table.remove
 
+	--
+	-- global data related stuff
+	--
+
 	data		= { }
-	channels	= { }
-	conditions	= { }
 
 	traverse_locked = function(tbl, except, ...)
 		local n = select('#', ...)
@@ -59,6 +61,12 @@ local function setup()
 		local tbl, n = traverse_locked(data, 1, ...)
 		table.remove(tbl, select(n-1, ...))
 	end
+
+	--
+	-- channeel queue related stuff
+	--
+
+	channels	= { }
 
 	channel_locked = function(name)
 		local channel = channels[name] or { queue = { } }
