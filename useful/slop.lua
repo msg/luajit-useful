@@ -92,6 +92,7 @@ slop.Transaction = Class({
 
 	reset = function(self)
 		self.name		= ''
+		self.args		= {}
 		self.seq		= nil
 		self.binary		= nil
 		self.multi		= {}
