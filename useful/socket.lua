@@ -147,9 +147,9 @@ socket.Socket = Class({
 	end,
 
 	bind = function(self, address, port)
-		local addr = socket.getaddrinfo(address, port)
-		local addrp = cast('struct sockaddr *', addr)
-		local rc = C.bind(self.fd, addrp, sizeof(addr[0]))
+		local addr	= socket.getaddrinfo(address, port)
+		local addrp	= cast('struct sockaddr *', addr)
+		local rc	= C.bind(self.fd, addrp, sizeof(addr[0]))
 		if rc < 0 then
 			return nil, socket.syserror('bind')
 		end
@@ -205,7 +205,7 @@ socket.TCP = Class(socket.Socket, {
 		local addr	= socket.getaddrinfo(host, port)
 		local addrp	= cast('struct sockaddr *', addr)
 		local size	= sizeof(addr)
-		local rc = C.connect(self.fd, addrp, size)
+		local rc	= C.connect(self.fd, addrp, size)
 		if rc < 0 then
 			return nil, socket.syserror('connect')
 		end
@@ -226,7 +226,7 @@ socket.UDP = Class(socket.Socket, {
 		local from	= new('struct sockaddr_in[1]')
 		local fromp	= cast('struct sockaddr *', from)
 		local size	= new('uint32_t[1]', sizeof(from))
-		local ret = C.recvfrom(self.fd, buf, len, 0, fromp, size)
+		local ret	= C.recvfrom(self.fd, buf, len, 0, fromp, size)
 		return ret, from[0]
 	end,
 
