@@ -147,6 +147,7 @@ function table_mt:write_front(v)
 end
 function table_mt:pop_back(n)	self.back = self.back - (n or 1)	end
 function table_mt:get_back()	return self.table[self.back - 1]	end
+function table_mt:set_back(v)	self.back[-1] = v			end
 function table_mt:read_back()
 	local v = self.table[self.back - 1]
 	self.back = self.back - 1
@@ -178,6 +179,9 @@ function string_mt:pop_front(n)	self.front = self.front + (n or 1)	end
 function string_mt:get_front()
 	return self.string:sub(self.front, self.front)
 end
+function string_mt:set_front(v)
+	self.string = v..self.string:sub(2)
+end
 function string_mt:read_front()
 	local v = self:get_front()
 	self.front = self.front + 1
@@ -191,6 +195,9 @@ end
 function string_mt:pop_back(n)	self.back = self.back - (n or 1)	end
 function string_mt:get_back()
 	return self.string:sub(self.back - 1, self.back - 1)
+end
+function string_mt:set_back(v)
+	self.string = self.string:sub(-1)..v
 end
 function string_mt:read_back()
 	local v = self:get_back()
