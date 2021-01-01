@@ -14,7 +14,7 @@ local  sizeof	=  ffi.sizeof
 local bit	= require('bit')
 local  tohex	=  bit.tohex
 
-		  require('useful.stdlib')
+		  require('posix.stdlib')
 
 local stdio	= require('useful.stdio')
 local  sprintf	=  stdio.sprintf
