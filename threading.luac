@@ -67,6 +67,7 @@ local function setup()
 	--
 
 	channels	= { }
+	conditions	= { }
 
 	channel_locked = function(name)
 		local channel = channels[name] or { queue = { } }
