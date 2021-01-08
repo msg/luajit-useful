@@ -14,7 +14,7 @@ local  lshift	=  bit.lshift
 local sys_mman	= require('posix.sys.mman')
 
 function mmalloc.align(sz)
-	local mask = bnot(lshift(bnot(0), 12))
+	local mask = bnot(lshift(bnot(0ULL), 12))
 	return band(sz + mask - 1, bnot(mask))
 end
 
