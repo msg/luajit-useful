@@ -421,14 +421,13 @@ int MODULE(lua_State *lua) {
 		lua_setfield(man->lua, LUA_REGISTRYINDEX, "_MANAGER");
 
 		luaL_openlibs(man->lua);
+		lua_settop(man->lua, 0);
 	}
 	if (luaL_loadbuffer(lua, (const char *)luaJIT_BC_threading,
 				luaJIT_BC_threading_SIZE, NULL))
 		lua_error(lua);
 	if (lua_pcall(lua, 0, 0, 0) != 0)
 		fprintf(stderr, "error: %s\n", lua_tostring(lua, -1));
-
-	lua_settop(man->lua, 0);
 
 	return 1;
 }
