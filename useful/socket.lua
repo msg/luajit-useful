@@ -156,6 +156,17 @@ socket.Socket = Class({
 		return rc
 	end,
 
+	connect = function(self, host, port)
+		local addr	= socket.getaddrinfo(host, port)
+		local addrp	= cast('struct sockaddr *', addr)
+		local size	= sizeof(addr)
+		local rc	= C.connect(self.fd, addrp, size)
+		if rc < 0 then
+			return nil, socket.syserror('connect')
+		end
+		return rc
+	end,
+
 	recv = function(self, buf, len, flags)
 		return C.recv(self.fd, buf, len, flags or 0)
 	end,
@@ -201,16 +212,6 @@ socket.TCP = Class(socket.Socket, {
 		return rc, from[0]
 	end,
 
-	connect = function(self, host, port)
-		local addr	= socket.getaddrinfo(host, port)
-		local addrp	= cast('struct sockaddr *', addr)
-		local size	= sizeof(addr)
-		local rc	= C.connect(self.fd, addrp, size)
-		if rc < 0 then
-			return nil, socket.syserror('connect')
-		end
-		return rc
-	end,
 })
 
 socket.UDP = Class(socket.Socket, {
