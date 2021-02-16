@@ -56,7 +56,8 @@ end
 
 local function make_convert_time(name)
 	return function(st)
-		return tonumber(st[name].tv_sec)
+		return tonumber(st[name].tv_sec) +
+			tonumber(st[name].tv_nsec) * 1e-9
 	end
 end
 
@@ -184,6 +185,7 @@ filesystem.chdir = function(path) -- luacheck:ignore
 	if rc < 0 then
 		error(strerror())
 	end
+	return rc
 end
 
 filesystem.currentdir = function()
@@ -192,6 +194,7 @@ filesystem.currentdir = function()
 	if rc < 0 then
 		error(strerror())
 	end
+	return rc
 end
 
 filesystem.link = function(old, new, symlink)
@@ -204,6 +207,7 @@ filesystem.link = function(old, new, symlink)
 	if rc < 0 then
 		error(strerror())
 	end
+	return rc
 end
 
 filesystem.mkdir = function(dirname)
@@ -211,6 +215,7 @@ filesystem.mkdir = function(dirname)
 	if rc < 0 then
 		error(strerror())
 	end
+	return rc
 end
 
 filesystem.rmdir = function(dirname)
@@ -218,6 +223,7 @@ filesystem.rmdir = function(dirname)
 	if rc < 0 then
 		error(strerror())
 	end
+	return rc
 end
 
 filesystem.mkdirp = function(_path, permissions)
@@ -238,16 +244,12 @@ end
 
 local ftw
 ftw = function(path, func) -- luacheck:ignore
-	local ok, entries = pcall(filesystem.list, path)
-	if not ok then -- ignore failed paths
-		return true
-	end
 	local attributes = filesystem.symlinkattributes
-	for _,entry in ipairs(entries) do
+	for entry in filesystem.dir(path) do
 		if entry ~= '.' and entry ~= '..' then
-			entry = path .. '/' .. entry
+			local entry_path = path .. '/' .. entry
 			local entry_stat = { }
-			ok = pcall(attributes, entry, entry_stat)
+			ok = pcall(attributes, entry_path, entry_stat)
 			if not ok then
 				entry_stat = nil
 			end
