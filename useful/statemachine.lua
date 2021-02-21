@@ -8,39 +8,40 @@ local  Class	=  class.Class
 local system	= require('useful.system')
 local  is_main	=  system.is_main
 
-statemachine.StateMachine = Class()
+local StateMachine = Class()
+statemachine.StateMachine = StateMachine
 
-function statemachine.StateMachine:new(init_state)
+function StateMachine:new(init_state)
 	self.init_state		= init_state or 'done'
 	self.state		= init_state or 'done'
 	self.states		= {}
 	self:add_state('done', self.done)
 end
 
-function statemachine.StateMachine:get_state()
+function StateMachine:get_state()
 	return self.state
 end
 
-function statemachine.StateMachine:set_state(state_table)
+function StateMachine:set_state(state_table)
 	self.state = state_table.state
 end
 
-function statemachine.StateMachine:add_state(name, func)
+function StateMachine:add_state(name, func)
 	self.states[name] = func
 end
 
 -- done is stop state "always"
-function statemachine.StateMachine:done() -- luacheck: ignore
+function StateMachine:done() -- luacheck: ignore
 	return 'done'
 end
 
 -- restart at the initial state
-function statemachine.StateMachine:restart()
+function StateMachine:restart()
 	self.state = self.init_state
 end
 
 -- run one "step" of current state
-function statemachine.StateMachine:step()
+function StateMachine:step()
 	if self.state == 'done' then
 		return self.state
 	end
@@ -68,7 +69,7 @@ local function make_stop_states(...)
 end
 
 -- run until the "next" state change or "done"
-function statemachine.StateMachine:next(...)
+function StateMachine:next(...)
 	local stop_states = make_stop_states(...)
 	local state = self.state
 	while state == self.state and stop_states[self.state] == nil do
@@ -78,7 +79,7 @@ function statemachine.StateMachine:next(...)
 end
 
 -- "run" the state machine until the stop states reached
-function statemachine.StateMachine:run(...)
+function StateMachine:run(...)
 	local stop_states = make_stop_states(...)
 	while stop_states[self.state] == nil do
 		self:step()
