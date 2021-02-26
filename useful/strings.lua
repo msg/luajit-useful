@@ -14,15 +14,20 @@ local  unpack		=  system.unpack
 local tables		= require('useful.tables')
 
 local  insert		=  table.insert
+local  concat		=  table.concat
 
-local 	byte		=  string.byte
-local 	char		=  string.char
-local 	rep		=  string.rep
+local  byte		=  string.byte
+local  char		=  string.char
+local  rep		=  string.rep
+local  sprintf		=  string.format
 
-function strings.lstrip(s) return (s:gsub('^%s*', '')) end
-function strings.rstrip(s) return (s:gsub('%s*$', '')) end
-function strings.strip(s) return strings.lstrip(strings.rstrip(s)) end
-strings.join = table.concat -- join(s, sep)
+local  lstrip		= function(s) return (s:gsub('^%s*', '')) end
+local  rstrip		= function(s) return (s:gsub('%s*$', '')) end
+local  strip		= function(s) return lstrip(rstrip(s)) end
+strings.lstrip		= lstrip
+strings.rstrip		= rstrip
+strings.strip		= strip
+strings.join		= concat -- join(s, sep)
 
 function strings.capitalize(s)
 	return s:sub(1,1):upper() .. s:sub(2):lower()
@@ -144,24 +149,22 @@ function strings.binary_to_hex(s, sep)
 end
 
 function strings.hexdump(bytes, addr)
-	local sprintf = string.format
-
 	local function hex_data(bytes, at_most) -- luacheck:ignore
 		local hex = { }
 		at_most = at_most or 16
 		for i=1,math.min(#bytes, at_most) do
 			local s -- luacheck:ignore
-			s = sprintf("%02x", string.byte(bytes:sub(i,i)))
-			table.insert(hex, s)
+			s = sprintf("%02x", byte(bytes:sub(i,i)))
+			insert(hex, s)
 		end
-		return table.concat(hex, ' ')
+		return concat(hex, ' ')
 	end
 
 	local function char_data(bytes) -- luacheck:ignore
 		local s = ''
 		for i=1,math.min(#bytes, 16) do
 			local c = bytes:sub(i,i)
-			if string.byte(c) < 32 or 127 < string.byte(c) then
+			if byte(c) < 32 or 127 < byte(c) then
 				c = '.'
 			end
 			s = s .. c
@@ -177,9 +180,9 @@ function strings.hexdump(bytes, addr)
 			hex_data(bytes:sub(off,off+8-1), 8),
 			hex_data(bytes:sub(off+8,off+16-1), 8),
 			char_data(bytes:sub(off,off+16-1)))
-		table.insert(lines, line)
+		insert(lines, line)
 	end
-	return table.concat(lines, '\n')
+	return concat(lines, '\n')
 end
 
 return strings
