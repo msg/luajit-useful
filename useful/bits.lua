@@ -4,10 +4,14 @@
 --
 local bits = { }
 
+local ffi	= require('ffi')
+local  cast	=  ffi.cast
+
 local bit	= require('bit')
-local  bor	=  bit.bor
-local  bnot	=  bit.bnot
 local  band	=  bit.band
+local  bnot	=  bit.bnot
+local  bor	=  bit.bor
+local  bswap	=  bit.bswap
 local  lshift	=  bit.lshift
 local  rshift	=  bit.rshift
 
@@ -18,6 +22,12 @@ end
 function bits.setbits(x, p, n, y)
 	local m = bnot(lshift(bnot(0LL), n))
 	return bor(band(x, bnot(lshift(m, p))), lshift(band(m, y), p))
+end
+
+function bits.swap(value, type)
+	local sizeof = ffi.sizeof(value)
+	value = cast('int64_t', value)
+	return rshift(bswap(value), 64 - sizeof * 8)
 end
 
 return bits
