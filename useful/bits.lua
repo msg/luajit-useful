@@ -6,6 +6,7 @@ local bits = { }
 
 local ffi	= require('ffi')
 local  cast	=  ffi.cast
+local  sizeof	=  ffi.sizeof
 
 local bit	= require('bit')
 local  band	=  bit.band
@@ -24,10 +25,10 @@ function bits.setbits(x, p, n, y)
 	return bor(band(x, bnot(lshift(m, p))), lshift(band(m, y), p))
 end
 
-function bits.swap(value, type)
-	local sizeof = ffi.sizeof(value)
+function bits.swap(value)
+	local size = sizeof(value)
 	value = cast('int64_t', value)
-	return rshift(bswap(value), 64 - sizeof * 8)
+	return rshift(bswap(value), 64 - size * 8)
 end
 
 return bits
