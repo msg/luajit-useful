@@ -25,6 +25,7 @@ local function setup() -- this is run in the management thread
 	local min	= math.min
 	local insert	= table.insert
 	local remove	= table.remove --luacheck:ignore
+	local concat	= table.concat
 
 	--
 	-- global data related stuff
@@ -33,20 +34,22 @@ local function setup() -- this is run in the management thread
 
 	local path = function(args, n)
 		while #args > n do
-			table.remove(args, #args)
+			remove(args, #args)
 		end
-		return table.concat(args, '.')
+		return concat(args, '.')
 	end
 
 	traverse_locked = function(tbl, n, except, args) --luacheck:ignore
-		for i=1,n-except do
+		local i = 1
+		while i < n - except and tbl ~= nil do
 			tbl = tbl[args[i]]
-			if tbl == nil then
-				assert(tbl ~= nil, 'table nil path '..
-					path(args, i))
-			end
+			i = i + 1
 		end
-		return tbl --  + 1
+		if tbl == nil then
+			return nil, 'nil entry '..path(args, i)
+		else
+			return tbl --  + 1
+		end
 	end
 
 	-- `data` is a global table
@@ -55,14 +58,14 @@ local function setup() -- this is run in the management thread
 	--       the data table cannot be removed by setting them to nil.
 	set_locked = function(...) --luacheck:ignore
 		local args = {...}
-		local n = select('#', ...)
+		local n = select('#', ...) -- NOTE: above
 		local tbl = traverse_locked(data, n, 2, args) --luacheck:ignore
 		tbl[args[n-1]] = args[n]
 	end
 
 	get_locked = function(...) --luacheck:ignore
 		local args = {...}
-		local n = select('#', ...)
+		local n = select('#', ...) -- NOTE: above
 		return traverse_locked(data, n, 0, args) --luacheck:ignore
 	end
 
@@ -70,14 +73,14 @@ local function setup() -- this is run in the management thread
 		local args = {...}
 		local n = select('#', ...)
 		local tbl = traverse_locked(data, n, 2, args) --luacheck:ignore
-		table.insert(tbl, args[n])
+		insert(tbl, args[n]) -- NOTE: above
 	end
 
 	remove_locked = function(...) --luacheck:ignore
 		local args = {...}
-		local n = select('#', ...)
+		local n = select('#', ...) -- NOTE: above
 		local tbl = traverse_locked(data, n, 1, args) --luacheck:ignore
-		table.remove(tbl, args[n])
+		remove(tbl, args[n])
 	end
 
 	--
@@ -110,7 +113,7 @@ local function setup() -- this is run in the management thread
 	queues_locked = function() --luacheck:ignore
 		local queues = {}
 		for name,_ in pairs(channels) do
-			table.insert(queues, name)
+			insert(queues, name)
 		end
 		return queues
 	end
