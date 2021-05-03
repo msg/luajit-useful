@@ -41,7 +41,7 @@ local function setup() -- this is run in the management thread
 
 	traverse_locked = function(tbl, n, except, args) --luacheck:ignore
 		local i = 1
-		while i < n - except and tbl ~= nil do
+		while i <= n - except and tbl ~= nil do
 			tbl = tbl[args[i]]
 			i = i + 1
 		end
