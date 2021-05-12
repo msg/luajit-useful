@@ -30,12 +30,12 @@ local class		= require('useful.class')
 local  Class		=  class.Class
 local stdio		= require('useful.stdio')
 local  sprintf		=  stdio.sprintf
-local  printf		=  stdio.printf
 local system		= require('useful.system')
 local  is_main		=  system.is_main
 
 function socket.syserror(call)
-	return sprintf("%s: %s\n", call, fstring(C.strerror(ffi.errno())))
+	local errno = ffi.errno()
+	return sprintf("%s: %d %s\n", call, errno, fstring(C.strerror(errno())))
 end
 
 function socket.getaddrinfo(host, port, protocol)
@@ -47,9 +47,14 @@ function socket.getaddrinfo(host, port, protocol)
 	end
 	local ret = C.getaddrinfo(host, tostring(port), hint, ai)
 	if ret ~= 0 then
-		printf('getaddrinfo(%s %s) error: %d %s\n', host, port,
-			ret, fstring(C.gai_strerror(ret)))
-		os.exit(-1)
+		local s
+		if ret == C.EAI_SYSTEM then
+			s = socket.syserror('getaddrinfo')
+		else
+			s = sprintf('getaddrinfo(%s %s): %d %s\n',
+				host, port, ret, fstring(C.gai_strerror(ret)))
+		end
+		error(s)
 	end
 
 	local a = ai[0]
