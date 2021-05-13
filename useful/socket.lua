@@ -35,7 +35,7 @@ local  is_main		=  system.is_main
 
 function socket.syserror(call)
 	local errno = ffi.errno()
-	return sprintf("%s: %d %s\n", call, errno, fstring(C.strerror(errno())))
+	return sprintf("%s: %d %s\n", call, errno, fstring(C.strerror(errno)))
 end
 
 function socket.getaddrinfo(host, port, protocol)
