@@ -358,6 +358,7 @@ static int wait_locked_(lua_State *lua) {
 			break;
 		cond = get_condition_locked(man, name);		// [-0 +0 e]
 	}
+	set_condition_locked(man, name, NULL);
 	return 0;
 }
 
