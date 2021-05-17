@@ -71,8 +71,8 @@ time.timespec_to_number = timespec_to_number
 time.iso8601_fmt = '%Y%m%dT%H%M%S%Z'
 
 function time.strftime(ts, fmt)
-	local s = ffi.new('char[64]')
-	local rc = C.strftime(s, 1024, fmt, ts.tv_sec)
+	local s = ffi.new('char[1024]')
+	local rc = C.strftime(s, ffi.sizeof(s), fmt, ts.tv_sec)
 	return ffi.string(s, rc)
 end
 
