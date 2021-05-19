@@ -81,8 +81,6 @@ socket.Socket = Class({
 	new = function(self, fd, port)
 		self.fd		= fd or -1
 		self.port	= port or -1
-		self._gc	= new('int *')
-		self._gc	= ffi.gc(self._gc, function() self:__gc() end)
 	end,
 
 	__gc = function(self)

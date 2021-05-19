@@ -43,6 +43,13 @@ function class.Class(...)
 		__call = function (class, ...) -- luacheck: ignore
 			local instance = setmetatable({ }, class)
 			-- run the new method if it's there
+			if class.__gc ~= nil then
+				instance._gc = newproxy(true)
+				local mt = getmetatable(instance._gc)
+				mt.__gc = function()
+					class.__gc(instance)
+				end
+			end
 			if class.new then
 				class.new(instance, ...)
 			end
