@@ -9,6 +9,7 @@ local bit	= require('bit')
 local  band	=  bit.band
 
 		  require('posix.dirent')
+		  require('posix.errno')
 local stat	= require('posix.sys.stat')
 		  require('posix.string')
 		  require('posix.unistd')
@@ -231,7 +232,7 @@ filesystem.mkdirp = function(_path, permissions)
 	local dir = path.dirpath(_path)
 	while not filesystem.exists(dir) do
 		local rc = filesystem.mkdirp(dir, permissions)
-		if rc < 0 then
+		if rc < 0 and ffi.errno() ~= C.EEXISTS then
 			return rc
 		end
 	end
