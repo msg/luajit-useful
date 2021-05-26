@@ -211,8 +211,8 @@ filesystem.link = function(old, new, symlink)
 	return rc
 end
 
-filesystem.mkdir = function(dirname)
-	local rc = C.mkdir(dirname, tonumber(0755, 8))
+filesystem.mkdir = function(dirname, permissions)
+	local rc = C.mkdir(dirname, permissions or tonumber(0755, 8))
 	if rc < 0 then
 		error(strerror())
 	end
@@ -237,7 +237,7 @@ filesystem.mkdirp = function(_path, permissions)
 		end
 	end
 	if not filesystem.exists(_path) then
-		return filesystem.mkdir(_path, permissions)
+		return C.mkdir(_path, permissions)
 	else
 		return 0
 	end
