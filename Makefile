@@ -1,7 +1,7 @@
 
 CFLAGS=-I/usr/include/luajit-2.1 -g
 
-useful/threading.so: threading.c threading.h
+useful/threadingc.so: threadingc.c
 	gcc $(CFLAGS) -fPIC -Wall -Wextra -shared -lluajit-5.1 -lpthread -o $@ $+
 
 threading.h: threading.luac

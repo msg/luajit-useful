@@ -9,12 +9,12 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
-#include "threading.h"
+// #include "threading.h"
 
 #if 0
 #define MODULE luaopen_threading
 #else
-#define MODULE luaopen_useful_threading
+#define MODULE luaopen_useful_threadingc
 #endif
 int MODULE(lua_State *lua);
 
@@ -390,7 +390,7 @@ static const struct luaL_Reg manager_mt_funcs[] = {
 };
 
 int MODULE(lua_State *lua) {
-	luaL_register(lua, "useful.threading", ll_funcs);
+	luaL_register(lua, "useful.threadingc", ll_funcs);
 
 	proc *self	= (proc *)lua_newuserdata(lua, sizeof(proc));
 	lua_setfield(lua, LUA_REGISTRYINDEX, "_SELF");		// [-1 +0 e]
@@ -418,11 +418,13 @@ int MODULE(lua_State *lua) {
 		lua_settop(man->lua, 0);
 	}
 								// [-0 +1 m]
+#if 0
 	if (luaL_loadbuffer(lua, (const char *)luaJIT_BC_threading,
 				luaJIT_BC_threading_SIZE, NULL))
 		lua_error(lua);
 	if (lua_pcall(lua, 0, 0, 0) != 0)
 		fprintf(stderr, "error: %s\n", lua_tostring(lua, -1));
+#endif
 
 	return 1;
 }
