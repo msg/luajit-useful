@@ -19,9 +19,10 @@ local lock	= threadingc.lock
 local unlock	= threadingc.unlock
 
 local function setup() -- this is run in the management thread
-	if _G.data then
+	if init ~= nil then
 		return
 	end
+	init = true
 
 	local min	= math.min
 	local insert	= table.insert
@@ -31,7 +32,7 @@ local function setup() -- this is run in the management thread
 	--
 	-- global data related stuff
 	--
-	data		= { } --luacheck:ignore
+	local data	= { } --luacheck:ignore
 
 	local path = function(args, n)
 		while #args > n do
