@@ -28,7 +28,7 @@ end
 function path.abspath(path) -- luacheck: ignore path
 	if path ~= '' then
 		local buf = ffi.new('char[4096]')
-		local p = ffi.new('char[?]', #path, path)
+		local p = ffi.new('char[?]', #path+1, path)
 		C.realpath(p, buf)
 		return ffi.string(buf);
 	else
@@ -38,7 +38,7 @@ end
 
 function path.dirpath(path) -- luacheck: ignore path
 	if path ~= '' then
-		local p = ffi.new('char[?]', #path, path)
+		local p = ffi.new('char[?]', #path+1, path)
 		return ffi.string(C.dirname(p))
 	else
 		return path
@@ -47,7 +47,7 @@ end
 
 function path.basepath(path) -- luacheck: ignore path
 	if path ~= '' then
-		local p = ffi.new('char[?]', #path, path)
+		local p = ffi.new('char[?]', #path+1, path)
 		return ffi.string(C.basename(p))
 	else
 		return path
