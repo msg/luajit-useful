@@ -52,7 +52,10 @@ function StateMachine:step()
 			error(string.format('invalid state %s', self.state), 2)
 		end
 	end
-	self.state = self.states[self.state]()
+	local state = self.states[self.state]()
+	if state ~= nil then
+		self.state = state
+	end
 	return self.state
 end
 
