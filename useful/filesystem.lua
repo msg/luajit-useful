@@ -229,7 +229,7 @@ end
 
 filesystem.mkdirp = function(_path, permissions)
 	permissions = permissions or tonumber(0755, 8)
-	local dir = path.dirpath(_path)
+	local dir = path.split_path(_path)
 	while not filesystem.exists(dir) do
 		local rc = filesystem.mkdirp(dir, permissions)
 		if rc < 0 and ffi.errno() ~= C.EEXIST then
