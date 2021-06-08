@@ -126,17 +126,17 @@ local function setup() -- this is run in the management thread
 end
 
 local function pexec(code, ...)
-	return { pcall(exec, code, ...) }
+	return pcall(exec, code, ...)
 end
 
 local run = function(code, ...)
 	lock()
-	local result = pexec(code, ...)
+	local result, a, b = pexec(code, ...)
 	unlock()
-	if not remove(result, 1) then
+	if result == false then
 		error('run: '..tostring(result[1]))
 	end
-	return unpack(result)
+	return a, b
 end
 
 run(setup)
