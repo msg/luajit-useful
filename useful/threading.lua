@@ -48,7 +48,7 @@ local function setup() -- this is run in the management thread
 			i = i + 1
 		end
 		if tbl == nil then
-			return nil, 'nil entry '..path(args, i)
+			return nil, 'entry '..path(args, i)..' not found'
 		else
 			return tbl --  + 1
 		end
