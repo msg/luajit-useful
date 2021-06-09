@@ -134,7 +134,7 @@ local run = function(code, ...)
 	local result, a, b = pexec(code, ...)
 	unlock()
 	if result == false then
-		error('run: '..tostring(result[1]))
+		error('run: '..tostring(a))
 	end
 	return a, b
 end
@@ -160,12 +160,12 @@ local signal	= threadingc.signal
 
 threading.send = function(name, ...)
 	lock()
-	local results = pexec(function(name, ...) --luacheck:ignore
+	local ok, result = pexec(function(name, ...) --luacheck:ignore
 		enqueue_locked(name, ...) --luacheck:ignore
 	end, name, ...)
 	signal(name)
 	unlock()
-	if not remove(results, 1) then
+	if not ok then
 		error('threading.send: '..results[1])
 	end
 end
@@ -173,25 +173,22 @@ end
 threading.receive = function(name, timeout, max)
 	lock()
 	max = max or 1
-	local results = pexec(function(name) --luacheck:ignore
+	local ok, result = pexec(function(name) --luacheck:ignore
 		return #channel_locked(name).queue --luacheck:ignore
 	end, name)
-	local ok = remove(results, 1)
 	if ok == true then
-		local size = results[1]
-		if size == 0 then
+		if result == 0 then
 			wait(name, timeout)
 		end
-		results = pexec(function(name, max) --luacheck:ignore
+		ok, result = pexec(function(name, max) --luacheck:ignore
 			return dequeue_locked(name, max) --luacheck:ignore
 		end, name, max)
-		ok = remove(results, 1)
 	end
 	unlock()
 	if not ok then
-		error('threading.receive: '..results[1])
+		error('threading.receive: '..result)
 	end
-	return results[1]
+	return result
 end
 
 threading.start		= threadingc.start
