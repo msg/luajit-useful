@@ -19,19 +19,19 @@ log.DEBUG	= 4
 log.ALL		= 5
 
 local Log = Class({
-	new = function(self, date_format, level)
-		self.date_format	= date_format or ''
+	new = function(self, log_leader, level)
+		self.log_leader	= log_leader or ''
 		self.level		= level or log.ALL
 	end,
 
 	write = function(self, buf) -- luacheck: ignore
 	end,
 
-	date = function(self)
-		if self.date_format == '' then
+	leader = function(self)
+		if self.log_leader == '' then
 			return ''
 		end
-		return os.date(self.date_format) .. ' '
+		return os.date(self.log_leader)..' '
 	end,
 
 	clear = function(self) -- luacheck: ignore
@@ -41,7 +41,7 @@ local Log = Class({
 		if level > self.level then
 			return
 		end
-		self:write(self:date() .. sprintf(fmt, ...))
+		self:write(sprintf(fmt, ...))
 	end,
 
 	error = function(self, fmt, ...)
@@ -63,12 +63,13 @@ local Log = Class({
 log.Log = Log
 
 log.StringLog = Class(log.Log, {
-	new = function(self, date_format, level)
-		Log.new(self, date_format, level)
+	new = function(self, log_leader, level)
+		Log.new(self, log_leader, level)
 		self.data = {}
 	end,
 
 	write = function(self, buf)
+		buf = self:leader()..buf
 		table.insert(self.data, buf)
 	end,
 
@@ -82,12 +83,13 @@ log.StringLog = Class(log.Log, {
 })
 
 log.FileLog = Class(log.Log, {
-	new = function(self, filename, date_format, level)
-		Log.new(self, date_format, level)
+	new = function(self, filename, log_leader, level)
+		Log.new(self, log_leader, level)
 		self.filename = filename
 	end,
 
 	write = function(self, buf)
+		buf = self:leader()..buf
 		if self.filename == '-' then
 			io.stdout:write(buf)
 			io.stdout:flush()
@@ -100,21 +102,22 @@ log.FileLog = Class(log.Log, {
 })
 
 log.UDPLog = Class(log.Log, {
-	new = function(self, host, port, date_format, level)
-		Log.new(self, date_format, level)
+	new = function(self, host, port, log_leader, level)
+		Log.new(self, log_leader, level)
 		self.dest = socket.getaddrinfo(host, port)
 		self.udp = socket.UDP()
 	end,
 
 	write = function(self, buf)
+		buf = self:leader()..buf
 		local p = ffi.new('char[?]', #buf+1, buf) -- +1 for '\0'
 		self.udp:sendto(p, #buf, self.dest)
 	end,
 })
 
 log.GroupLog = Class(log.Log, {
-	new = function(self, date_format, level)
-		Log.new(self, date_format, level)
+	new = function(self, log_leader, level)
+		Log.new(self, log_leader, level)
 		self.logs = {}
 	end,
 
@@ -123,6 +126,7 @@ log.GroupLog = Class(log.Log, {
 	end,
 
 	write = function(self, buf)
+		buf = self:leader()..buf
 		for _,log in ipairs(self.logs) do -- luacheck: ignore
 			log:write(buf)
 		end
