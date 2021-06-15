@@ -603,7 +603,12 @@ end
 
 function lj.stack_dump(lua)
 	local top = lj.lua_gettop(lua)
+	printf('stack %d: ', top)
+	if top == 0 then
+		printf('<empty>')
+	end
 	for i=1,top do
+		printf('(%d)', i)
 		local t = lj.lua_type(lua, i)
 		if t == lj.LUA_TTABLE then		printf('t:')
 		elseif t == lj.LUA_TNIL then		printf('0:')
