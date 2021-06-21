@@ -8,7 +8,7 @@ local ffi	= require('ffi')
 local  C	=  ffi.C
 
 local stdio	= require('useful.stdio')
-local  printf	=  stdio.printf
+local  sprintf	=  stdio.sprintf
 
 ffi.cdef [[
 	typedef ptrdiff_t		LUA_INTEGER;
@@ -290,8 +290,8 @@ function lj.lua_getgccount(L)
 	return C.lua_gc(L, C.LUA_GCCOUNT, 0);
 end
 
-local s -- luacheck:ignore
-s = [[
+local s_ -- luacheck:ignore
+s_ = [[
 	/*
 	#define lua_Chunkreader lua_Reader
 	#define lua_Chunkwriter lua_Writer
@@ -363,7 +363,7 @@ ffi.cdef [[
 	};
 ]]
 
-s = [[
+s_ = [[
 	//
 	// l a u x l i b
 	//
@@ -447,7 +447,7 @@ ffi.cdef [[
 				const char *msg, int level);
 ]]
 
-s = [[
+s_ = [[
 	/*
 	** ===============================================================
 	** some useful macros
@@ -502,7 +502,7 @@ function lj.luaLopt(L, f, n, d)
 	end
 end
 
-s = [[
+s_ = [[
 	/*
 	** {======================================================
 	** Generic Buffer manipulation
@@ -603,30 +603,30 @@ end
 
 function lj.stack_dump(lua)
 	local top = lj.lua_gettop(lua)
-	printf('stack %d: ', top)
+	local s = sprintf('stack %d: ', top)
 	if top == 0 then
-		printf('<empty>')
+		s = s..'<empty>'
 	end
 	for i=1,top do
-		printf('(%d)', i)
+		s = s..sprintf('(%d)', i)
 		local t = lj.lua_type(lua, i)
-		if t == lj.LUA_TTABLE then		printf('t:')
-		elseif t == lj.LUA_TNIL then		printf('0:')
-		elseif t == lj.LUA_TFUNCTION then	printf('f:')
+		if t == lj.LUA_TTABLE then		s = s..sprintf('t:')
+		elseif t == lj.LUA_TNIL then		s = s..sprintf('0:')
+		elseif t == lj.LUA_TFUNCTION then	s = s..sprintf('f:')
 		elseif t == lj.LUA_TSTRING then
-			printf("s:'%s'", lj.lj_tostring(lua, i))
+			s = s..sprintf("s:'%s'", lj.lj_tostring(lua, i))
 		elseif t == lj.LUA_TBOOLEAN then
-			printf('b:%s', lj.lua_toboolean(lua, i) and
+			s = s..sprintf('b:%s', lj.lua_toboolean(lua, i) and
 					'true' or 'false')
 		elseif t == lj.LUA_TNUMBER then
-			printf('n:%g', lj.lua_tonumber(lua, i))
+			s = s..sprintf('n:%g', lj.lua_tonumber(lua, i))
 		else
-			printf('u(%d):%s', t, lj.lj_typename(lua, i))
-			printf(' %s', lj.lua_topointer(lua, i))
+			s = s..sprintf('u(%d):%s', t, lj.lj_typename(lua, i))
+			s = s..sprintf(' %s', lj.lua_topointer(lua, i))
 		end
-		printf('  ')
+		s = s..sprintf('  ')
 	end
-	printf('\n')
+	return s
 end
 
 local pc = pcall
