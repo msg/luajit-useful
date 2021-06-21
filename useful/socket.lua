@@ -112,7 +112,7 @@ socket.Socket = Class({
 			return -1
 		end
 		local ret = C.fcntl(self.fd, C.F_GETFL)
-		return C.fcntl(self.fd, bor(ret, C.O_NONBLOCK))
+		return C.fcntl(self.fd, C.F_SETFL, bor(ret, C.O_NONBLOCK))
 	end,
 
 	poll = function(self, events, timeout)
