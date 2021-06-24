@@ -63,7 +63,6 @@ local StateMachine = Class({
 		if state ~= nil then
 			self.state = state
 		end
-		return self.state
 	end,
 
 	-- run until the "next" state change or stop state (including 'done')
