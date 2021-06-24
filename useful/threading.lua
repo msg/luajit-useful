@@ -12,17 +12,15 @@
 local threading = { }
 local threadingc = require('useful.threadingc')
 
-local remove	= table.remove
-
 local exec	= threadingc.exec
 local lock	= threadingc.lock
 local unlock	= threadingc.unlock
 
 local function setup() -- this is run in the management thread
-	if init ~= nil then
+	if init_ ~= nil then
 		return
 	end
-	init = true
+	init_ = true
 
 	local min	= math.min
 	local insert	= table.insert
@@ -74,7 +72,7 @@ local function setup() -- this is run in the management thread
 	insert_locked = function(...) --luacheck:ignore
 		local args = {...}
 		local n = select('#', ...)
-		local tbl = traverse_locked(data, n, 2, args) --luacheck:ignore
+		local tbl = traverse_locked(data, n, 1, args) --luacheck:ignore
 		insert(tbl, args[n]) -- NOTE: above
 	end
 
@@ -97,6 +95,10 @@ local function setup() -- this is run in the management thread
 		return channel
 	end
 
+	flush_locked = function(name) --luacheck:ignore
+		channels[name] = nil
+	end
+
 	enqueue_locked = function(name, ...) --luacheck:ignore
 		local channel = channel_locked(name) --luacheck:ignore
 		insert(channel.queue, {...})
@@ -109,6 +111,9 @@ local function setup() -- this is run in the management thread
 		for _=1,n do
 			insert(results, remove(channel.queue, 1))
 		end
+		if #channel.queue then -- remove queue when it's empty
+			flush_locked(name)
+		end
 		return results
 	end
 
@@ -118,10 +123,6 @@ local function setup() -- this is run in the management thread
 			insert(queues, name)
 		end
 		return queues
-	end
-
-	flush_locked = function(name) --luacheck:ignore
-		channels[name] = nil
 	end
 end
 
