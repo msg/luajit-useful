@@ -237,8 +237,9 @@ function tables.range(first, last, inc)
 end
 
 function tables.update(t,...)
+	local a = {...}
 	for i=1,select('#',...) do
-		for k,v in pairs(select(i,...)) do
+		for k,v in pairs(a[i]) do
 			t[k] = v
 		end
 	end
