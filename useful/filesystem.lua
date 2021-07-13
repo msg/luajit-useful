@@ -254,12 +254,12 @@ ftw = function(path, func) -- luacheck:ignore
 			if not ok then
 				entry_stat = nil
 			end
-			if func(entry, entry_stat) == false then
+			if func(entry_path, entry_stat) == false then
 				return false
 			end
 			if not entry_stat then -- luacheck:ignore
 			elseif entry_stat.mode == 'directory' then
-				if ftw(entry, func) == false then
+				if ftw(entry_path, func) == false then
 					return false
 				end
 			end
