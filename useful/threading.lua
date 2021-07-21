@@ -111,7 +111,7 @@ local function setup() -- this is run in the management thread
 		for _=1,n do
 			insert(results, remove(channel.queue, 1))
 		end
-		if #channel.queue then -- remove queue when it's empty
+		if #channel.queue == 0 then -- remove queue when it's empty
 			flush_locked(name)
 		end
 		return results
