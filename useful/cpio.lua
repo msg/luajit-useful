@@ -10,7 +10,8 @@ local  bor		=  bit.bor
 local  lshift		=  bit.lshift
 
 local class		= require('useful.class')
-local Class		=  class.Class
+local  Class		=  class.Class
+local iomem		= require('useful.iomem')
 local stdio		= require('useful.stdio')
 local  sprintf		=  stdio.sprintf
 local  printf		=  stdio.printf
@@ -32,14 +33,7 @@ function cpio.pad4(l)
 end
 
 local function octal(val)
-	local oct = 0
-	local bit = 0 -- luacheck: ignore bit
-	while val > 0 do
-		oct = bor(oct, lshift(math.fmod(val, 10), bit))
-		bit = bit + 3
-		val = math.floor(val / 10)
-	end
-	return oct
+	return tonumber(val, 8)
 end
 
 function cpio.eval(str)
@@ -208,18 +202,19 @@ cpio.CPIO = Class({
 })
 
 local function main()
-	local f = io.open('test.cpio', 'w')
-	local cpio = cpio.CPIO(f) -- luacheck: ignore cpio
+	local f = iomem.iomem()
+	local c = cpio.CPIO(f) -- luacheck: ignore cpio
 	for i=0,99 do
-		cpio:write_file(sprintf('a/b/c/d/testing/%02d', i),
+		c:write_file(sprintf('a/b/c/d/testing/%02d', i),
 				string.rep(string.char(i), 100+i))
 	end
-	cpio:write_end_of_archive()
 	f:close()
-	f = io.open('test.cpio', 'r')
-	cpio = cpio.CPIO(f)
+	c:write_end_of_archive()
+
+	f = iomem.iomem(s)
+	c = cpio.CPIO(f)
 	while true do
-		local header, contents = cpio:read_entry() -- luacheck: ignore contents
+		local header, contents = c:read_entry() -- luacheck: ignore contents
 		if header.path == cpio.END_OF_ARCHIVE then
 			break
 		end
