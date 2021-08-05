@@ -105,7 +105,7 @@ local ReadIO = Class({
 				pos = #str + 1
 				break
 			elseif type(arg) == 'number' then
-				tinsert(results, str:sub(pos, pos + arg))
+				tinsert(results, str:sub(pos, pos + arg - 1))
 				pos = mmin(pos + arg, #str + 1)
 			else
 				error('invalid format arg #'..i)
