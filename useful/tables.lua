@@ -84,9 +84,9 @@ function tables.load_table(filename)
 	if f == nil then
 		return { }
 	end
-	local t = tables.unserialize(f:read('*a'))
+	local data = f:read('*a')
 	f:close()
-	return t
+	return tables.unserialize(data)
 end
 
 function tables.count(t)
@@ -177,11 +177,10 @@ function tables.imap(t, f)
 	return new
 end
 
-function tables.find(t, f)
-	for _,v in ipairs(t) do
-		local result = f(v)
-		if result ~= nil then
-			return result
+function tables.index(t, value)
+	for n,v in ipairs(t) do
+		if value == v then
+			return n
 		end
 	end
 	return nil
