@@ -17,10 +17,10 @@ local lock	= threadingc.lock
 local unlock	= threadingc.unlock
 
 local function setup() -- this is run in the management thread
-	if init_ ~= nil then
+	if init_ ~= nil then --luacheck:ignore
 		return
 	end
-	init_ = true
+	init_ = true --luacheck:ignore
 
 	local min	= math.min
 	local insert	= table.insert
@@ -30,7 +30,7 @@ local function setup() -- this is run in the management thread
 	--
 	-- global data related stuff
 	--
-	local data	= { } --luacheck:ignore
+	data	= { } --luacheck:ignore
 
 	local path = function(args, n)
 		while #args > n do
@@ -99,9 +99,9 @@ local function setup() -- this is run in the management thread
 		channels[name] = nil
 	end
 
-	enqueue_locked = function(name, ...) --luacheck:ignore
+	enqueue_locked = function(name, args) --luacheck:ignore
 		local channel = channel_locked(name) --luacheck:ignore
-		insert(channel.queue, {...})
+		insert(channel.queue, args)
 	end
 
 	dequeue_locked = function(name, max) --luacheck:ignore
@@ -112,7 +112,7 @@ local function setup() -- this is run in the management thread
 			insert(results, remove(channel.queue, 1))
 		end
 		if #channel.queue == 0 then -- remove queue when it's empty
-			flush_locked(name)
+			flush_locked(name) --luacheck:ignore
 		end
 		return results
 	end
@@ -132,6 +132,9 @@ end
 
 local run = function(code, ...)
 	lock()
+	if type(code) == 'string' then
+		code = loadstring(code)
+	end
 	local result, a, b = pexec(code, ...)
 	unlock()
 	if result == false then
@@ -161,13 +164,15 @@ local signal	= threadingc.signal
 
 threading.send = function(name, ...)
 	lock()
-	local ok, result = pexec(function(name, ...) --luacheck:ignore
-		enqueue_locked(name, ...) --luacheck:ignore
-	end, name, ...)
+	local args = { ... }
+	args.nargs = select('#', ...)
+	local ok, result = pexec(function(name, args) --luacheck:ignore
+		enqueue_locked(name, args) --luacheck:ignore
+	end, name, args)
 	signal(name)
 	unlock()
 	if not ok then
-		error('threading.send: '..results[1])
+		error('threading.send: '..result[1])
 	end
 end
 
