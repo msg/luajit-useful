@@ -183,11 +183,13 @@ static const char *chunk_reader(lua_State *lua, void *ud, size_t *size) {
 static void load_code(lua_State *to_lua, lua_State *from_lua) {
 	chunk_move cm[1];
 	int rc;
+	int n;
 
 	lua_pushvalue(from_lua, 1); // push function on the top	// [-0 +1 m]
+	n = lua_gettop(from_lua);
 	luaL_buffinit(from_lua, cm->buf);
 	rc = lua_dump(from_lua, chunk_writer, cm);		// [-0 +0 m]
-	lua_remove(from_lua, -1); // remove function on the top
+	lua_remove(from_lua, n); // remove function on the top
 	if (rc != 0)
 		luaL_error(from_lua, "unable to dump function: %d",
 			lua_tostring(from_lua, -1));
