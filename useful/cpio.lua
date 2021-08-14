@@ -7,7 +7,6 @@ local cpio = { }
 local bit		= require('bit')
 local  band		=  bit.band
 local  bor		=  bit.bor
-local  lshift		=  bit.lshift
 
 local class		= require('useful.class')
 local  Class		=  class.Class
@@ -211,6 +210,7 @@ local function main()
 	f:close()
 	c:write_end_of_archive()
 
+	local s = tostring(f)
 	f = iomem.iomem(s)
 	c = cpio.CPIO(f)
 	while true do
