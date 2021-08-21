@@ -1,55 +1,7 @@
-local table_print_value
-table_print_value = function(value, indent, done)
-  indent = indent or 0
-  done = done or {}
-  if type(value) == "table" and not done [value] then
-    done [value] = true
-
-    local list = {}
-    for key in pairs (value) do
-      list[#list + 1] = key
-    end
-    table.sort(list, function(a, b) return tostring(a) < tostring(b) end)
-    local last = list[#list]
-
-    local rep = "{\n"
-    local comma
-    for _, key in ipairs (list) do
-      if key == last then
-        comma = ''
-      else
-        comma = ','
-      end
-      local keyRep
-      if type(key) == "number" then
-        keyRep = key
-      else
-        keyRep = string.format("%q", tostring(key))
-      end
-      rep = rep .. string.format(
-        "%s[%s] = %s%s\n",
-        string.rep(" ", indent + 2),
-        keyRep,
-        table_print_value(value[key], indent + 2, done),
-        comma
-      )
-    end
-
-    rep = rep .. string.rep(" ", indent) -- indent it
-    rep = rep .. "}"
-
-    done[value] = false
-    return rep
-  elseif type(value) == "string" then
-    return string.format("%q", value)
-  else
-    return tostring(value)
-  end
-end
-
-local table_print = function(tt)
-  print('return '..table_print_value(tt))
-end
+--
+-- u s e f u l / y a m l . l u a
+--
+local yaml = {version = "1.2"}
 
 local table_clone = function(t)
   local clone = {}
@@ -92,7 +44,6 @@ function Parser.new (self, tokens)
   return self
 end
 
-local exports = {version = "1.2"}
 
 local word = function(w) return "^("..w..")([%s$%c])" end
 
@@ -103,7 +54,7 @@ local tokens = {
   {"true",      word("enabled"),  const = true, value = true},
   {"true",      word("true"),     const = true, value = true},
   {"true",      word("yes"),      const = true, value = true},
-  {"true",      word("on"),      const = true, value = true},
+  {"true",      word("on"),       const = true, value = true},
   {"false",     word("disabled"), const = true, value = false},
   {"false",     word("false"),    const = true, value = false},
   {"false",     word("no"),       const = true, value = false},
@@ -115,7 +66,7 @@ local tokens = {
   {"id",    "^\"([^\"]-)\" *(:[%s%c])"},
   {"id",    "^'([^']-)' *(:[%s%c])"},
   {"string",    "^\"([^\"]-)\"",  force_text = true},
-  {"string",    "^'([^']-)'",    force_text = true},
+  {"string",    "^'([^']-)'",     force_text = true},
   {"timestamp", "^(%d%d%d%d)-(%d%d?)-(%d%d?)%s+(%d%d?):(%d%d):(%d%d)%s+(%-?%d%d?):(%d%d)"},
   {"timestamp", "^(%d%d%d%d)-(%d%d?)-(%d%d?)%s+(%d%d?):(%d%d):(%d%d)%s+(%-?%d%d?)"},
   {"timestamp", "^(%d%d%d%d)-(%d%d?)-(%d%d?)%s+(%d%d?):(%d%d):(%d%d)"},
@@ -138,7 +89,7 @@ local tokens = {
   {"string",    "^[^%c]+", noinline = true},
   {"string",    "^[^,%]}%c ]+"}
 };
-exports.tokenize = function (str)
+yaml.tokenize = function (str)
   local token
   local row = 0
   local ignore
@@ -337,7 +288,7 @@ Parser.parse = function (self)
     self:advanceValue();
     result = c.token.value
   else
-    error("ParseError: unexpected token '" .. c.token[1] .. "'" .. context(c.token.input))
+    error("ParseError: unexpected token on line="..c.token.row.." '" .. c.token[1] .. "'" .. context(c.token.input))
   end
 
   pop(self.parse_stack)
@@ -573,10 +524,82 @@ Parser.parseTimestamp = function (self)
   } - os.time{year=1970, month=1, day=1, hour=8}
 end
 
-exports.eval = function (str)
-  return Parser:new(exports.tokenize(str)):parse()
+yaml.eval = function (str)
+  return Parser:new(yaml.tokenize(str)):parse()
 end
 
-exports.dump = table_print
+local function is_array(t)
+	local n = #t
+	local i = 0
+	for _,_ in pairs(t) do
+		i = i + 1
+	end
+	return i == n
+end
 
-return exports
+local function split_lines(s)
+	local lines = { }
+	for line in string.gmatch(s, '[^\n]+') do
+		table.insert(lines, line)
+	end
+	return lines
+end
+
+local function format_array(a, indent, visited)
+	local insert = table.insert
+	local new = { }
+	for i=1,#a do
+		if type(a[i]) == 'table' then
+			insert(new, indent..'-')
+			insert(new, yaml.format(a[i], indent..'  ', visited))
+		else
+			insert(new, indent..'- '..a[i])
+		end
+	end
+	return table.concat(new, '\n')
+end
+
+local function escape(s)
+	return string.format("%q", s)
+end
+
+yaml.format = function(t, indent, visited)
+	local new = {}
+	visited = visited or { }
+	indent = indent or ''
+	local insert = table.insert
+	if is_array(t) then
+		return format_array(t, indent, visited)
+	end
+	for n,v in pairs(t) do
+		local vtype = type(v)
+		if vtype == 'table' then
+			if is_array(v) then
+				insert(new, indent..n..':')
+				insert(new, format_array(v, indent..'  ', visited))
+			else
+				insert(new, indent..n..':')
+				insert(new, yaml.format(v, indent..'  ', visited))
+			end
+		else
+			local s = indent..n..': '..escape(v)
+			if vtype == 'string' then
+				local lines = split_lines(v)
+				if #lines > 1 then
+					insert(new, indent..n..': |-')
+					for _,line in ipairs(lines) do
+						insert(new, indent..'  '..line)
+					end
+				elseif v == '' then
+					s = indent..n..':'
+				end
+				insert(new, s)
+			else
+				insert(new, s)
+			end
+		end
+	end
+	return table.concat(new, '\n')
+end
+
+return yaml
