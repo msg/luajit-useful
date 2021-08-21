@@ -44,7 +44,7 @@ local function serialize(o, indent, sp, nl, visited)
 			elseif ktype == 'boolean'  then
 				k = '['..tostring(k)..']'..sp..'='..sp
 			elseif ktype == 'number'  then
-				if last == k - 1 then
+				if last + 1 == k then
 					last = k
 					k = ''
 				else
