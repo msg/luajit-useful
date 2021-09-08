@@ -7,8 +7,6 @@ end
 
 system.loadstring = loadstring or load -- luacheck:ignore
 
-system.unpack = unpack or table.unpack -- luacheck:ignore
-
 system.setfenv = setfenv or function(fn, env) -- luacheck:ignore
 	local i = 1
 	while true do

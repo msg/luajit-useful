@@ -89,6 +89,14 @@ function tables.load_table(filename)
 	return tables.unserialize(data)
 end
 
+function tables.pack(...)
+	local new = {...}
+	new.n = select('#', ...)
+	return n
+end
+
+tables.unpack = unpack or table.unpack -- luacheck:ignore
+
 function tables.count(t)
 	local i = 0
 	for _,_ in pairs(t) do
