@@ -19,6 +19,7 @@ function class.Class(...)
 			if i == #bases then
 				class[k] = v
 			-- __index ignored for base classes
+			-- it will have to be called or set specifically
 			elseif k ~= '__index' then
 				class[k] = v
 			end
