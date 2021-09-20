@@ -12,6 +12,12 @@
 local threading = { }
 local threadingc = require('useful.threadingc')
 
+local pack	= table.pack  --luacheck:ignore
+if pack == nil then
+	local tables = require('useful.tables')
+	pack = tables.pack
+end
+
 local exec	= threadingc.exec
 local lock	= threadingc.lock
 local unlock	= threadingc.unlock
@@ -24,6 +30,11 @@ local function setup() -- this is run in the management thread
 
 	local min	= math.min
 	local insert	= table.insert
+	local pack	= table.pack  --luacheck:ignore
+	if pack == nil then
+		local tables = require('useful.tables')
+		pack = tables.pack
+	end
 	local remove	= table.remove --luacheck:ignore
 	local concat	= table.concat
 
@@ -53,34 +64,28 @@ local function setup() -- this is run in the management thread
 	end
 
 	-- `data` is a global table
-	-- NOTE: select('#', ...) is used below because when creating
-	--       a new table, nil values get ignored.  Then values in
-	--       the data table cannot be removed by setting them to nil.
 	set_locked = function(...) --luacheck:ignore
-		local args = {...}
-		local n = select('#', ...) -- NOTE: above
+		local args = pack(...)
+		local n = args.n
 		local tbl = traverse_locked(data, n, 2, args) --luacheck:ignore
 		tbl[args[n-1]] = args[n]
 	end
 
 	get_locked = function(...) --luacheck:ignore
-		local args = {...}
-		local n = select('#', ...) -- NOTE: above
-		return traverse_locked(data, n, 0, args) --luacheck:ignore
+		local args = pack(...)
+		return traverse_locked(data, args.n, 0, args) --luacheck:ignore
 	end
 
 	insert_locked = function(...) --luacheck:ignore
-		local args = {...}
-		local n = select('#', ...)
-		local tbl = traverse_locked(data, n, 1, args) --luacheck:ignore
-		insert(tbl, args[n]) -- NOTE: above
+		local args = pack(...)
+		local tbl = traverse_locked(data, args.n, 1, args) --luacheck:ignore
+		insert(tbl, args[args.n]) -- NOTE: above
 	end
 
 	remove_locked = function(...) --luacheck:ignore
-		local args = {...}
-		local n = select('#', ...) -- NOTE: above
-		local tbl = traverse_locked(data, n, 1, args) --luacheck:ignore
-		remove(tbl, args[n])
+		local args = pack(...)
+		local tbl = traverse_locked(data, args.n, 1, args) --luacheck:ignore
+		remove(tbl, args[args.nn])
 	end
 
 	--
@@ -164,8 +169,7 @@ local signal	= threadingc.signal
 
 threading.send = function(name, ...)
 	lock()
-	local args = { ... }
-	args.nargs = select('#', ...)
+	local args = pack(...)
 	local ok, result = pexec(function(name, args) --luacheck:ignore
 		enqueue_locked(name, args) --luacheck:ignore
 	end, name, args)
