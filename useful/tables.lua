@@ -4,16 +4,19 @@
 local tables = { }
 
 local  insert	=  table.insert
-local  remove	=  table.remove
 local  concat	=  table.concat
 
 local system	= require('useful.system')
 local  is_main	=  system.is_main
 local  setfenv	=  system.setfenv
-local  unpack	=  system.unpack
 
 local function is_identifier(s)
 	return s:match('^[_A-Za-z][_A-Za-z0-9]*$') ~= nil
+end
+
+local function encode(s)
+	local data = string.format('%q', s)
+	return data
 end
 
 local function serialize(o, indent, sp, nl, visited)
@@ -26,7 +29,7 @@ local function serialize(o, indent, sp, nl, visited)
 	if otype == 'number' or otype == 'boolean' then
 		insert(new, tostring(o))
 	elseif otype == 'string' then
-		insert(new, string.format('%q', o))
+		insert(new, encode(o))
 	elseif otype == 'table' then
 		if visited[o] == true then
 			error('table loop')
@@ -38,7 +41,7 @@ local function serialize(o, indent, sp, nl, visited)
 			local ktype = type(k)
 			if ktype == 'string' then
 				if not is_identifier(k) then
-					k = string.format('[%q]', k)
+					k = '['..encode(k)..']'
 				end
 				k = k..sp..'='..sp
 			elseif ktype == 'boolean'  then
@@ -48,7 +51,7 @@ local function serialize(o, indent, sp, nl, visited)
 					last = k
 					k = ''
 				else
-					last = nil
+					last = 0
 					k = '['..k..']'..sp..'='..sp
 				end
 			end
@@ -89,13 +92,13 @@ function tables.load_table(filename)
 	return tables.unserialize(data)
 end
 
-function tables.pack(...)
+local function pack(...)
 	local new = {...}
 	new.n = select('#', ...)
-	return n
+	return new
 end
-
-tables.unpack = unpack or table.unpack -- luacheck:ignore
+tables.pack	= table.pack or pack		-- luacheck:ignore
+tables.unpack	= unpack or table.unpack	-- luacheck:ignore
 
 function tables.count(t)
 	local i = 0
@@ -126,6 +129,14 @@ function tables.keys(t)
 	return new
 end
 
+function tables.values(t)
+	local new = {}
+	for _,v in pairs(t) do
+		insert(new, v)
+	end
+	return new
+end
+
 function tables.concat(t, s)
 	for _,v in ipairs(s) do
 		insert(t, v)
@@ -133,17 +144,19 @@ function tables.concat(t, s)
 	return t
 end
 
-function tables.copy(t)
+local copy
+copy = function(t)
 	local new = {}
 	for n,v in pairs(t) do
 		if type(v) == 'table' then
-			new[n] = tables.copy(v)
+			new[n] = copy(v)
 		else
 			new[n] = v
 		end
 	end
 	return new
 end
+tables.copy = copy
 
 function tables.iiter(t)
 	local i = 0
@@ -157,12 +170,11 @@ function tables.iiter(t)
 	end
 end
 
-function tables.map(t, f)
-	if t == nil then
-		error('map(t,f) t is nil', 2)
-	end
+function tables.map(t, f, it)
+	assert(t, 'map(t, f[, it]) t is nil')
 	local new = {}
-	for n,v in pairs(t) do
+	it = it or pairs
+	for n,v in it(t) do
 		n, v = f(n, v)
 		if n ~= nil then
 			new[n] = v
@@ -172,23 +184,16 @@ function tables.map(t, f)
 end
 
 function tables.imap(t, f)
-	if t == nil then
-		error('imap(t,f) t is nil', 2)
-	end
-	local new = {}
-	for n,v in ipairs(t) do
-		v = f(n, v)
-		if v ~= nil then
-			insert(new, v)
-		end
-	end
-	return new
+	assert(t, 'map(t, f) t is nil')
+	return tables.map(t, f, ipairs)
 end
 
 function tables.index(t, value)
+	local compare = type(value) == 'function' and value or
+			function(v) return v == value end
 	for n,v in ipairs(t) do
-		if value == v then
-			return n
+		if compare(v) then
+			return n, v
 		end
 	end
 	return nil
@@ -202,7 +207,7 @@ function tables.reverse(t)
 	return new
 end
 
-function tables.upper(t, i)
+local function offset(t, i)
 	if not i or i > #t then
 		return #t
 	elseif i < 0 then
@@ -211,19 +216,45 @@ function tables.upper(t, i)
 		return i
 	end
 end
+tables.offset = offset
 
 function tables.sub(t, s, e)
-	s = tables.upper(s or 1)
-	e = tables.upper(e)
+	s = offset(t, s or 1)
+	e = offset(t, e)
 	return { unpack(t, s, e) }
 end
 
-function tables.remove(t, s, e)
-	s = tables.upper(s or 1)
-	e = tables.upper(e)
-	for _=s,e do
-		remove(t, s)
+function tables.iremove(t, keep, s, e)
+	s = offset(t, s or 1)
+	e = offset(t, e)
+	for i=s,e do
+		if keep(t, i, s) then
+			if i ~= s then -- differing iter and insert point
+				t[s] = t[i]
+				t[i] = nil
+			end
+			s = s + 1 -- next insert point
+		else
+			t[i] = nil
+		end
 	end
+	return t
+end
+
+function tables.iinsert(t, ip, ...)
+	local a = pack(...)
+	local n = a.n
+	-- NOTE: this function is not checked for validity.
+	ip = ip or #t + 1
+	if ip < #t + 1 then
+		for i=#t,ip,-1 do
+			t[i+n] = t[i]
+		end
+	end
+	for i=0,n-1 do
+		t[ip+i] = a[i]
+	end
+	return t
 end
 
 function tables.rep(value, count)
@@ -243,9 +274,9 @@ function tables.range(first, last, inc)
 	return new
 end
 
-function tables.update(t,...)
-	local a = {...}
-	for i=1,select('#',...) do
+function tables.update(t, ...)
+	local a = tables.pack(...)
+	for i=1,a.n do
 		for k,v in pairs(a[i]) do
 			t[k] = v
 		end
