@@ -134,16 +134,16 @@ local timespec_mt = {
 			return a.tv_sec < b.tv_sec
 		end
 	end,
-	__tonumber = function(ts)
-		return timespec_to_number(ts)
-	end,
 	gmtime = function(ts)
-		return C.gmtime(ffi.cast('int64_t', ts.tv_sec))
+		local t = ffi.new('int64_t[1]', ts.tv_sec)
+		return C.gmtime(t)
 	end,
 	localtime = function(ts)
-		return C.localtime(ffi.cast('int64_t', ts.tv_sec))
+		local t = ffi.new('int64_t[1]', ts.tv_sec)
+		return C.localtime(t)
 	end,
 }
+timespec_mt.__index = timespec_mt
 
 time.timespec = ffi.metatype('struct timespec', timespec_mt)
 
