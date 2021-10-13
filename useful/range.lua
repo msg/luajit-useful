@@ -98,11 +98,12 @@ function range.range_type(declaration)
 		self:pop_back()
 	end
 	-- array manipulation functions
-	function rmt.vla(size, ...)
-		return new(rmt.declaration..'[?]', size, ...)
-	end
 	function rmt.from_vla(array)
 		return rmt.meta(array, array + sizeof(array))
+	end
+	function rmt.vla(size, ...)
+		local vla = new(rmt.declaration..'[?]', size, ...)
+		return vla,  rmt.from_vla(vla)
 	end
 	function rmt.to_vla(self)
 		local size	= self:size()
@@ -241,6 +242,7 @@ retro_mt.__len = retro_mt.size
 range.retro = function(range) -- luacheck:ignore
 	return setmetatable({ range=range }, retro_mt)
 end
+function retro_mt:save()	return range.retro(self.range:save()) end
 
 local chain_mt = { }
 chain_mt.__index = chain_mt
@@ -330,6 +332,14 @@ range.chain = function(...)
 		front_index	= 1,
 		back_index	= #ranges,
 	}, chain_mt)
+end
+
+function chain_mt:save()
+	local ranges = { }
+	for i=self.front_index,self.back_index do
+		table.insert(ranges, self.ranges[i]:save())
+	end
+	return range.chain(unpack(ranges))
 end
 
 local take_mt = { }
