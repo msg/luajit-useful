@@ -3,6 +3,14 @@
 --
 local strings = { }
 
+local  insert		=  table.insert
+local  concat		=  table.concat
+
+local  byte		=  string.byte
+local  char		=  string.char
+local  rep		=  string.rep
+local  sprintf		=  string.format
+
 local bit		= require('bit')
 local  bor		=  bit.bor
 local  band		=  bit.band
@@ -12,14 +20,6 @@ local  rshift		=  bit.rshift
 local system		= require('useful.system')
 local  unpack		=  system.unpack
 local tables		= require('useful.tables')
-
-local  insert		=  table.insert
-local  concat		=  table.concat
-
-local  byte		=  string.byte
-local  char		=  string.char
-local  rep		=  string.rep
-local  sprintf		=  string.format
 
 local  lstrip		= function(s) return (s:gsub('^%s*', '')) end
 local  rstrip		= function(s) return (s:gsub('%s*$', '')) end
@@ -90,11 +90,11 @@ end
 function strings.parse_ranges(str)
 	local ranges = {}
 	for _,range in ipairs(strings.split(str, ',')) do
-		local s, e = unpack(
-			tables.imap(strings.split(range, '-'), function (_,v)
-				return tonumber(v)
+		local ranges = tables.imap(strings.split(range, '-'),
+			function (n, v)
+				return n, tonumber(v)
 			end)
-		)
+		local s, e = unpack(ranges)
 		e = e or s
 		for i=s,e do
 			insert(ranges, i)
