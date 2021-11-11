@@ -3,9 +3,6 @@
 --
 local class = { }
 
-local system	= require('useful.system')
-local  is_main	=  system.is_main
-
 function class.Class(...)
 	local class = { } -- luacheck: ignore
 
@@ -97,7 +94,8 @@ local function main()
 	y:print_is()
 end
 
-if is_main() then
+local system = require('useful.system')
+if system.is_main() then
 	main()
 else
 	return class
