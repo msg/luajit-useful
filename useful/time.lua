@@ -70,14 +70,14 @@ time.timespec_to_number = timespec_to_number
 
 time.iso8601_fmt = '%Y%m%dT%H%M%S%Z'
 
-function time.strftime(tm, fmt)
+function time.strftime(fmt, tm)
 	local s = ffi.new('char[1024]')
 	local rc = C.strftime(s, ffi.sizeof(s), fmt, tm)
 	return ffi.string(s, rc)
 end
 
 function time.iso8601(ts)
-	return time.strftime(time.gmtime(ts), time.iso8601_fmt)
+	return time.strftime(time.iso8601_fmt, time.gmtime(ts))
 end
 
 time.secs = function(s)		return number_to_timespec(s)		end
