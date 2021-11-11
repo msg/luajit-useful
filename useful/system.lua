@@ -5,6 +5,8 @@ function system.is_main()
         return debug.getinfo(4) == nil
 end
 
+system.unpack	= unpack or table.unpack
+
 system.loadstring = loadstring or load -- luacheck:ignore
 
 system.setfenv = setfenv or function(fn, env) -- luacheck:ignore
