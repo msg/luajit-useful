@@ -241,22 +241,6 @@ function tables.iremove(t, keep, s, e)
 	return t
 end
 
-function tables.iinsert(t, ip, ...)
-	local a = pack(...)
-	local n = a.n
-	-- NOTE: this function is not checked for validity.
-	ip = ip or #t + 1
-	if ip < #t + 1 then
-		for i=#t,ip,-1 do
-			t[i+n] = t[i]
-		end
-	end
-	for i=0,n-1 do
-		t[ip+i] = a[i]
-	end
-	return t
-end
-
 function tables.rep(value, count)
 	local new = {}
 	for _=1,count do
