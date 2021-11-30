@@ -20,6 +20,8 @@ local  rshift		=  bit.rshift
 local system		= require('useful.system')
 local  unpack		=  system.unpack
 local tables		= require('useful.tables')
+local  serialize	=  tables.serialize
+local  deserialize	=  tables.deserialize
 
 local  lstrip		= function(s) return (s:gsub('^%s*', '')) end
 local  rstrip		= function(s) return (s:gsub('%s*$', '')) end
@@ -183,6 +185,14 @@ function strings.hexdump(bytes, addr)
 		insert(lines, line)
 	end
 	return concat(lines, '\n')
+end
+
+function strings.serialize(t, indent, sp, nl, visited)
+	return serialize(t, indent or '', sp or '', nl or '', visited)
+end
+
+function strings.deserialize(s)
+	return deserialize(s)
 end
 
 return strings
