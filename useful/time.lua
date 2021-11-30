@@ -142,6 +142,9 @@ local timespec_mt = {
 		local t = ffi.new('int64_t[1]', ts.tv_sec)
 		return C.localtime(t)
 	end,
+	to_number = function(ts)
+		return time.timespec_to_number(ts)
+	end,
 }
 timespec_mt.__index = timespec_mt
 
