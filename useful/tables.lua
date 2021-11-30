@@ -60,7 +60,7 @@ local function serialize(o, indent, sp, nl, visited)
 		end
 		insert(new, indent .. '}')
 	else
-		error('cannot serialize a ' ..type(o))
+		error('cannot serialize a ' ..type(o)..': '..tostring(o))
 	end
 	return concat(new, nl)
 end
