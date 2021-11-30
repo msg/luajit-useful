@@ -186,11 +186,11 @@ local encode
 
 local function encode_table(value)
 	local is_map = false
-	local index = #value
-	if index == 0 then
-		index = nil
+	local size = #value
+	if size == 0 then
+		size = nil
 	end
-	if next(value, index) then
+	if next(value, size) then
 		is_map = true
 	end
 	if is_map == true then
@@ -213,19 +213,18 @@ local function encode_table(value)
 		end
 	else
 		local parts = {}
-		local l = index
-		for i = 1, l do
+		for i = 1,size do
 			insert(parts, encode(value[i]))
 		end
 		value = concat(parts)
-		if l < 0x10 then
-			return encode8(bor(0x90, l)) .. value
-		elseif l < 0x10000 then
-			return encode8(0xdc) .. encode16(l) .. value
-		elseif l < 0x100000000 then
-			return encode8(0xdd) .. encode32(l) .. value
+		if size < 0x10 then
+			return encode8(bor(0x90, size)) .. value
+		elseif size < 0x10000 then
+			return encode8(0xdc) .. encode16(size) .. value
+		elseif size < 0x100000000 then
+			return encode8(0xdd) .. encode32(size) .. value
 		else
-			error("Array too long: " .. l .. "items")
+			error("Array too long: " .. size .. "items")
 		end
 	end
 end
@@ -365,7 +364,7 @@ local msgpack = { }
 msgpack.encode = encode
 
 msgpack.decode = function (data, offset)
-	return decode(data, offset or 0)
+	return ({decode(data, offset or 0)})[1]
 end
 
 return msgpack
