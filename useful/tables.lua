@@ -92,12 +92,12 @@ function tables.load_table(filename)
 	return tables.unserialize(data)
 end
 
-local function pack(...)
+local pack	= table.pack or function(...)
 	local new = {...}
 	new.n = select('#', ...)
 	return new
 end
-tables.pack	= table.pack or pack		-- luacheck:ignore
+tables.pack	= pack
 tables.unpack	= unpack or table.unpack	-- luacheck:ignore
 
 function tables.count(t)
@@ -259,7 +259,7 @@ function tables.range(first, last, inc)
 end
 
 function tables.update(t, ...)
-	local a = tables.pack(...)
+	local a = pack(...)
 	for i=1,a.n do
 		for k,v in pairs(a[i]) do
 			t[k] = v
