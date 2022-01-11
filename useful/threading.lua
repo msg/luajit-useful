@@ -85,7 +85,7 @@ local function setup() -- this is run in the management thread
 	remove_locked = function(...) --luacheck:ignore
 		local args = pack(...)
 		local tbl = traverse_locked(data, args.n, 1, args) --luacheck:ignore
-		remove(tbl, args[args.nn])
+		remove(tbl, args[args.n])
 	end
 
 	--
