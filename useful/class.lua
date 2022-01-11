@@ -6,7 +6,6 @@ local class = { }
 function class.Class(...)
 	local class = { } -- luacheck: ignore
 
-	class._class	= class
 	class.__index	= class
 
 	local bases = {...}
@@ -39,7 +38,7 @@ function class.Class(...)
 
 	setmetatable(class, {
 		__call = function (class, ...) -- luacheck: ignore
-			local instance = setmetatable({ }, class)
+			local instance = setmetatable({ _class=class, }, class)
 			-- run the new method if it's there
 			if class.__gc ~= nil then
 				instance._gc = newproxy(true)
