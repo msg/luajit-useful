@@ -5,11 +5,11 @@ function system.is_main()
         return debug.getinfo(4) == nil
 end
 
-system.unpack	= unpack or table.unpack
+system.unpack	= unpack or table.unpack		-- luacheck:ignore
 
-system.loadstring = loadstring or load -- luacheck:ignore
+system.loadstring = loadstring or load			-- luacheck:ignore
 
-system.setfenv = setfenv or function(fn, env) -- luacheck:ignore
+system.setfenv = setfenv or function(fn, env)		-- luacheck:ignore
 	local i = 1
 	while true do
 		local name = debug.getupvalue(fn, i)
@@ -26,7 +26,7 @@ system.setfenv = setfenv or function(fn, env) -- luacheck:ignore
 	return fn
 end
 
-system.getfenv = getfenv or function(fn) -- luacheck:ignore
+system.getfenv = getfenv or function(fn)		-- luacheck:ignore
 	local i = 1
 	while true do
 		local name, value = debug.getupvalue(fn, i)

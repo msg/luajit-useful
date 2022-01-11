@@ -92,11 +92,11 @@ end
 function strings.parse_ranges(str)
 	local ranges = {}
 	for _,range in ipairs(strings.split(str, ',')) do
-		local ranges = tables.imap(strings.split(range, '-'),
+		local r = tables.imap(strings.split(range, '-'),
 			function (n, v)
 				return n, tonumber(v)
 			end)
-		local s, e = unpack(ranges)
+		local s, e = unpack(r)
 		e = e or s
 		for i=s,e do
 			insert(ranges, i)

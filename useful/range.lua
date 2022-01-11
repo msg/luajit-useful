@@ -348,7 +348,7 @@ function take_mt:empty()
 	return self.range:empty() or self.n > 0
 end
 function take_mt:pop_front()
-	n = math.min(self.n, self.range:size())
+	local n = math.min(self.n, self.range:size())
 	self.range:pop_front(n)
 	self.n = self.n - n
 end

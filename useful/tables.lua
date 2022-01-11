@@ -92,7 +92,7 @@ function tables.load_table(filename)
 	return tables.unserialize(data)
 end
 
-local pack	= table.pack or function(...)
+local pack	= table.pack or function(...)	-- luacheck:ignore
 	local new = {...}
 	new.n = select('#', ...)
 	return new
