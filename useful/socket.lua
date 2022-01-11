@@ -77,6 +77,12 @@ function socket.getaddrinfo(host, port, protocol)
 	return addr
 end
 
+socket.addr_to_ip_port = function(addr)
+	local host = ffi.string(C.inet_ntoa(addr.sin_addr))
+	local port = C.htons(addr.sin_port)
+	return host, port
+end
+
 socket.Socket = Class({
 	new = function(self, fd, port)
 		self.fd		= fd or -1
@@ -162,7 +168,7 @@ socket.Socket = Class({
 		if rc < 0 then
 			return nil, socket.syserror('bind')
 		end
-		return rc
+		return rc, addr
 	end,
 
 	connect = function(self, host, port)
