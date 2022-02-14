@@ -77,7 +77,7 @@ function time.strftime(fmt, tm)
 end
 
 function time.iso8601(ts)
-	return time.strftime(time.iso8601_fmt, time.gmtime(ts))
+	return time.strftime(time.iso8601_fmt, ts:gmtime())
 end
 
 time.secs = function(s)		return number_to_timespec(s)		end
