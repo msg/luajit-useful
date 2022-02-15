@@ -175,55 +175,22 @@ range.table = function(t)
 end
 
 local string_mt = { }
-function string_mt:empty()	return self.front < self.back		end
-function string_mt:pop_front(n)	self.front = self.front + (n or 1)	end
-function string_mt:get_front()
-	return self.string:sub(self.front, self.front)
-end
-function string_mt:set_front(v)
-	self.string = v..self.string:sub(2)
-end
-function string_mt:read_front()
-	local v = self:get_front()
-	self.front = self.front + 1
-	return v
-end
-function string_mt:write_front(v)
-	self.set_front(v)
-	self.front = self.front + 1
-	return v
-end
-function string_mt:pop_back(n)	self.back = self.back - (n or 1)	end
-function string_mt:get_back()
-	return self.string:sub(self.back - 1, self.back - 1)
-end
-function string_mt:set_back(v)
-	self.string = self.string:sub(-1)..v
-end
-function string_mt:read_back()
-	local v = self:get_back()
-	self.back = self.back - 1
-	return v
-end
-function string_mt:write_back(v)
-	self:set_back(v)
-	self.back = self.back - 1
-	return v
-end
-function string_mt:size()	return self.back - self.front		end
+function string_mt:empty()	return #self.string == 0		end
+function string_mt:pop_front(n)	self.string = self.string:sub(n)	end
+function string_mt:get_front()	return self.string:sub(1, 1)		end
+function string_mt:set_front(v)	self.string = v..self.string:sub(2)	end
+function string_mt:read_front()	return self:get_front()			end
+function string_mt:write_front(v) self.set_front(v)			end
+function string_mt:pop_back(n)	self.string = self.string:sub(1, -n)	end
+function string_mt:get_back()	return self.string:sub(-1)		end
+function string_mt:set_back(v)	self.string = self.string:sub(-2)..v	end
+function string_mt:read_back()	return self:get_back()			end
+function string_mt:write_back(v) self:set_back(v)			end
+function string_mt:size()	return #self.string			end
 string_mt.__len = string_mt.size
-function string_mt:save()
-	local string_range = range.string(self.string)
-	string_range.front = self.front
-	string_range.back = self.back
-	return string_range
-end
+function string_mt:save()	return range.string(self.string)	end
 range.string = function(s)
-	return setmetatable({
-		string	=	s,
-		front	=	1,
-		back	=	#s + 1,
-	}, string_mt)
+	return setmetatable({ string = s, }, string_mt)
 end
 
 local retro_mt = { }
