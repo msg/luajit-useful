@@ -119,6 +119,7 @@ function range.range_type(declaration)
 	function rmt.to_string(self)
 		return fstring(self.front, self:size())
 	end
+	rmt.__tostring = rmt.to_string
 
 	range_types[declaration] = rmt.meta
 
@@ -172,25 +173,6 @@ range.table = function(t)
 		front	=	1,
 		back	=	#t + 1,
 	}, table_mt)
-end
-
-local string_mt = { }
-function string_mt:empty()	return #self.string == 0		end
-function string_mt:pop_front(n)	self.string = self.string:sub(n)	end
-function string_mt:get_front()	return self.string:sub(1, 1)		end
-function string_mt:set_front(v)	self.string = v..self.string:sub(2)	end
-function string_mt:read_front()	return self:get_front()			end
-function string_mt:write_front(v) self.set_front(v)			end
-function string_mt:pop_back(n)	self.string = self.string:sub(1, -n)	end
-function string_mt:get_back()	return self.string:sub(-1)		end
-function string_mt:set_back(v)	self.string = self.string:sub(-2)..v	end
-function string_mt:read_back()	return self:get_back()			end
-function string_mt:write_back(v) self:set_back(v)			end
-function string_mt:size()	return #self.string			end
-string_mt.__len = string_mt.size
-function string_mt:save()	return range.string(self.string)	end
-range.string = function(s)
-	return setmetatable({ string = s, }, string_mt)
 end
 
 local retro_mt = { }
