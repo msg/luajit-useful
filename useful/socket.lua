@@ -137,6 +137,11 @@ socket.Socket = Class({
 		return self:setsockopt(C.SOL_SOCKET, C.SO_REUSEADDR, value)
 	end,
 
+	reuseport = function(self)
+		local value = new('int[1]', 1)
+		return self:setsockopt(C.SOL_SOCKET, C.SO_REUSEPORT, value)
+	end,
+
 	rcvbuf = function(self, size)
 		local value = new('int[1]', size)
 		return self:setsockopt(C.SOL_SOCKET, C.SO_RCVBUF, value)
