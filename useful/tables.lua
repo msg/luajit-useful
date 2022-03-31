@@ -8,7 +8,9 @@ local  concat	=  table.concat
 
 local system	= require('useful.system')
 local  is_main	=  system.is_main
+local  pack	=  system.pack
 local  setfenv	=  system.setfenv
+local  unpack	=  system.unpack
 
 local function is_identifier(s)
 	return s:match('^[_A-Za-z][_A-Za-z0-9]*$') ~= nil
@@ -92,13 +94,8 @@ function tables.load_table(filename)
 	return tables.unserialize(data)
 end
 
-local pack	= table.pack or function(...)	-- luacheck:ignore
-	local new = {...}
-	new.n = select('#', ...)
-	return new
-end
 tables.pack	= pack
-tables.unpack	= unpack or table.unpack	-- luacheck:ignore
+tables.unpack	= unpack
 
 function tables.count(t)
 	local i = 0
