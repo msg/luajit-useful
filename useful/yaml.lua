@@ -524,7 +524,7 @@ Parser.parseTimestamp = function (self)
   } - os.time{year=1970, month=1, day=1, hour=8}
 end
 
-yaml.eval = function (str)
+yaml.decode = function (str)
   return Parser:new(yaml.tokenize(str)):parse()
 end
 
@@ -551,7 +551,7 @@ local function format_array(a, indent, visited)
 	for i=1,#a do
 		if type(a[i]) == 'table' then
 			insert(new, indent..'-')
-			insert(new, yaml.format(a[i], indent..'  ', visited))
+			insert(new, yaml.encode(a[i], indent..'  ', visited))
 		else
 			insert(new, indent..'- '..a[i])
 		end
@@ -563,7 +563,7 @@ local function escape(s)
 	return string.format("%q", s)
 end
 
-yaml.format = function(t, indent, visited)
+yaml.encode = function(t, indent, visited)
 	local new = {}
 	visited = visited or { }
 	indent = indent or ''
@@ -579,7 +579,7 @@ yaml.format = function(t, indent, visited)
 				insert(new, format_array(v, indent..'  ', visited))
 			else
 				insert(new, indent..n..':')
-				insert(new, yaml.format(v, indent..'  ', visited))
+				insert(new, yaml.encode(v, indent..'  ', visited))
 			end
 		else
 			local s = indent..n..': '..escape(v)
