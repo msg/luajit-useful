@@ -6,6 +6,11 @@ function system.is_main()
 end
 
 system.unpack	= unpack or table.unpack		-- luacheck:ignore
+system.pack	= table.pack or function(...)	-- luacheck:ignore
+	local new = {...}
+	new.n = select('#', ...)
+	return new
+end
 
 system.loadstring = loadstring or load			-- luacheck:ignore
 
