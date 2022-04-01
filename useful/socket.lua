@@ -256,18 +256,26 @@ socket.UDP = Class(socket.Socket, {
 		return C.sendto(self.fd, buf, len, 0, addrp, sizeof(addr))
 	end,
 
-	add_membership = function(self, addr, port)
-		addr		= socket.getaddrinfo(addr, port)
-		local imreq	= new('struct ip_mreq[1]')
-		imreq.imr_multiaddr = addr
+	ip_multicast_if = function(self, addr)
+		addr		= socket.getaddrinfo(addr, 0)
+		local imreq	= new('struct ip_mreqn[1]')
+		imreq[0].imr_address.s_addr = addr[0].sin_addr.s_addr
+		return self:setsockopt(C.IPPROTO_IP, C.IP_MULTICAST_IF,
+				imreq, sizeof(imreq))
+	end,
+
+	add_membership = function(self, addr)
+		addr		= socket.getaddrinfo(addr, 0)
+		local imreq	= new('struct ip_mreqn[1]')
+		imreq[0].imr_multiaddr.s_addr = addr[0].sin_addr.s_addr
 		return self:setsockopt(C.IPPROTO_IP, C.IP_ADD_MEMBERSHIP,
 				imreq, sizeof(imreq))
 	end,
 
-	drop_membership = function(self, addr, port)
-		addr		= socket.getaddrinfo(addr, port)
-		local imreq	= new('struct ip_mreq[1]')
-		imreq.imr_multiaddr = addr
+	drop_membership = function(self, addr)
+		addr		= socket.getaddrinfo(addr, 0)
+		local imreq	= new('struct ip_mreqn[1]')
+		imreq[0].imr_multiaddr.s_addr = addr[0].sin_addr.s_addr
 		return self:setsockopt(C.IPPROTO_IP, C.IP_DROP_MEMBERSHIP,
 				imreq, sizeof(imreq))
 	end,
