@@ -319,12 +319,5 @@ function tables.structure(initializer)
 	return self
 end
 
-local function main()
-end
-
-if is_main() then
-	main()
-else
-	return tables
-end
+return tables
 

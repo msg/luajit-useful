@@ -281,12 +281,4 @@ socket.UDP = Class(socket.Socket, {
 	end,
 })
 
-local function main()
-end
-
-if is_main() then
-	main()
-else
-	return socket
-end
-
+return socket

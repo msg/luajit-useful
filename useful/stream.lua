@@ -289,12 +289,5 @@ stream.TCPStream = Class(stream.Stream, {
 	end,
 })
 
-local function main()
-end
-
-if is_main() then
-	main()
-else
-	return stream
-end
+return stream
 

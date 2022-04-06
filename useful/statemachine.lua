@@ -88,12 +88,4 @@ local StateMachine = Class({
 })
 statemachine.StateMachine = StateMachine
 
-local function main()
-end
-
-if is_main() then
-	main()
-else
-	return statemachine
-end
-
+return statemachine
