@@ -1,4 +1,3 @@
-#!/usr/bin/luajit
 --
 -- r a n g e . l u a
 --

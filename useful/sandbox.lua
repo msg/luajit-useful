@@ -1,4 +1,3 @@
-#!/usr/bin/luajit
 --
 -- u s e f u l / s a n d b o x . l u a
 --

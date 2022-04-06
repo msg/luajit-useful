@@ -1,4 +1,3 @@
-#!/usr/bin/luajit
 --
 -- u s e f u l / n e t w o r k . l u a
 --

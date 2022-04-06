@@ -1,5 +1,6 @@
-#!/usr/bin/env luajit
-
+--
+-- u s e f u l / c s v . l u a
+--
 local csv = { }
 
 local find	= string.find

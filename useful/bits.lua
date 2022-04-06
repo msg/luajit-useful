@@ -1,4 +1,3 @@
-#!/usr/bin/lua
 --
 -- b i t s . l u a
 --

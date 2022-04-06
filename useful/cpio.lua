@@ -1,4 +1,3 @@
-#!/usr/bin/luajit
 --
 -- u s e f u l / c p i o . l u a
 --

@@ -1,4 +1,3 @@
-#!/usr/bin/luajit
 --
 -- u s e f u l / t i m e . l u a
 --
