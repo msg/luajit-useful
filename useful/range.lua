@@ -52,18 +52,36 @@ function range.range_type(declaration)
 
 	-- input range api
 	function rmt.empty(self) return self.front >= self.back end
-	function rmt.pop_front(self, n) self.front = self.front + (n or 1) end
-	function rmt.get_front(self) return self.front[0] end
-	function rmt.set_front(self, v) self.front[0] = v end
+	function rmt.pop_front(self, n)
+		assert(self.front < self.back, 'out of range')
+		self.front = self.front + (n or 1)
+	end
+	function rmt.get_front(self)
+		assert(self.front < self.back, 'out of range')
+		return self.front[0]
+	end
+	function rmt.set_front(self, v)
+		assert(self.front < self.back, 'out of range')
+		self.front[0] = v
+	end
 	function rmt.read_front(self)
 		local e = self:get_front()
 		self:pop_front()
 		return e
 	end
 	-- bi-directional range api
-	function rmt.pop_back(self, n) self.back = self.back - (n or 1) end
-	function rmt.get_back(self) return self.back[-1] end
-	function rmt.set_back(self, v) self.back[-1] = v end
+	function rmt.pop_back(self, n)
+		assert(self.front < self.back, 'out of range')
+		self.back = self.back - (n or 1)
+	end
+	function rmt.get_back(self)
+		assert(self.front < self.back, 'out of range')
+		return self.back[-1]
+	end
+	function rmt.set_back(self, v)
+		assert(self.front < self.back, 'out of range')
+		self.back[-1] = v
+	end
 	function rmt.read_back(self)
 		local e = self:get_back()
 		self:pop_back()
@@ -85,15 +103,22 @@ function range.range_type(declaration)
 		elseif j < 0 then
 			j = self:size() - j
 		end
+		assert(i >= 0 and j >= 0, 'slice out of range')
 		return rmt.meta(self.front + i, self.front + j)
 	end
+
+	function rmt.copy(self, from, size)
+		assert(size <= self:size() * self.sizeof, 'out of range')
+		copy(self.front, from, size)
+	end
+
 	-- output range api
 	function rmt.write_front(self, v)
-		self.front[0] = v
+		self:set_front(v)
 		self:pop_front()
 	end
 	function rmt.write_back(self, v)
-		self.back[-1] = v
+		self:set_back(v)
 		self:pop_back()
 	end
 	-- array manipulation functions
