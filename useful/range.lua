@@ -87,29 +87,31 @@ function range.range_type(declaration)
 		self:pop_back()
 		return e
 	end
+	function rmt.read_front_size(self, size)
+		local r8 = rmt.meta(self.front, self.front + size)
+		self:pop_front(size)
+		return r8
+	end
 	-- forward range api
 	function rmt.save(self) return rmt.meta(self.front, self.back) end
 	-- random access range api
 	function rmt.size(self) return self.back - self.front end
 	rmt.__len = rmt.size
 	function rmt.slice(self, i, j)
+		local size = self:size()
 		if not i then
 			i = 0
 		elseif i < 0 then
-			i = self:size() - i
+			i = size - i
 		end
 		if not j then
-			j = self:size()
+			j = size
 		elseif j < 0 then
-			j = self:size() - j
+			j = size - j
 		end
-		assert(i >= 0 and j >= 0, 'slice out of range')
+		assert(0 <= i and i < size, 'slice i out of range')
+		assert(0 <= j and j < size, 'slice j out of range')
 		return rmt.meta(self.front + i, self.front + j)
-	end
-
-	function rmt.copy(self, from, size)
-		assert(size <= self:size() * self.sizeof, 'out of range')
-		copy(self.front, from, size)
 	end
 
 	-- output range api
@@ -120,6 +122,12 @@ function range.range_type(declaration)
 	function rmt.write_back(self, v)
 		self:set_back(v)
 		self:pop_back()
+	end
+	function rmt.write_front_range(self, from)
+		local size = from:size()
+		assert(size <= self:size() * self.sizeof, 'out of range')
+		copy(self.front, from.front, size)
+		self:pop_front(size)
 	end
 	-- array manipulation functions
 	function rmt.from_vla(array)
