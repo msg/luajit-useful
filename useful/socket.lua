@@ -195,6 +195,17 @@ socket.Socket = Class({
 		return C.send(self.fd, buf, len, flags or 0)
 	end,
 
+	send_all = function(self, buf, len)
+		local nbytes = 0
+		while nbytes < len do
+			local n = self:send(buf, len)
+			nbytes = nbytes + n
+			buf = buf + n
+			len = len - n
+		end
+		return nbytes
+	end,
+
 	close = function(self)
 		return C.close(self.fd)
 	end,
