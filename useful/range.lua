@@ -28,8 +28,8 @@ function range.range_type(declaration)
 	end
 
 	local rmt	= { }
-
 	rmt.__index	= rmt
+
 	rmt.rmt		= rmt
 	rmt.declaration	= declaration
 	rmt.sizeof	= sizeof(declaration)
@@ -92,6 +92,11 @@ function range.range_type(declaration)
 		self:pop_front(size)
 		return r8
 	end
+	function rmt.read_front_type(self, type)
+		local value = cast(type..'*', self.front)[0]
+		self:pop_front(sizeof(type))
+		return value
+	end
 	-- forward range api
 	function rmt.save(self) return rmt.meta(self.front, self.back) end
 	-- random access range api
@@ -129,13 +134,18 @@ function range.range_type(declaration)
 		copy(self.front, from.front, size)
 		self:pop_front(size)
 	end
+	function rmt.write_front_type(self, type, value)
+		cast(type..'*', self.front)[0] = value
+		self:pop_front(sizeof(type))
+	end
+
 	-- array manipulation functions
 	function rmt.from_vla(array)
 		return rmt.meta(array, array + sizeof(array))
 	end
 	function rmt.vla(size, ...)
 		local vla = new(rmt.declaration..'[?]', size, ...)
-		return vla,  rmt.from_vla(vla)
+		return vla, rmt.from_vla(vla)
 	end
 	function rmt.to_vla(self)
 		local size	= self:size()
