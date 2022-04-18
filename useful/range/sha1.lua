@@ -100,8 +100,11 @@ sha1.sha1 = function(m8, len)
 		h[3] = h[3] + d
 		h[4] = h[4] + e
 	end
+	for i=0,4 do
+		h[i] = bswap(h[i])
+	end
 
-	return h
+	return h, uint32.from_vla(h)
 end
 
 local function test()
