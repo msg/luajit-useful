@@ -38,6 +38,14 @@ b64d_8[PAD] = 0 -- padding should just be zero
 
 -- aaaaaa aabbbb bbbbcc cccccc
 
+base64.encode_length = function(from_length)
+	return 4 * math.floor((from_length + 2) / 3)
+end
+
+base64.decode_length = function(from_length)
+	return 3 * math.floor((from_length + 3) / 4)
+end
+
 base64.encode = function(i8, o8)
 	local function encode_chunk(i, o)
 		o[0] = b64e_8[                                 rshift(i[0], 2) ]
