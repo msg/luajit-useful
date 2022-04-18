@@ -141,7 +141,7 @@ function range.range_type(declaration)
 
 	-- array manipulation functions
 	function rmt.from_vla(array)
-		return rmt.meta(array, array + sizeof(array))
+		return rmt.meta(array, array + sizeof(array) / rmt.sizeof)
 	end
 	function rmt.vla(size, ...)
 		local vla = new(rmt.declaration..'[?]', size, ...)
