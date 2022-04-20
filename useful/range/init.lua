@@ -47,7 +47,7 @@ function range.range_type(declaration)
 	end
 	rmt.swap	= function(value)
 		value = cast('int64_t',value)
-		return rshift(bswap(value), 64-rmt.sizeof*8)
+		return rshift(bswap(value), 64-sizeof(declaration)*8)
 	end
 
 	-- input range api
@@ -130,7 +130,7 @@ function range.range_type(declaration)
 	end
 	function rmt.write_front_range(self, from)
 		local size = from:size()
-		assert(size <= self:size() * self.sizeof, 'out of range')
+		assert(size <= self:size() * sizeof(declaration), 'out of range')
 		copy(self.front, from.front, size)
 		self:pop_front(size)
 	end
@@ -141,17 +141,16 @@ function range.range_type(declaration)
 
 	-- array manipulation functions
 	function rmt.from_vla(array)
-		return rmt.meta(array, array + sizeof(array) / rmt.sizeof)
+		return rmt.meta(array, array + sizeof(array) / sizeof(declaration))
 	end
 	function rmt.vla(size, ...)
-		local vla = new(rmt.declaration..'[?]', size, ...)
+		local vla = new(declaration..'[?]', size, ...)
 		return vla, rmt.from_vla(vla)
 	end
 	function rmt.to_vla(self)
 		local size	= self:size()
-		local size1	= sizeof(self.declaration)
 		local array	= rmt.vla(size)
-		copy(array, self.front, size * size1)
+		copy(array, self.front, size * sizeof(declaration))
 		return array
 	end
 	function rmt.from_string(s)
@@ -159,7 +158,7 @@ function range.range_type(declaration)
 		return rmt.meta(p, p + #s)
 	end
 	function rmt.to_string(self)
-		return fstring(self.front, self:size())
+		return fstring(self.front, self:size() * sizeof(declaration))
 	end
 	rmt.__tostring = rmt.to_string
 
