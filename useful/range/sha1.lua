@@ -14,13 +14,19 @@ local  bnot	=  bit.bnot
 local  bor	=  bit.bor
 local  bswap	=  bit.bswap
 local  bxor	=  bit.bxor
+local  lshift	=  bit.lshift
 local  rol	=  bit.rol
+local  rshift	=  bit.rshift
 local  tohex	=  bit.tohex
 
 local range	= require('useful.range')
 local  uint8	=  range.uint8
 local  uint32	=  range.uint32
 local  uint64	=  range.uint64
+
+sha1.sha1_length = function(from_length)
+	return lshift(rshift(from_length + 8 + 1 + 0x3f, 6), 6)
+end
 
 -- m8:  must be 64 byte aligned
 -- len: must < #m8 - 8
@@ -35,7 +41,7 @@ sha1.sha1 = function(m8, len)
 	r8:write_front(0x80)
 
 	-- pad to multiple of 64 minus 64bits minus 1 from added 0x80
-	local padding_len = band(64 - band(len + 8, 0x3f), 0x3f) - 1
+	local padding_len = band(64 - band(len + 8 + 1, 0x3f), 0x3f)
 	for _=0,padding_len-1 do
 		r8:write_front(0)
 	end
