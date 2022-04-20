@@ -54,6 +54,7 @@ base64.encode = function(i8, o8)
 		o[3] = b64e_8[           band(i[2], 0x3f)                      ]
 	end
 
+	assert(#o8 >= base64.encode_length(#i8), 'output not big enough')
 	local so8 = o8:save()
 	if #i8 % 3 > 0 then i8.back[0] = 0 end
 	if #i8 % 3 > 1 then i8.back[1] = 0 end
@@ -85,6 +86,7 @@ base64.decode = function(i8, o8)
 		o[1] = bor(lshift(band(b64d_8[b],0xf), 4),rshift(b64d_8[c],2))
 		o[2] = bor(lshift(band(b64d_8[c],0x3), 6),       b64d_8[d]   )
 	end
+	assert(#o8 >= base64.decode_length(#i8), 'output not big enough')
 	local so8 = o8:save()
 	local pad = 0
 	do
