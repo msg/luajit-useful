@@ -27,12 +27,14 @@ function range.range_type(declaration)
 		return range_types[declaration]
 	end
 
+	local sizeof_decl = sizeof(declaration)
+
 	local rmt	= { }
 	rmt.__index	= rmt
 
 	rmt.rmt		= rmt
 	rmt.declaration	= declaration
-	rmt.sizeof	= sizeof(declaration)
+	rmt.sizeof	= sizeof_decl
 	rmt.sizemask	= rmt.sizeof - 1
 	rmt.pointer	= typeof(rmt.declaration .. '*')
 	rmt.struct	= typeof('struct { $ front, back; }', rmt.pointer)
@@ -47,7 +49,7 @@ function range.range_type(declaration)
 	end
 	rmt.swap	= function(value)
 		value = cast('int64_t',value)
-		return rshift(bswap(value), 64-sizeof(declaration)*8)
+		return rshift(bswap(value), 64-sizeof_decl*8)
 	end
 
 	-- input range api
@@ -130,7 +132,7 @@ function range.range_type(declaration)
 	end
 	function rmt.write_front_range(self, from)
 		local size = from:size()
-		assert(size <= self:size() * sizeof(declaration), 'out of range')
+		assert(size <= self:size() * sizeof_decl, 'out of range')
 		copy(self.front, from.front, size)
 		self:pop_front(size)
 	end
@@ -141,7 +143,7 @@ function range.range_type(declaration)
 
 	-- array manipulation functions
 	function rmt.from_vla(array)
-		return rmt.meta(array, array + sizeof(array) / sizeof(declaration))
+		return rmt.meta(array, array + sizeof(array) / sizeof_decl)
 	end
 	function rmt.vla(size, ...)
 		local vla = new(declaration..'[?]', size, ...)
@@ -150,7 +152,7 @@ function range.range_type(declaration)
 	function rmt.to_vla(self)
 		local size	= self:size()
 		local array	= rmt.vla(size)
-		copy(array, self.front, size * sizeof(declaration))
+		copy(array, self.front, size * sizeof_decl)
 		return array
 	end
 	function rmt.from_string(s)
@@ -158,7 +160,7 @@ function range.range_type(declaration)
 		return rmt.meta(p, p + #s)
 	end
 	function rmt.to_string(self)
-		return fstring(self.front, self:size() * sizeof(declaration))
+		return fstring(self.front, self:size() * sizeof_decl)
 	end
 	rmt.__tostring = rmt.to_string
 
