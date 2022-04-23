@@ -71,6 +71,17 @@ function range.range_type(declaration)
 		self:pop_front()
 		return e
 	end
+	function rmt.read_front_size(self, size)
+		assert(#self >= size, 'out of range')
+		local r8 = rmt.meta(self.front, self.front + size)
+		self:pop_front(size)
+		return r8
+	end
+	function rmt.read_front_type(self, type)
+		self:pop_front(sizeof(type))
+		-- -1 is ok because an assert is done in pop_front()
+		return cast(type..'*', self.front)[-1]
+	end
 	-- bi-directional range api
 	function rmt.pop_back(self, n)
 		assert(self.front < self.back, 'out of range')
@@ -89,15 +100,9 @@ function range.range_type(declaration)
 		self:pop_back()
 		return e
 	end
-	function rmt.read_front_size(self, size)
-		local r8 = rmt.meta(self.front, self.front + size)
-		self:pop_front(size)
-		return r8
-	end
-	function rmt.read_front_type(self, type)
-		local value = cast(type..'*', self.front)[0]
-		self:pop_front(sizeof(type))
-		return value
+	function rmt.read_back_type(self, type)
+		self:pop_back(sizeof(type))
+		return cast(type..'*', self.back)[0]
 	end
 	-- forward range api
 	function rmt.save(self) return rmt.meta(self.front, self.back) end
@@ -126,10 +131,6 @@ function range.range_type(declaration)
 		self:set_front(v)
 		self:pop_front()
 	end
-	function rmt.write_back(self, v)
-		self:set_back(v)
-		self:pop_back()
-	end
 	function rmt.write_front_range(self, from)
 		local size = from:size()
 		assert(size <= self:size() * sizeof_decl, 'out of range')
@@ -139,6 +140,14 @@ function range.range_type(declaration)
 	function rmt.write_front_type(self, type, value)
 		cast(type..'*', self.front)[0] = value
 		self:pop_front(sizeof(type))
+	end
+	function rmt.write_back(self, v)
+		self:set_back(v)
+		self:pop_back()
+	end
+	function rmt.write_back_type(self, type, value)
+		self:pop_back(sizeof(type))
+		cast(type..'*', self.back)[0] = value
 	end
 
 	-- array manipulation functions
