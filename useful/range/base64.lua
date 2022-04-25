@@ -22,7 +22,7 @@ local  hexdump	=  strings.hexdump
 
 --                      1         2         3         4         5        6
 --            0123456789012345678901234567890123456789012345678901234567801234
-local b64s = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+local b64s = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 local b64e_8	= uint8.vla(64)
 copy(b64e_8, b64s, #b64s)
 local UNUSED	= 0x80
