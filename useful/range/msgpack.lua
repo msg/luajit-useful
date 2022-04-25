@@ -432,6 +432,7 @@ msgpack.PACKET_HEADER_SIZE	= PACKET_HEADER_SIZE
 -- NOTE: these functions modify the incoming range (r8) which is useful
 --       to append more messages before sending the output.
 
+
 local encode_header = function(length, r8)
 	local v16	= uint16.vla(1)
 	v16[0]		= uint16.swap(length)
@@ -447,7 +448,7 @@ msgpack.encode_packet = function(data, r8)
 	encode(data, r8)
 	p8.back		= r8.front
 
-	encode_header(p8:size(), sr8:save())
+	encode_header(#p8, sr8:save())
 	return uint8.meta(sr8.front, r8.front)
 end
 
@@ -462,7 +463,7 @@ msgpack.decode_header = decode_header
 
 msgpack.decode_packet = function(r8)
 	local length = decode_header(r8)
-	assert(length <= r8:size(), 'invalid length')
+	assert(length <= #r8, 'invalid length')
 	return decode(r8)
 end
 
