@@ -39,15 +39,15 @@ function range.range_type(declaration)
 	rmt.pointer	= typeof(rmt.declaration .. '*')
 	rmt.struct	= typeof('struct { $ front, back; }', rmt.pointer)
 	rmt.meta	= metatype(rmt.struct, rmt)
-	rmt.cast	= function(self, type_range)
+	function rmt.cast(self, type_range)
 		return type_range(cast(type_range.pointer, self.front),
 				cast(type_range.pointer, self.back))
 	end
-	rmt.set		= function(self, from)
+	function rmt.set(self, from)
 		self.front = cast(rmt.pointer, from.front)
 		self.back = cast(rmt.pointer, from.back)
 	end
-	rmt.swap	= function(value)
+	function rmt.swap(value)
 		value = cast('int64_t',value)
 		return rshift(bswap(value), 64-sizeof_decl*8)
 	end
@@ -110,7 +110,7 @@ function range.range_type(declaration)
 	function rmt.size(self) return self.back - self.front end
 	rmt.__len = rmt.size
 	function rmt.slice(self, i, j)
-		local size = self:size()
+		local size = #self
 		if not i then
 			i = 0
 		elseif i < 0 then
@@ -132,10 +132,9 @@ function range.range_type(declaration)
 		self:pop_front()
 	end
 	function rmt.write_front_range(self, from)
-		local size = from:size()
-		assert(size <= self:size() * sizeof_decl, 'out of range')
-		copy(self.front, from.front, size)
-		self:pop_front(size)
+		assert(#from <= #self * sizeof_decl, 'out of range')
+		copy(self.front, from.front, #from)
+		self:pop_front(#from)
 	end
 	function rmt.write_front_type(self, type, value)
 		cast(type..'*', self.front)[0] = value
@@ -159,9 +158,8 @@ function range.range_type(declaration)
 		return vla, rmt.from_vla(vla)
 	end
 	function rmt.to_vla(self)
-		local size	= self:size()
-		local array	= rmt.vla(size)
-		copy(array, self.front, size * sizeof_decl)
+		local array	= rmt.vla(#self)
+		copy(array, self.front, #self * sizeof_decl)
 		return array
 	end
 	function rmt.from_string(s)
@@ -169,7 +167,7 @@ function range.range_type(declaration)
 		return rmt.meta(p, p + #s)
 	end
 	function rmt.to_string(self)
-		return fstring(self.front, self:size() * sizeof_decl)
+		return fstring(self.front, #self * sizeof_decl)
 	end
 	rmt.__tostring = rmt.to_string
 
