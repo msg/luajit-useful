@@ -195,6 +195,23 @@ socket.Socket = Class({
 		return C.send(self.fd, buf, len, flags or 0)
 	end,
 
+	recv_all = function(self, buf, len)
+		local nbytes = 0
+		while nbytes < len do
+			local rc = self:recv(buf, len, C.MSG_WAITALL)
+			if rc > 0 then
+				nbytes = nbytes + rc
+			elseif nbytes > 0 then
+				break
+			elseif rc == 0 then
+				return rc
+			else
+				return rc
+			end
+		end
+		return nbytes
+	end,
+
 	send_all = function(self, buf, len)
 		local nbytes = 0
 		while nbytes < len do
