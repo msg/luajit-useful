@@ -311,7 +311,6 @@ slop.Slop = Class(slop.Transaction, {
 slop.TCPSlopServer = Class(slop.Slop, {
 	new = function(self, port)
 		slop.Slop.new(self)
-		self.stream = stream.TCPStream(stream.NOFD, 32768, 5)
 
 		self.tcp = self.stream.tcp
 		self.tcp:nonblock()
@@ -321,10 +320,9 @@ slop.TCPSlopServer = Class(slop.Slop, {
 	end,
 
 	process = function(self)
-		local inout = self.stream
 		local rc, from = self.tcp:accept(1) -- luacheck: ignore
 		if rc > 0 then
-			inout:reopen(rc)
+			local inout = stream.TCPStream(rc, 32768, 5)
 			while rc >= 0 do
 				rc = self:process_transaction(inout, inout)
 			end

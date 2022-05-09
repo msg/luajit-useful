@@ -41,6 +41,10 @@ stream.Stream = Class({
 		self:flush_read()
 	end,
 
+	__gc = function(self)
+		self:close()
+	end,
+
 	set_timeout = function(self, timeout)
 		if self.fd ~= stream.NOFD then
 			local fl = C.fcntl(self.fd, C.F_GETFL)
