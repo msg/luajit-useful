@@ -224,7 +224,9 @@ socket.Socket = Class({
 	end,
 
 	close = function(self)
-		return C.close(self.fd)
+		local rc = C.close(self.fd)
+		self.fd = -1
+		return rc
 	end,
 })
 

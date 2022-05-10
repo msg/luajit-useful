@@ -68,7 +68,9 @@ stream.Stream = Class({
 
 	close = function(self)
 		self:flush()
-		return C.close(self.fd)
+		local rc = C.close(self.fd)
+		self.fd = NOFD
+		return rc
 	end,
 
 	flush_read = function(self)
@@ -120,7 +122,7 @@ stream.Stream = Class({
 	end,
 
 	stream_close = function(self)
-		return C.close(self.fd)
+		return self:close()
 	end,
 
 	read_more = function(self)
