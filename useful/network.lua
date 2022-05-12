@@ -6,18 +6,10 @@ local network = { }
 local  sprintf	=  string.format
 
 local bit	= require('bit')
-local  arshift	=  bit.arshift
 local  band	=  bit.band
 local  bnot	=  bit.bnot
 local  bor	=  bit.bor
-local  bswap	=  bit.bswap
-local  bxor	=  bit.bxor
 local  lshift	=  bit.lshift
-local  rshift	=  bit.rshift
-local  rol	=  bit.rol
-local  ror	=  bit.ror
-local  tobit	=  bit.tobit
-local  tohex	=  bit.tohex
 
 local bits	= require('useful.bits')
 local  getbits	=  bits.getbits
@@ -58,7 +50,7 @@ end
 network.gateway = function(ifname)
 	local routes	= json.decode(io.popen('ip -j route'):read('*a'))
 	for _,route in ipairs(routes) do
-		if ifname ~= nil and route.dev ~= ifname then
+		if ifname ~= nil and route.dev ~= ifname then --luacheck:ignore
 		elseif route.gateway ~= nil then
 			return network.stoip(route.gateway)
 		end
@@ -68,9 +60,9 @@ end
 network.config = function(ifname)
 	local address	= json.decode(io.popen('ip -j address show'):read('*a'))
 	for _,entry in ipairs(address) do
-		if entry.ifname ~= ifname then
-		elseif entry.addr_info == nil then
-		elseif entry.addr_info[1] == nil then
+		if entry.ifname ~= ifname then		--luacheck:ignore
+		elseif entry.addr_info == nil then	--luacheck:ignore
+		elseif entry.addr_info[1] == nil then	--luacheck:ignore
 		else
 			local info	= entry.addr_info[1]
 			local addr	= info['local']

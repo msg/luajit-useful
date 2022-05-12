@@ -5,8 +5,6 @@ local statemachine = { }
 
 local class	= require('useful.class')
 local  Class	=  class.Class
-local system	= require('useful.system')
-local  is_main	=  system.is_main
 
 local function make_stop_states(...)
 	local states = {...}

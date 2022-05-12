@@ -7,7 +7,6 @@ local  insert	=  table.insert
 local  concat	=  table.concat
 
 local system	= require('useful.system')
-local  is_main	=  system.is_main
 local  pack	=  system.pack
 local  setfenv	=  system.setfenv
 local  unpack	=  system.unpack

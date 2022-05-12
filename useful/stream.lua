@@ -21,12 +21,11 @@ local pstring	= require('posix.string') -- luacheck: ignore
 local class	= require('useful.class')
 local  Class	=  class.Class
 local socket	= require('useful.socket')
-local system	= require('useful.system')
-local  is_main	=  system.is_main
 
 local  min	=  math.min
 
-stream.NOFD = -1 -- when the Stream has no file descriptor
+local NOFD	= -1 -- when the Stream has no file descriptor
+stream.NOFD	= NOFD
 
 stream.Stream = Class({
 	new = function(self, fd, size, timeout, unget_size)

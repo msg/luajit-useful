@@ -30,8 +30,6 @@ local class		= require('useful.class')
 local  Class		=  class.Class
 local stdio		= require('useful.stdio')
 local  sprintf		=  stdio.sprintf
-local system		= require('useful.system')
-local  is_main		=  system.is_main
 
 function socket.syserror(call)
 	local errno = ffi.errno()
