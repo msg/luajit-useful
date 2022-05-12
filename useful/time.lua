@@ -33,11 +33,16 @@ local time = { }
 --         calculations.
 --
 local ffi	= require('ffi')
-local C		= ffi.C
+local  C	=  ffi.C
+local  fstring	=  ffi.string
+local  metatype	=  ffi.metatype
+local  new	=  ffi.new
+local  sizeof	=  ffi.sizeof
+local  typeof	=  ffi.typeof
 
-local posix_time = require('posix.time')
+		  require('posix.time')
 
-local timespec	= ffi.typeof('struct timespec')
+local timespec	= typeof('struct timespec')
 
 local MILLI_HZ	= 1000
 local MICRO_HZ	= 1000 * MILLI_HZ
@@ -45,6 +50,7 @@ local NANO_HZ	= 1000 * MICRO_HZ
 
 local function fix_nano(ts)
 	-- NOTE: this only handles overflow of < abs(NANO_HZ * 2)
+	--       because of int32_t has a range of +/- 2G.
 	while ts.tv_nsec > NANO_HZ do
 		ts.tv_sec = ts.tv_sec + 1
 		ts.tv_nsec = ts.tv_nsec - NANO_HZ
@@ -70,9 +76,9 @@ time.timespec_to_number = timespec_to_number
 time.iso8601_fmt = '%Y%m%dT%H%M%S%Z'
 
 function time.strftime(fmt, tm)
-	local s = ffi.new('char[1024]')
-	local rc = C.strftime(s, ffi.sizeof(s), fmt, tm)
-	return ffi.string(s, rc)
+	local s = new('char[1024]')
+	local rc = C.strftime(s, sizeof(s), fmt, tm)
+	return fstring(s, rc)
 end
 
 function time.iso8601(ts)
@@ -134,11 +140,11 @@ local timespec_mt = {
 		end
 	end,
 	gmtime = function(ts)
-		local t = ffi.new('int64_t[1]', ts.tv_sec)
+		local t = new('int64_t[1]', ts.tv_sec)
 		return C.gmtime(t)
 	end,
 	localtime = function(ts)
-		local t = ffi.new('int64_t[1]', ts.tv_sec)
+		local t = new('int64_t[1]', ts.tv_sec)
 		return C.localtime(t)
 	end,
 	to_number = function(ts)
@@ -147,11 +153,11 @@ local timespec_mt = {
 }
 timespec_mt.__index = timespec_mt
 
-time.timespec = ffi.metatype('struct timespec', timespec_mt)
+time.timespec = metatype('struct timespec', timespec_mt)
 
 function time.now(ts)
 	ts = ts or timespec()
-	if C.clock_gettime(posix_time.CLOCK_REALTIME, ts) < 0 then
+	if C.clock_gettime(C.CLOCK_REALTIME, ts) < 0 then
 		ts = nil
 	end
 	return ts
@@ -161,11 +167,14 @@ function time.sleep(ts_or_s)
 	if type(ts_or_s) == 'number' then
 		ts_or_s = number_to_timespec(ts_or_s)
 	end
-	return C.clock_nanosleep(posix_time.CLOCK_REALTIME, 0, ts_or_s, nil)
+	return C.clock_nanosleep(C.CLOCK_REALTIME, 0, ts_or_s, nil)
 end
 
 function time.dt(end_ts, begin_ts)
 	return time.timespec_to_number(end_ts - begin_ts)
 end
+
+time.to_timespec	= time.number_to_timespec
+time.to_number		= time.timespec_to_number
 
 return time
