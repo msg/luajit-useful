@@ -194,31 +194,29 @@ socket.Socket = Class({
 	end,
 
 	recv_all = function(self, buf, len)
-		local nbytes = 0
-		while nbytes < len do
-			local rc = self:recv(buf, len, C.MSG_WAITALL)
+		local p		= cast('char *', buf)
+		while len > 0 do
+			local rc = self:recv(p, len, C.MSG_WAITALL)
 			if rc > 0 then
-				nbytes = nbytes + rc
-			elseif nbytes > 0 then
-				break
+				p	= p + rc
+				len	= len - rc
 			elseif rc == 0 then
 				return rc
 			else
 				return rc
 			end
 		end
-		return nbytes
+		return p - buf
 	end,
 
 	send_all = function(self, buf, len)
-		local nbytes = 0
-		while nbytes < len do
+		local p		= cast('char *', buf)
+		while len > 0 do
 			local n = self:send(buf, len)
-			nbytes = nbytes + n
-			buf = buf + n
-			len = len - n
+			p	= p + n
+			len	= len - n
 		end
-		return nbytes
+		return p - buf
 	end,
 
 	close = function(self)
