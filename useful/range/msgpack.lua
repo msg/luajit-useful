@@ -200,6 +200,11 @@ end
 local encode
 
 local function table_size(value)
+	local size = 0
+	for _,_ in pairs(value) do
+		size = size + 1
+	end
+	return size
 end
 
 local function encode_map(value, size, r8)
