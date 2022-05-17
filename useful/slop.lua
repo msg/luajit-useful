@@ -15,7 +15,8 @@ local strings	= require('useful.strings')
 local  strip	=  strings.strip
 local  split	=  strings.split
 local  ljust	=  strings.ljust
-		  require('useful.socket')
+local socket	= require('useful.socket')
+local  TCP	=  socket.TCP
 local stream	= require('useful.stream')
 local system	= require('useful.system')
 local  is_main	=  system.is_main
@@ -309,10 +310,10 @@ slop.Slop = Class(slop.Transaction, {
 })
 
 slop.TCPSlopServer = Class(slop.Slop, {
-	new = function(self, port)
+	new = function(self, port, timeout)
 		slop.Slop.new(self)
-
-		self.tcp = self.stream.tcp
+		self.timeout = timeout or 5
+		self.tcp = TCP()
 		self.tcp:nonblock()
 		self.tcp:reuseaddr()
 		self.tcp:bind('*', port)
@@ -322,7 +323,7 @@ slop.TCPSlopServer = Class(slop.Slop, {
 	process = function(self)
 		local rc, from = self.tcp:accept(1) -- luacheck: ignore
 		if rc > 0 then
-			local inout = stream.TCPStream(rc, 32768, 5)
+			local inout = stream.TCPStream(rc, 32768, self.timeout)
 			while rc >= 0 do
 				rc = self:process_transaction(inout, inout)
 			end
