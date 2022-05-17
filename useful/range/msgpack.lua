@@ -199,47 +199,46 @@ end
 
 local encode
 
-local function encode_table(value, r8)
-	local is_map = false
-	local index = #value
-	local size = index
-	if index == 0 then
-		index = nil
-	end
-	if next(value, index) then
-		is_map = true
-	end
-	if is_map then
-		size = 0
-		for _,_ in pairs(value) do
-			size = size + 1
-		end
-		if     size < 0x10 then
-			r8:write_front(bor(FIXMAP, size))
-		elseif size < 0x10000 then
-			encode_16(MAP16, r8, size)
-		elseif size < 0x100000000 then
-			encode_32(MAP32, r8, size)
-		else
-			error("map too big: " .. size)
-		end
-		for key, part in pairs(value) do
-			encode(key, r8)
-			encode(part, r8)
-		end
+local function table_size(value)
+end
+
+local function encode_map(value, size, r8)
+	if     size < 0x10 then
+		r8:write_front(bor(FIXMAP, size))
+	elseif size < 0x10000 then
+		encode_16(MAP16, r8, size)
+	elseif size < 0x100000000 then
+		encode_32(MAP32, r8, size)
 	else
-		if     size < 0x10 then
-			r8:write_front(bor(FIXARRAY, size))
-		elseif size < 0x10000 then
-			encode_16(ARRAY16, size, r8)
-		elseif size < 0x100000000 then
-			encode_32(ARRAY32, size, r8)
-		else
-			error("Array too long: " .. size .. "items")
-		end
-		for i = 1,size do
-			encode(value[i], r8)
-		end
+		error("map too big: " .. size)
+	end
+	for key, part in pairs(value) do
+		encode(key, r8)
+		encode(part, r8)
+	end
+end
+
+local function encode_array(value, size, r8)
+	if     size < 0x10 then
+		r8:write_front(bor(FIXARRAY, size))
+	elseif size < 0x10000 then
+		encode_16(ARRAY16, size, r8)
+	elseif size < 0x100000000 then
+		encode_32(ARRAY32, size, r8)
+	else
+		error("Array too long: " .. size .. "items")
+	end
+	for i = 1,size do
+		encode(value[i], r8)
+	end
+end
+
+local function encode_table(value, r8)
+	local size = table_size(value)
+	if size ~= value then
+		encode_map(value, size, r8)
+	else
+		encode_array(value, size, r8)
 	end
 end
 

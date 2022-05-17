@@ -184,48 +184,57 @@ end
 
 local encode
 
-local function encode_table(value)
-	local is_map = false
-	local size = #value
-	if size == 0 then
-		size = nil
+local function table_size(value)
+	local size = 0
+	for _,_ in pairs(value) do
+		size = size + 1
 	end
-	if next(value, size) then
-		is_map = true
+	return soze
+end
+
+local function encode_map(value, size)
+	local parts = {}
+	local count = 0
+	for key, part in pairs(value) do
+		insert(parts, encode(key))
+		insert(parts, encode(part))
+		count = count + 1
 	end
-	if is_map == true then
-		local parts = {}
-		local count = 0
-		for key, part in pairs(value) do
-			insert(parts, encode(key))
-			insert(parts, encode(part))
-			count = count + 1
-		end
-		value = concat(parts)
-		if count < 0x10 then
-			return encode8(bor(0x80, count)) .. value
-		elseif count < 0x10000 then
-			return encode8(0xde) .. encode16(count) .. value
-		elseif count < 0x100000000 then
-			return encode8(0xdf) .. encode32(count) .. value
-		else
-			error("map too big: " .. count)
-		end
+	value = concat(parts)
+	if count < 0x10 then
+		return encode8(bor(0x80, count)) .. value
+	elseif count < 0x10000 then
+		return encode8(0xde) .. encode16(count) .. value
+	elseif count < 0x100000000 then
+		return encode8(0xdf) .. encode32(count) .. value
 	else
-		local parts = {}
-		for i = 1,size do
-			insert(parts, encode(value[i]))
-		end
-		value = concat(parts)
-		if size < 0x10 then
-			return encode8(bor(0x90, size)) .. value
-		elseif size < 0x10000 then
-			return encode8(0xdc) .. encode16(size) .. value
-		elseif size < 0x100000000 then
-			return encode8(0xdd) .. encode32(size) .. value
-		else
-			error("Array too long: " .. size .. "items")
-		end
+		error("map too big: " .. count)
+	end
+end
+
+local function encode_array(value, size)
+	local parts = {}
+	for i = 1,size do
+		insert(parts, encode(value[i]))
+	end
+	value = concat(parts)
+	if size < 0x10 then
+		return encode8(bor(0x90, size)) .. value
+	elseif size < 0x10000 then
+		return encode8(0xdc) .. encode16(size) .. value
+	elseif size < 0x100000000 then
+		return encode8(0xdd) .. encode32(size) .. value
+	else
+		error("Array too long: " .. size .. "items")
+	end
+end
+
+local function encode_table(value)
+	local size = table_size(value)
+	if size ~= #value then
+		encode_map(value, size)
+	else
+		encode_array(value, size)
 	end
 end
 
