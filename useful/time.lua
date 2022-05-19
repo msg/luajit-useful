@@ -174,7 +174,4 @@ function time.dt(end_ts, begin_ts)
 	return time.timespec_to_number(end_ts - begin_ts)
 end
 
-time.to_timespec	= time.number_to_timespec
-time.to_number		= time.timespec_to_number
-
 return time
