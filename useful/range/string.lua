@@ -60,10 +60,10 @@ end
 
 local NL	= byte('\n')	range_string.NL		= NL
 local CR	= byte('\r')	range_string.CR		= CR
-local TAB	= byte('\t')	range_string.TAB		= TAB
+local TAB	= byte('\t')	range_string.TAB	= TAB
 local SPACE	= byte(' ')	range_string.SPACE	= SPACE
-local AMP	= byte('&')	range_string.AMP		= AMP
-local DOT	= byte('.')	range_string.DOT		= DOT
+local AMP	= byte('&')	range_string.AMP	= AMP
+local DOT	= byte('.')	range_string.DOT	= DOT
 local SLASH	= byte('/')	range_string.SLASH	= SLASH
 local COLON	= byte(':')	range_string.COLON	= COLON
 local EQUALS	= byte('=')	range_string.EQUALS	= EQUALS
