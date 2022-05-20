@@ -174,4 +174,12 @@ function time.dt(end_ts, begin_ts)
 	return time.timespec_to_number(end_ts - begin_ts)
 end
 
+time.elapsed = function(start)
+	return time.dt(time.now(), start)
+end
+
+time.timeout = function(start, timeout)
+	return time.elapsed(start) > timeout
+end
+
 return time
