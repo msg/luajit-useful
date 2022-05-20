@@ -14,21 +14,19 @@ local  errno		=  ffi.errno
 
 local class		= require('useful.class')
 local  Class		=  class.Class
-
-local time		= require('util.time')
-local  now		=  time.now
-
-local scheduler		= require('scheduler')
+local scheduler		= require('useful.scheduler')
 local  check		=  scheduler.check
 local  exit		=  scheduler.exit
 local  sleep		=  scheduler.sleep
 local  spawn		=  scheduler.spawn
 local  step		=  scheduler.step
-local poll		= require('scheduler.poll')
+local poll		= require('useful.scheduler.poll')
 local  Poll		=  poll.Poll
-local socket		= require('scheduler.socket')
+local socket		= require('useful.scheduler.socket')
 local  TCP		=  socket.TCP
 local  TCP_RPC		=  socket.TCP_RPC
+local time		= require('useful.time')
+local  now		=  time.now
 
 rpcpeer.RPCPeer = Class({
 	new = function(self, timeout, max)
@@ -92,8 +90,6 @@ rpcpeer.RPCPeer = Class({
 			local err = errno()
 			if serve_ignore[err] then
 				return
-			else
-				--print('serve errno=', err)
 			end
 			error('serve error errno='..tostring(err))
 		end

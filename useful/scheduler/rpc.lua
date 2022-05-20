@@ -26,9 +26,6 @@ local  decode		= msgpack.decode
 local  FIXSTR		= msgpack.FIXSTR
 local  BIN8		= msgpack.BIN8
 
-local scheduler		= require('scheduler')
-local  spawn		=  scheduler.spawn
-
 local HEADER_SIZE		= 12
 scheduler_rpc.HEADER_SIZE	= HEADER_SIZE
 

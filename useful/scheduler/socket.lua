@@ -13,32 +13,21 @@ local  bor	=  bit.bor
 
 		  require('posix.poll')
 
-local class	= require('useful.class')
-local  Class	=  class.Class
-local range	= require('useful.range')
-local  uint8	=  range.uint8
-local socket	= require('useful.socket')
-local strings	= require('useful.strings')
-local tables	= require('useful.tables')
-
+local class		= require('useful.class')
+local  Class		=  class.Class
+local range		= require('useful.range')
+local  uint8		=  range.uint8
 local msgpack		= require('useful.range.msgpack')
 local  decode		=  msgpack.decode
-local scheduler_rpc	= require('scheduler.rpc')
+local scheduler		= require('useful.scheduler')
+local  check		=  scheduler.check
+local scheduler_rpc	= require('useful.scheduler.rpc')
 local  decode_header	=  scheduler_rpc.decode_header
 local  RPC		=  scheduler_rpc.RPC
 local  HEADER_SIZE	=  scheduler_rpc.HEADER_SIZE
-
-local time	= require('util.time')
-local  now	=  time.now
-
-local scheduler	= require('scheduler')
-local  check	=  scheduler.check
---local  signal	=  scheduler.signal
---local  sleep	=  scheduler.sleep
---local  spawn	=  scheduler.spawn
---local  step	=  scheduler.step
---local  wait	=  scheduler.wait
---local  yield	=  scheduler.yield
+local socket		= require('useful.socket')
+local time		= require('useful.time')
+local  now		=  time.now
 
 local wait_for_events = function(pfd, timeout)
 	local start = now()
@@ -165,14 +154,14 @@ scheduler_socket.TCP_RPC = Class(RPC, {
 	end,
 
 	send = function(self, msg, to)			--luacheck:ignore
-		local out,o8	= uint8.vla(self.size)
+		local _,o8	= uint8.vla(self.size)
 		local m8	= self:encode_message(msg, o8)
 		local rc	= self.sock:send_all(m8.front, #m8)
 		return rc
 	end,
 
 	recv = function(self, timeout)
-		local inp,in8	= uint8.vla(self.size)
+		local _,in8	= uint8.vla(self.size)
 		local i8	= in8:save()
 		self.sock:set_timeout(timeout)
 		i8.back = i8.front + self.sock:recv_all(i8.front, HEADER_SIZE)
