@@ -135,7 +135,7 @@ local TCP = Class(socket_TCP, {
 	send_all = function(self, buf, len)
 		local nbytes = 0
 		while len > 0 do
-			local n = self:send(buf, len)
+			local n = self:send(buf, len, C.MSG_NOSIGNAL)
 			nbytes = nbytes + n
 			buf = buf + n
 			len = len - n
