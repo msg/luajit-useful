@@ -246,7 +246,7 @@ local RPC = Class({
 
 	wrap = function(self, name)
 		return function(...)
-			local req = self:call(name)(self, ...)
+			local req = self:call(name)(self, self.to, ...)
 			self:send(req.msg, self.to)
 			return req
 		end
