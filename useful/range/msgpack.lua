@@ -15,25 +15,26 @@ local msgpack	= { }
 local  floor	=  math.floor
 local  huge	=  math.huge
 
+local ffi	= require('ffi')
+local  cast	=  ffi.cast
+local  fstring	=  ffi.string
+local  new	=  ffi.new
+local  sizeof	=  ffi.sizeof
 local bit	= require('bit')
 local  band	=  bit.band
 local  bor	=  bit.bor
 local  bswap	=  bit.bswap
 local  rshift	=  bit.rshift
 local  tobit	=  bit.tobit
-local ffi	= require('ffi')
-local  cast	=  ffi.cast
-local  fstring	=  ffi.string
-local  sizeof	=  ffi.sizeof
 local bigendian	= ffi.abi('be')
 
 local range	= require('useful.range')
+local  int32	=  range.int32
+local  int64	=  range.int64
 local  uint8	=  range.uint8
 local  uint16	=  range.uint16
 local  uint32	=  range.uint32
 local  uint64	=  range.uint64
-local  float	=  range.float
-local  double	=  range.double
 
 local fix_endian_64, fix_endian_32, fix_endian_16
 
@@ -155,10 +156,12 @@ end
 local function encode_number(value, r8)
 	if value == huge or value == -huge or value ~= value then
 		-- Encode Infinity, -Infinity and NaN as floats
-		encode_32(FLOAT32, value, r8)
+		value = new('float[1]', value)
+		encode_32(FLOAT32, cast('int32_t *', value)[0], r8)
 	elseif floor(value) ~= value then
 		-- Encode other non-ints as doubles
-		encode_64(FLOAT64, value, r8)
+		value = new('double[1]', value)
+		encode_64(FLOAT64, cast('int64_t *', value)[0], r8)
 	else
 		encode_integer(value, r8)
 	end
@@ -361,15 +364,17 @@ decoders[BIN32]		= function(r8)
 	return decode_with_size(decode_32(r8), r8)
 end
 decoders[FLOAT32]	= function(r8)
-	local f32	= r8:cast(float)
-	local value	= r8.swap(f32:read_front())
-	r8:set(f32)
+	local p32	= cast('int32_t *', r8.front)
+	local x32	= new('int32_t[1]', fix_endian_32(p32[0]))
+	local value	= cast('float *', x32)[0]
+	r8:pop_front(sizeof('int32_t'))
 	return value
 end
 decoders[FLOAT64]	= function(r8)
-	local d64	= r8:cast(double)
-	local value	= r8.swap(d64:read_front())
-	r8:set(d64)
+	local p64	= cast('int64_t *', r8.front)
+	local x64	= new('int64_t[1]', fix_endian_64(p64[0]))
+	local value	= cast('double *', x64)[0]
+	r8:pop_front(sizeof('int64_t'))
 	return value
 end
 decoders[UINT8]		= function(r8) return decode_8(r8) end
