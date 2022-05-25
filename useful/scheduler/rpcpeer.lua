@@ -128,7 +128,8 @@ rpcpeer.RPCPeer = Class({
 		if rc ~= nil then
 			self.rpc.sock = self.sock
 			self.sock:nonblock()
-			spawn(self.client, self, self.sock, 0)
+			self.poll:add(self.sock)
+			spawn(self.client, self, self.sock)
 			spawn(self.submit, self)
 		end
 		return rc, msg
