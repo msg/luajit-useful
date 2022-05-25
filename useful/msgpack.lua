@@ -189,10 +189,10 @@ local function table_size(value)
 	for _,_ in pairs(value) do
 		size = size + 1
 	end
-	return soze
+	return size
 end
 
-local function encode_map(value, size)
+local function encode_map(value)
 	local parts = {}
 	local count = 0
 	for key, part in pairs(value) do
