@@ -66,9 +66,7 @@ rpcpeer.RPCPeer = Class({
 		}
 		local function client_error(sock)	--luacheck:ignore
 			local err = errno()
-			--print('client_error err=', err)
 			if not client_ignore[err] then
-				--print('client done', sock)
 				self:remove(sock)
 			end
 		end
