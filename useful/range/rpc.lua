@@ -246,9 +246,7 @@ local RPC = Class({
 
 	wrap = function(self, name)
 		return function(...)
-			local req = self:call(name)(self, self.to, ...)
-			self:send(req.msg, self.to)
-			return req
+			return self:call(name)(self, ...)
 		end
 	end,
 
@@ -305,13 +303,11 @@ rpc.ThreadingRPC = Class(RPC, {
 		end
 	end,
 
-	call = function(self, name)
-		local call = RPC.call(self, name)
-		local to = rawget(self, 'to')
-		if to ~= nil then
-			return bind2(call, to)
-		else
-			return call
+	wrap = function(self, name)
+		return function(...)
+			local req = RPC.wrap(self, name)(...)
+			self:send(req.msg, self.to)
+			return req
 		end
 	end,
 
