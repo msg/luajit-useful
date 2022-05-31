@@ -29,8 +29,6 @@ local  tobit	=  bit.tobit
 local bigendian	= ffi.abi('be')
 
 local range	= require('useful.range')
-local  int32	=  range.int32
-local  int64	=  range.int64
 local  uint8	=  range.uint8
 local  uint16	=  range.uint16
 local  uint32	=  range.uint32
