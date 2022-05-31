@@ -5,6 +5,7 @@ include_files = {
 	"threading.luac",
 	"useful/*.lua",
 	"useful/range/*.lua",
+	"useful/rpc/*.lua",
 	"useful/scheduler/*.lua",
 	"test/*.lua",
 	"test/*.lua.test",
