@@ -1,6 +1,6 @@
 #!/usr/bin/env luajit
 --
--- u s e f u l / r a n g e / r p c . l u a
+-- u s e f u l / r p c / i n i t . l u a
 --
 local rpc = { }
 
@@ -10,8 +10,6 @@ local  remove		=  table.remove
 
 local class		= require('useful.class')
 local  Class		=  class.Class
-local functional	= require('useful.functional')
-local  bind2		=  functional.bind2
 local range		= require('useful.range')
 local  uint8		=  range.uint8
 local  uint16		=  range.uint16

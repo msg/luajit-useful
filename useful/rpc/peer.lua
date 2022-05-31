@@ -1,8 +1,9 @@
 #!/usr/bin/luajit
 --
--- s c h e d u l e r / r p c p e e r . l u a
+-- u s e f u l / r p c / p e e r . l u a
 --
-local rpcpeer = { }
+
+local peer = { }
 
 package.path = './?/init.lua;'..package.path
 
@@ -28,7 +29,7 @@ local  TCP_RPC		=  socket.TCP_RPC
 local time		= require('useful.time')
 local  now		=  time.now
 
-rpcpeer.RPCPeer = Class({
+peer.RPCPeer = Class({
 	new = function(self, timeout, max)
 		self.timeout	= timeout or 0.05
 		self.max	= max or 2
@@ -136,4 +137,4 @@ rpcpeer.RPCPeer = Class({
 	end,
 })
 
-return rpcpeer
+return peer

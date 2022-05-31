@@ -1,4 +1,7 @@
 #!/usr/bin/luajit
+--
+-- u s e f u l / r p c / s o c k e t . l u a
+--
 
 local rpc_socket = { }
 
