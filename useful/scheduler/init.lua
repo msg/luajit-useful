@@ -44,7 +44,7 @@ local  remove		=  table.remove
 local  pack		=  table.pack			--luacheck:ignore
 local  unpack		=  table.unpack			--luacheck:ignore
 
-local time		= require('util.time')
+local time		= require('useful.time')
 local  now		=   time.now
 
 local READY	= 0	scheduler.READY		= READY
