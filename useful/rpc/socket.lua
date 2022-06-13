@@ -11,10 +11,10 @@ local range		= require('useful.range')
 local  uint8		=  range.uint8
 local msgpack		= require('useful.range.msgpack')
 local  decode		=  msgpack.decode
-local range_rpc		= require('useful.range.rpc')
-local  decode_header	=  range_rpc.decode_header
-local  RPC		=  range_rpc.RPC
-local  HEADER_SIZE	=  range_rpc.HEADER_SIZE
+local rpc		= require('useful.rpc')
+local  decode_header	=  rpc.decode_header
+local  RPC		=  rpc.RPC
+local  HEADER_SIZE	=  rpc.HEADER_SIZE
 
 rpc_socket.TCP_RPC = Class(RPC, {
 	new = function(self, sock, size, timeout, synchronous)

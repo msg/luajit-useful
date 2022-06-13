@@ -25,7 +25,8 @@ local poll		= require('useful.scheduler.poll')
 local  Poll		=  poll.Poll
 local socket		= require('useful.scheduler.socket')
 local  TCP		=  socket.TCP
-local  TCP_RPC		=  socket.TCP_RPC
+local rpc_socket	= require('useful.rpc.socket')
+local  TCP_RPC		=  rpc_socket.TCP_RPC
 local time		= require('useful.time')
 local  now		=  time.now
 
