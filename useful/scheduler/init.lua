@@ -41,9 +41,10 @@ local  co_yield		=  coroutine.yield
 
 local  insert		=  table.insert
 local  remove		=  table.remove
-local  pack		=  table.pack			--luacheck:ignore
-local  unpack		=  table.unpack			--luacheck:ignore
 
+local system		= require('useful.system')
+local  pack		=  system.pack
+local  unpack		=  system.unpack
 local time		= require('useful.time')
 local  now		=   time.now
 

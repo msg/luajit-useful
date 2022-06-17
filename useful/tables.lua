@@ -93,9 +93,6 @@ function tables.load_table(filename)
 	return tables.unserialize(data)
 end
 
-tables.pack	= pack
-tables.unpack	= unpack
-
 function tables.count(t)
 	local i = 0
 	for _,_ in pairs(t) do

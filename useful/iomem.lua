@@ -8,10 +8,11 @@ local  mmax	=  math.max
 local  mmin	=  math.min
 local  tconcat	=  table.concat
 local  tinsert	=  table.insert
-local  unpack	=  table.unpack or unpack -- luacheck: ignore
 
 local class	= require('useful.class')
 local  Class	=  class.Class
+local system	= require('useful.system')
+local  unpack	=  system.unpack
 
 local WriteIO = Class({
 	new = function(self)

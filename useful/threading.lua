@@ -12,11 +12,8 @@
 local threading = { }
 local threadingc = require('useful.threadingc')
 
-local pack	= table.pack  --luacheck:ignore
-if pack == nil then
-	local tables = require('useful.tables')
-	pack = tables.pack
-end
+local system	= require('useful.system')
+local  pack	= system.pack  --luacheck:ignore
 
 local exec	= threadingc.exec
 local lock	= threadingc.lock
@@ -28,15 +25,13 @@ local function setup() -- this is run in the management thread
 	end
 	init_ = true --luacheck:ignore
 
-	local min	= math.min
-	local insert	= table.insert
-	local pack	= table.pack  --luacheck:ignore
-	if pack == nil then
-		local tables = require('useful.tables')
-		pack = tables.pack
-	end
-	local remove	= table.remove --luacheck:ignore
-	local concat	= table.concat
+	local  min	=  math.min
+	local  insert	=  table.insert
+	local  remove	=  table.remove --luacheck:ignore
+	local  concat	=  table.concat
+
+	local system	= require('useful.system')	--luacheck:ignore
+	local  pack	=  system.pack			--luacheck:ignore
 
 	--
 	-- global data related stuff

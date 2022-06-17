@@ -5,7 +5,6 @@
 local rpc = { }
 
 local  insert		=  table.insert
-local  pack		=  table.pack -- luacheck:ignore
 local  remove		=  table.remove
 
 local class		= require('useful.class')
@@ -14,8 +13,11 @@ local range		= require('useful.range')
 local  uint8		=  range.uint8
 local  uint16		=  range.uint16
 local strings		= require('useful.strings')
+local system		= require('useful.system')
+local  pack		=  system.pack
+local  unpack		=  system.unpack
 local tables		= require('useful.tables')
-local  unpack		=  unpack or tables.unpack
+local  serialize	=  tables.serialize
 local threading		= require('useful.threading')
 
 local msgpack		= require('useful.range.msgpack')
@@ -45,7 +47,7 @@ local encode_packet = function(data, r8)
 	p8.back		= r8.front
 	sr8.back = r8.front
 	assert(p8.front[0] ~= 0x80,
-		'it is bad here: '..p8.front[0]..'\n'..tables.serialize(data, nil, '', '')..'\n'..
+		'it is bad here: '..p8.front[0]..'\n'..serialize(data, nil, '', '')..'\n'..
 		strings.hexdump(sr8:to_string()))
 
 	encode_header(#p8, sr8:save())

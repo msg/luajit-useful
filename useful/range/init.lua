@@ -19,6 +19,7 @@ local stdio	= require('useful.stdio')
 local  printf	=  stdio.printf
 local system	= require('useful.system')
 local  is_main	=  system.is_main
+local  unpack	=  system.unpack
 
 local range_types = { }
 
