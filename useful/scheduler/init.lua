@@ -167,11 +167,11 @@ end
 
 local last
 scheduler.step = function()
-	local current	= now()
-	last		= last or current
-	local dt	= time.dt(current, last)
-	last		= current
-	local threads_to_resume = {}
+	local current		= now()
+	last			= last or current
+	local dt		= time.dt(current, last)
+	last			= current
+	local threads_to_resume	= {}
 
 	for thread,state in pairs(pool) do
 		if thread_ready(thread, state, dt) then
