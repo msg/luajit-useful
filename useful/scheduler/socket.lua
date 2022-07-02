@@ -40,6 +40,7 @@ local wait_for_events = function(pfd, timeout)
 		return 0
 	end
 end
+socket.wait_for_events = wait_for_events
 
 local  socket_TCP	=  socket.TCP
 local TCP = Class(socket_TCP, {
