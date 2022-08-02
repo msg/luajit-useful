@@ -36,7 +36,7 @@ function socket.syserror(call)
 	return sprintf("%s: %d %s\n", call, errno, fstring(C.strerror(errno)))
 end
 
-function socket.getaddrinfo(host, port, protocol)
+local function getaddrinfo(host, port, protocol)
 	local hint		= new('struct addrinfo [1]')
 	local ai		= new('struct addrinfo *[1]')
 	hint[0].ai_flags	= C.AI_CANONNAME
@@ -56,10 +56,8 @@ function socket.getaddrinfo(host, port, protocol)
 	end
 
 	local a = ai[0]
-	if protocol ~= nil then
-		while a ~= nil and a.ai_protocol ~= protocol do
-			a = a.ai_next
-		end
+	while a ~= nil and a.ai_protocol ~= protocol do
+		a = a.ai_next
 	end
 	local addr = new('struct sockaddr_in [1]')
 	if a ~= nil then
@@ -74,6 +72,7 @@ function socket.getaddrinfo(host, port, protocol)
 	C.freeaddrinfo(ai[0])
 	return addr
 end
+socket.getaddrinfo = getaddrinfo
 
 socket.addr_to_ip_port = function(addr)
 	local host = ffi.string(C.inet_ntoa(addr.sin_addr))
@@ -165,7 +164,7 @@ socket.Socket = Class({
 	end,
 
 	bind = function(self, address, port)
-		local addr	= socket.getaddrinfo(address, port)
+		local addr	= getaddrinfo(address, port)
 		local addrp	= cast('struct sockaddr *', addr)
 		local rc	= C.bind(self.fd, addrp, sizeof(addr[0]))
 		if rc < 0 then
@@ -175,7 +174,7 @@ socket.Socket = Class({
 	end,
 
 	connect = function(self, host, port)
-		local addr	= socket.getaddrinfo(host, port)
+		local addr	= getaddrinfo(host, port)
 		local addrp	= cast('struct sockaddr *', addr)
 		local size	= sizeof(addr)
 		local rc	= C.connect(self.fd, addrp, size)
@@ -283,7 +282,7 @@ socket.UDP = Class(socket.Socket, {
 	end,
 
 	ip_multicast_if = function(self, addr)
-		addr		= socket.getaddrinfo(addr, 0)
+		addr		= getaddrinfo(addr, 0)
 		local imreq	= new('struct ip_mreqn[1]')
 		imreq[0].imr_address.s_addr = addr[0].sin_addr.s_addr
 		return self:setsockopt(C.IPPROTO_IP, C.IP_MULTICAST_IF,
@@ -291,11 +290,11 @@ socket.UDP = Class(socket.Socket, {
 	end,
 
 	add_membership = function(self, addr, ifaddr)
-		addr		= socket.getaddrinfo(addr, 0)
+		addr		= getaddrinfo(addr, 0)
 		local imreq	= new('struct ip_mreqn[1]')
 		imreq[0].imr_multiaddr.s_addr = addr[0].sin_addr.s_addr
 		if ifaddr ~= nil then
-			ifaddr	= socket.getaddrinfo(ifaddr, 0)
+			ifaddr	= getaddrinfo(ifaddr, 0)
 			imreq[0].imr_address.s_addr = ifaddr[0].sin_addr.s_addr
 		end
 		return self:setsockopt(C.IPPROTO_IP, C.IP_ADD_MEMBERSHIP,
@@ -303,7 +302,7 @@ socket.UDP = Class(socket.Socket, {
 	end,
 
 	drop_membership = function(self, addr)
-		addr		= socket.getaddrinfo(addr, 0)
+		addr		= getaddrinfo(addr, 0)
 		local imreq	= new('struct ip_mreqn[1]')
 		imreq[0].imr_multiaddr.s_addr = addr[0].sin_addr.s_addr
 		return self:setsockopt(C.IPPROTO_IP, C.IP_DROP_MEMBERSHIP,
