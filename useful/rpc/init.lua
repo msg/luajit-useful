@@ -131,8 +131,7 @@ local RPC = Class({
 		self.request_id		= request_seed or 1
 		self.max_size		= 64 * 1024
 		self.methods		= { }
-		self.pending		= { }
-		self.submissions	= { }
+		self.requests		= { }
 	end,
 
 	add_method = function(self, name, func)
@@ -178,9 +177,9 @@ local RPC = Class({
 	end,
 
 	find_request = function(self, id)
-		for i,request in ipairs(self.pending) do
+		for i,request in ipairs(self.requests) do
 			if id == request.id then
-				remove(self.pending, i)
+				remove(self.requests, i)
 				return request
 			end
 		end
@@ -238,7 +237,7 @@ local RPC = Class({
 			local id	= self.request_id
 			self.request_id	= self.request_id + 1
 			local request	= Request(id, self, name, to)
-			insert(self.pending, request)
+			insert(self.requests, request)
 			request.msg 	= pack(REQUEST, id, name, params)
 			return request
 		end
