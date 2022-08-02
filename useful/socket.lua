@@ -290,10 +290,14 @@ socket.UDP = Class(socket.Socket, {
 				imreq, sizeof(imreq))
 	end,
 
-	add_membership = function(self, addr)
+	add_membership = function(self, addr, ifaddr)
 		addr		= socket.getaddrinfo(addr, 0)
 		local imreq	= new('struct ip_mreqn[1]')
 		imreq[0].imr_multiaddr.s_addr = addr[0].sin_addr.s_addr
+		if ifaddr ~= nil then
+			ifaddr	= socket.getaddrinfo(ifaddr, 0)
+			imreq[0].imr_address.s_addr = ifaddr[0].sin_addr.s_addr
+		end
 		return self:setsockopt(C.IPPROTO_IP, C.IP_ADD_MEMBERSHIP,
 				imreq, sizeof(imreq))
 	end,
