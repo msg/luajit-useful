@@ -222,9 +222,7 @@ static void *thread_(void *arg) {
 }
 
 static int start_(lua_State *lua) {
-	lua_State *new_lua;
-
-	new_lua = luaL_newstate();
+	lua_State *new_lua = luaL_newstate();
 	if (new_lua == NULL)
 		luaL_error(lua, "unable to create new state");
 
