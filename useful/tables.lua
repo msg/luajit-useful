@@ -77,6 +77,55 @@ function tables.deserialize(t)
 end
 tables.unserialize = tables.deserialize
 
+local function linearize(tbl, leader, visited, new)
+	new = new or { }
+	visited = visited or { }
+	leader = leader or ''
+	local last
+	if leader ~= '' then
+		insert(new, leader..' = {}')
+	end
+	for key, value in pairs(tbl) do
+		local vtype = type(value)
+		local ktype = type(key)
+		if ktype == 'string' then
+			if not is_identifier(key) then
+				key = string.format('[%q]', key)
+			end
+			key = '.'..key
+		elseif ktype == 'boolean'  then
+			key = '['..tostring(key)..']'
+		elseif ktype == 'number'  then
+			if last == key - 1 then
+				last = key
+				key = ''
+			else
+				last = nil
+				key = '['..key..']'
+			end
+		else
+			error('unknown key type '..ktype)
+		end
+		local name = leader..key
+		if vtype == 'number' or vtype == 'boolean' then
+			insert(new, name..' = '..tostring(value))
+		elseif vtype == 'string' then
+			insert(new, name..' = '..string.format('%q', value))
+		elseif vtype == 'table' then
+			if visited[value] == true then
+				error('table loop')
+			end
+			visited[value] = true
+			linearize(value, name, visited, new)
+		else
+			error('unknown value type '..vtype)
+		end
+	end
+	table.sort(new)
+	return new
+end
+tables.linearize = linearize
+
 function tables.save_table(filename, t)
 	local f = io.open(filename, 'w')
 	f:write(tables.serialize(t))
