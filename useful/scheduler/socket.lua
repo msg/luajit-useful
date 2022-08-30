@@ -55,7 +55,9 @@ local TCP = Class(socket_TCP, {
 	end,
 
 	on_error = function(self, func)
+		local prev_error_func = self.on_error_func
 		self.on_error_func = func
+		return prev_error_func
 	end,
 
 	default_error_func = function(self)		--luacheck:ignore
