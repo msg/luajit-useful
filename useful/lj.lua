@@ -6,6 +6,7 @@ local lj = { }
 
 local ffi	= require('ffi')
 local  C	=  ffi.C
+local  fstring	=  ffi.string
 
 local stdio	= require('useful.stdio')
 local  sprintf	=  stdio.sprintf
@@ -588,7 +589,7 @@ ffi.cdef [[
 function lj.lj_tostring(L, i)
 	local sp = C.lua_tolstring(L, i, nil)
 	if sp ~= nil then
-		sp = ffi.string(sp)
+		sp = fstring(sp)
 	end
 	return sp
 end
@@ -596,7 +597,7 @@ end
 function lj.lj_typename(L, i)
 	local sp = lj.luaL_typename(L, i)
 	if sp ~= nil then
-		sp = ffi.string(sp)
+		sp = fstring(sp)
 	end
 	return sp
 end
@@ -628,6 +629,105 @@ function lj.stack_dump(lua)
 	end
 	return s
 end
+
+local put_value
+
+local put_table = function(to_lua, tbl)
+	lj.lua_newtable(to_lua)
+	local index = C.lua_gettop(to_lua)
+	for key, value in next, tbl do
+		put_value(to_lua, key)
+		put_value(to_lua, value)
+		C.lua_settable(to_lua, index)
+	end
+end
+
+local put_values = {
+	['nil']	= function(to_lua) C.lua_pushnil(to_lua) end,
+	boolean	= function(to_lua, v) C.lua_pushboolen(to_lua, v) end,
+	string	= function(to_lua, v) C.lua_pushlstring(to_lua, v, #v) end,
+	number	= function(to_lua, v) C.lua_pushnumber(to_lua, v) end,
+	table	= function(to_lua, v) put_table(to_lua, v) end,
+	userdata = function(to_lua, v) C.lua_pushlightuserdata(to_lua, v) end,
+}
+
+put_value = function(to_lua, value)
+	local func = put_values[type(value)]
+	if func ~= nil then
+		func(to_lua, value)
+	else
+		error('invalid type '..type(value))
+	end
+end
+
+local put_stack = function(to_lua, ...)
+	local n = select('#', ...)
+	local a = {...}
+	for i=1,n do
+		put_value(to_lua, a[i])
+	end
+end
+lj.put_stack = put_stack
+
+local get_value
+
+local get_table = function(from_lua, i)
+	local t = { }
+	local n = lj.lua_gettop(from_lua)
+	lj.lua_pushnil(from_lua)
+	while lj.lua_next(from_lua, i) ~= 0 do
+		local key	= get_value(from_lua, n+1)
+		local value	= get_value(from_lua, n+2)
+		t[key] = value
+		lj.lua_pop(from_lua, 1)
+	end
+	return t
+end
+
+local get_values = {
+	[lj.LUA_TNIL]		= function() return nil end,
+	[lj.LUA_TBOOLEAN]	= function(from_lua, i)
+		local b = C.lua_toboolean(from_lua, i)
+		return b ~= 0
+	end,
+	[lj.LUA_TSTRING]	= function(from_lua, i)
+		return lj.lj_tostring(from_lua, i)
+	end,
+	[lj.LUA_TNUMBER]	= function(from_lua, i)
+		return C.lua_tonumber(from_lua, i)
+	end,
+	[lj.LUA_TUSERDATA]	= function(from_lua, i)
+		return C.lua_touserdata(from_lua, i)
+	end,
+	[lj.LUA_TLIGHTUSERDATA]	= function(from_lua, i)
+		return C.lua_touserdata(from_lua, i)
+	end,
+	[lj.LUA_TTABLE] = function(from_lua, i)
+		return get_table(from_lua, i)
+	end,
+}
+
+get_value = function(from_lua, i)
+	local ltype = lj.lua_type(from_lua, i)
+	local func = get_values[ltype]
+	if func ~= nil then
+		return func(from_lua, i)
+	else
+		local ltypename = fstring(lj.luaL_typename(from_lua, i))
+		print(lj.stack_dump(from_lua))
+		error('invalid type '..tostring(ltype)..' '..ltypename)
+	end
+end
+
+local get_stack = function(from_lua)
+	local n = C.lua_gettop(from_lua)
+	local a = { }
+	for i=1,n do
+		a[i] = get_value(from_lua, i)
+	end
+	return unpack(a, 1, n)
+end
+lj.get_stack = get_stack
 
 local pc = pcall
 setmetatable(lj, {
