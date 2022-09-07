@@ -12,20 +12,22 @@ local  uint8		=  range.uint8
 local msgpack		= require('useful.range.msgpack')
 local  decode		=  msgpack.decode
 local rpc		= require('useful.rpc')
-local  decode_header	=  rpc.decode_header
 local  RPC		=  rpc.RPC
-local  HEADER_SIZE	=  rpc.HEADER_SIZE
+local rpc_message	= require('useful.rpc.message')
+local  decode_header	=  rpc_message.decode_header
+local  encode_message	=  rpc_message.encode_message
+local  HEADER_SIZE	=  rpc_message.HEADER_SIZE
 
 rpc_socket.TCP_RPC = Class(RPC, {
-	new = function(self, sock, size, timeout, synchronous)
-		RPC.new(self, timeout, synchronous)
+	new = function(self, sock, size, timeout)
+		RPC.new(self, timeout)
 		self.size	= size
 		self.sock	= sock
 	end,
 
 	send = function(self, msg, to)			--luacheck:ignore
 		local _,o8	= uint8.vla(self.size)
-		local m8	= self:encode_message(msg, o8)
+		local m8	= encode_message(msg, o8)
 		local rc	= self.sock:send_all(m8.front, #m8)
 		return rc
 	end,
