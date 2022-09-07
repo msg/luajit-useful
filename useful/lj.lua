@@ -611,15 +611,15 @@ function lj.stack_dump(lua)
 	for i=1,top do
 		s = s..sprintf('(%d)', i)
 		local t = lj.lua_type(lua, i)
-		if t == lj.LUA_TTABLE then		s = s..sprintf('t:')
-		elseif t == lj.LUA_TNIL then		s = s..sprintf('0:')
-		elseif t == lj.LUA_TFUNCTION then	s = s..sprintf('f:')
-		elseif t == lj.LUA_TSTRING then
+		if     t == C.LUA_TTABLE then		s = s..sprintf('t:')
+		elseif t == C.LUA_TNIL then		s = s..sprintf('0:')
+		elseif t == C.LUA_TFUNCTION then	s = s..sprintf('f:')
+		elseif t == C.LUA_TSTRING then
 			s = s..sprintf("s:'%s'", lj.lj_tostring(lua, i))
-		elseif t == lj.LUA_TBOOLEAN then
+		elseif t == C.LUA_TBOOLEAN then
 			s = s..sprintf('b:%s', lj.lua_toboolean(lua, i) and
 					'true' or 'false')
-		elseif t == lj.LUA_TNUMBER then
+		elseif t == C.LUA_TNUMBER then
 			s = s..sprintf('n:%g', lj.lua_tonumber(lua, i))
 		else
 			s = s..sprintf('u(%d):%s', t, lj.lj_typename(lua, i))
@@ -685,24 +685,24 @@ local get_table = function(from_lua, i)
 end
 
 local get_values = {
-	[lj.LUA_TNIL]		= function() return nil end,
-	[lj.LUA_TBOOLEAN]	= function(from_lua, i)
+	[C.LUA_TNIL]		= function() return nil end,
+	[C.LUA_TBOOLEAN]	= function(from_lua, i)
 		local b = C.lua_toboolean(from_lua, i)
 		return b ~= 0
 	end,
-	[lj.LUA_TSTRING]	= function(from_lua, i)
+	[C.LUA_TSTRING]		= function(from_lua, i)
 		return lj.lj_tostring(from_lua, i)
 	end,
-	[lj.LUA_TNUMBER]	= function(from_lua, i)
+	[C.LUA_TNUMBER]		= function(from_lua, i)
 		return C.lua_tonumber(from_lua, i)
 	end,
-	[lj.LUA_TUSERDATA]	= function(from_lua, i)
+	[C.LUA_TUSERDATA]	= function(from_lua, i)
 		return C.lua_touserdata(from_lua, i)
 	end,
-	[lj.LUA_TLIGHTUSERDATA]	= function(from_lua, i)
+	[C.LUA_TLIGHTUSERDATA]	= function(from_lua, i)
 		return C.lua_touserdata(from_lua, i)
 	end,
-	[lj.LUA_TTABLE] = function(from_lua, i)
+	[C.LUA_TTABLE]		= function(from_lua, i)
 		return get_table(from_lua, i)
 	end,
 }
