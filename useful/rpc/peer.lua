@@ -48,8 +48,8 @@ peer.RPCPeer = Class({
 
 	submit = function(self)
 		while true do
-			check(function() return #self.rpc.pending > 0 end)
-			for _,request in ipairs(self.rpc.pending) do
+			check(function() return #self.rpc.requests > 0 end)
+			for _,request in ipairs(self.rpc.requests) do
 				if request.msg ~= nil then
 					self.rpc:send(request.msg, request.to)
 					self.sock.events = C.POLLIN
