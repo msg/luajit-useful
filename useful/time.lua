@@ -32,6 +32,9 @@ local time = { }
 --         This keeps the numbers from overflowing when doing many time
 --         calculations.
 --
+local  floor	=  math.floor
+local  modf	=  math.modf
+
 local ffi	= require('ffi')
 local  C	=  ffi.C
 local  fstring	=  ffi.string
@@ -63,8 +66,8 @@ end
 time.fix_nano = fix_nano
 
 local function number_to_timespec(n)
-	local i, f = math.modf(n, 1)
-	return timespec(math.floor(i), math.floor(f * NANO_HZ))
+	local i, f = modf(n, 1)
+	return timespec(floor(i), floor(f * NANO_HZ))
 end
 time.number_to_timespec = number_to_timespec
 
