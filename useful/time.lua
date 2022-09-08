@@ -42,7 +42,7 @@ local  typeof	=  ffi.typeof
 
 		  require('posix.time')
 
-local timespec	= typeof('struct timespec')
+local timespec
 
 local MILLI_HZ	= 1000
 local MICRO_HZ	= 1000 * MILLI_HZ
@@ -153,7 +153,8 @@ local timespec_mt = {
 }
 timespec_mt.__index = timespec_mt
 
-time.timespec = metatype('struct timespec', timespec_mt)
+timespec	= metatype('struct timespec', timespec_mt)
+time.timespec	= timespec
 
 function time.now(ts)
 	ts = ts or timespec()
