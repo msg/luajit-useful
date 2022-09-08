@@ -41,7 +41,6 @@ local  fstring	=  ffi.string
 local  metatype	=  ffi.metatype
 local  new	=  ffi.new
 local  sizeof	=  ffi.sizeof
-local  typeof	=  ffi.typeof
 
 		  require('posix.time')
 
