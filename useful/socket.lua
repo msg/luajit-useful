@@ -56,8 +56,10 @@ local function getaddrinfo(host, port, protocol)
 	end
 
 	local a = ai[0]
-	while a ~= nil and a.ai_protocol ~= protocol do
-		a = a.ai_next
+	if protocol ~= nil then
+		while a ~= nil and a.ai_protocol ~= protocol do
+			a = a.ai_next
+		end
 	end
 	local addr = new('struct sockaddr_in [1]')
 	if a ~= nil then
