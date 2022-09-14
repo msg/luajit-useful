@@ -44,6 +44,8 @@ local  sizeof	=  ffi.sizeof
 
 		  require('posix.time')
 
+local umath	= require('useful.math')
+local  divmod	=  umath.divmod
 local timespec
 
 local MILLI_HZ	= 1000
@@ -183,6 +185,14 @@ end
 
 time.timeout = function(start, timeout)
 	return time.elapsed(start) > timeout
+end
+
+time.dhms = function(seconds)
+	local days, hours, minutes
+	minutes, seconds	= divmod(60, seconds)
+	hours, minutes		= divmod(60, minutes)
+	days, hours		= divmod(24, hours)
+	return days, hours, minutes, seconds
 end
 
 return time
