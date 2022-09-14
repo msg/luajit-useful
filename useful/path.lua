@@ -18,12 +18,13 @@ function path.readpath(path) -- luacheck: ignore path
 	return io.open(path,'r'):read('a*')
 end
 
-function path.putfile(path, buf) -- luacheck: ignore path
+function path.writepath(path, buf) -- luacheck: ignore path
 	local f = io.open(path,'wb')
 	f:write(buf)
 	f:close()
 	return #buf
 end
+path.putfile = path.writepath -- backward compatibility
 
 function path.abspath(path) -- luacheck: ignore path
 	if path ~= '' then
