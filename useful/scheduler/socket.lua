@@ -47,16 +47,17 @@ local TCP = Class(socket_TCP, {
 	new = function(self, fd, port)
 		socket_TCP.new(self, fd, port)
 		self:nonblock()
-		self.on_error_func = self.default_error_func
+		self.timeout		= 0.001
+		self.on_error_func	= self.default_error_func
 	end,
 
 	set_timeout = function(self, timeout)
-		self.timeout	= timeout
+		self.timeout	= timtout
 	end,
 
 	on_error = function(self, func)
-		local prev_error_func = self.on_error_func
-		self.on_error_func = func
+		local prev_error_func	= self.on_error_func
+		self.on_error_func	= func
 		return prev_error_func
 	end,
 
