@@ -34,6 +34,7 @@ poll.Poll = Class({
 				self.pfds[i].events	= 0
 				self.pfds[npfds]	= self.pfds[i]
 				self.npfds		= self.npfds - 1
+				sock.pfd		= nil
 				return
 			end
 		end
