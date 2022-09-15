@@ -162,7 +162,9 @@ end
 
 local on_error_func = default_error_func
 scheduler.on_error = function(error_func)
-	on_error_func = error_func
+	local prev_error_func	= on_error_func
+	on_error_func		= error_func
+	return prev_error_func
 end
 
 local last
@@ -187,6 +189,12 @@ scheduler.step = function()
 			results[1] = results[1]..'\n'..debug.traceback(thread)
 			on_error_func(results)
 		end
+	end
+end
+
+scheduler.run = function()
+	while true do
+		step()
 	end
 end
 
