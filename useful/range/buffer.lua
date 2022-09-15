@@ -1,5 +1,5 @@
 --
--- s c h e d u l e r / b u f f e r . l u a
+-- b u f f e r . l u a
 --
 local ffi	= require('ffi')
 local  C	=  ffi.C
@@ -55,14 +55,14 @@ buffer.Buffer = Class({
 		self:reset()
 	end,
 
-	read_more = function(self, sock, nbytes)
-		local n = sock:recv(self.free.front, nbytes, C.MSG_DONTWAIT)
+	read_more = function(self, read_func, nbytes)
+		local n = read_func(self.free.front, nbytes)
 		self.avail.back = self.avail.back + n
 		self.free:pop_front(n)
 		return tonumber(n)
 	end,
 
-	read = function(self, sock, nbytes)
+	read = function(self, read_func, nbytes)
 		local avail = self.avail:save()
 		if nbytes >= #avail then
 			nbytes		= nbytes - #avail
@@ -70,7 +70,7 @@ buffer.Buffer = Class({
 		end
 		nbytes = math.min(nbytes, #self.free)
 		while nbytes > 0 do
-			local n		= self:read_more(sock, nbytes)
+			local n		= self:read_more(read_func, nbytes)
 			n		= math.min(n, nbytes)
 			avail.back	= avail.back + n
 			nbytes		= nbytes - n
@@ -79,7 +79,7 @@ buffer.Buffer = Class({
 		return avail
 	end,
 
-	read_line = function(self, sock)
+	read_line = function(self, read_func)
 		local line = self.avail:save()
 		while true do
 			line = find_nl(line)
@@ -88,7 +88,7 @@ buffer.Buffer = Class({
 					return line
 				end
 				local n		= #self.free
-				n		= self:read_more(sock, n)
+				n		= self:read_more(read_func, n)
 				line.back	= line.back + n
 			else
 				line.back	= line.front + 1
@@ -99,10 +99,10 @@ buffer.Buffer = Class({
 		end
 	end,
 
-	flush_write = function(self, sock)
+	flush_write = function(self, write_func)
 		local nbytes = 0
 		while #self.avail > 0 do
-			local n = sock:send(self.avail.front, #self.avail)
+			local n = write_func(self.avail.front, #self.avail)
 			nbytes = nbytes + n
 			self.avail:pop_front(n)
 		end
