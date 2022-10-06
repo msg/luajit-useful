@@ -79,9 +79,8 @@ buffer.Buffer = Class({
 	end,
 
 	read_line = function(self, read_func)
-		local line = self.avail:save()
 		while true do
-			line = find_nl(line)
+			local line = find_nl(self.avail)
 			if line:empty() then
 				if #self.free == 0 then
 					return line
