@@ -142,9 +142,7 @@ end
 range_string.lstrip = lstrip
 
 range_string.strip = function(r)
-	lstrip(r)
-	rstrip(r)
-	return r
+	return rstrip(lstrip(r))
 end
 
 return range_string
