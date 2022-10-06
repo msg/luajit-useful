@@ -8,7 +8,7 @@ local  copy	=  ffi.copy
 local class	= require('useful.class')
 local  Class 	=  class.Class
 local range	= require('useful.range')
-local  uint8	=  range.uint8
+local  int8	=  range.int8
 
 local buffer = { }
 
@@ -25,9 +25,9 @@ buffer.find_nl = find_nl
 
 buffer.Buffer = Class({
 	new = function(self, size)
-		self.buffer	= uint8.vla(size)
-		self.free	= uint8.from_vla(self.buffer)
-		self.avail	= uint8(self.free.front, self.free.front)
+		self.buffer	= int8.vla(size)
+		self.free	= int8.from_vla(self.buffer)
+		self.avail	= int8(self.free.front, self.free.front)
 	end,
 
 	__len = function(self)
@@ -73,7 +73,7 @@ buffer.Buffer = Class({
 		while nbytes > #self.avail do
 			self:read_more(read_func, nbytes)
 		end
-		avail.back = aval.front + nbytes
+		avail.back = avail.front + nbytes
 		self.avail:pop_front(#avail)
 		return avail
 	end,
