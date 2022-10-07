@@ -57,8 +57,10 @@ buffer.Buffer = Class({
 
 	read_more = function(self, read_func, nbytes)
 		local n = read_func(self.free.front, nbytes)
-		self.avail.back = self.avail.back + n
-		self.free:pop_front(n)
+		if n > 0 then
+			self.avail.back = self.avail.back + n
+			self.free:pop_front(n)
+		end
 		return tonumber(n)
 	end,
 
