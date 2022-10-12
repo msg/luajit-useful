@@ -65,16 +65,11 @@ buffer.Buffer = Class({
 	end,
 
 	read = function(self, read_func, nbytes)
+		nbytes = math.min(nbytes, #self.free + #self.avail)
+		while #self.avail < nbytes do
+			self:read_more(read_func, nbytes - #self.avail)
+		end
 		local avail = self.avail:save()
-		if nbytes >= #avail then
-			nbytes		= nbytes - #avail
-			avail.back	= avail.front + #avail
-		end
-		nbytes = math.min(nbytes, #self.free)
-		assert(nbytes < #self.free + #self.avail)
-		while nbytes > #self.avail do
-			self:read_more(read_func, nbytes)
-		end
 		avail.back = avail.front + nbytes
 		self.avail:pop_front(#avail)
 		return avail
@@ -85,7 +80,7 @@ buffer.Buffer = Class({
 			local line = find_nl(self.avail)
 			if line:empty() then
 				if #self.free == 0 then
-					return line
+					return self.avail.read_front_size(#self.avail)
 				end
 				self:read_more(read_func, #self.free)
 			else
