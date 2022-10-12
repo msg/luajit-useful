@@ -24,10 +24,12 @@ end
 buffer.find_nl = find_nl
 
 buffer.Buffer = Class({
-	new = function(self, size)
+	new = function(self, size, read_func, write_func)
 		self.buffer	= int8.vla(size)
 		self.free	= int8.from_vla(self.buffer)
 		self.avail	= int8(self.free.front, self.free.front)
+		self.read_func	= read_func
+		self.write_func	= write_func
 	end,
 
 	__len = function(self)
@@ -55,8 +57,8 @@ buffer.Buffer = Class({
 		self:reset()
 	end,
 
-	read_more = function(self, read_func, nbytes)
-		local n = read_func(self.free.front, nbytes)
+	read_more = function(self, nbytes)
+		local n = self.read_func(self.free.front, nbytes)
 		if n > 0 then
 			self.avail.back = self.avail.back + n
 			self.free:pop_front(n)
@@ -64,10 +66,10 @@ buffer.Buffer = Class({
 		return tonumber(n)
 	end,
 
-	read = function(self, read_func, nbytes)
+	read = function(self, nbytes)
 		nbytes = math.min(nbytes, #self.free + #self.avail)
 		while #self.avail < nbytes do
-			self:read_more(read_func, nbytes - #self.avail)
+			self:read_more(nbytes - #self.avail)
 		end
 		local avail = self.avail:save()
 		avail.back = avail.front + nbytes
@@ -75,14 +77,14 @@ buffer.Buffer = Class({
 		return avail
 	end,
 
-	read_line = function(self, read_func)
+	read_line = function(self)
 		while true do
 			local line = find_nl(self.avail)
 			if line:empty() then
 				if #self.free == 0 then
 					return self.avail.read_front_size(#self.avail)
 				end
-				self:read_more(read_func, #self.free)
+				self:read_more(#self.free)
 			else
 				line.back	= line.front + 1
 				line.front	= self.avail.front
@@ -92,10 +94,10 @@ buffer.Buffer = Class({
 		end
 	end,
 
-	flush_write = function(self, write_func)
+	flush_write = function(self)
 		local nbytes = 0
 		while #self.avail > 0 do
-			local n = write_func(self.avail.front, #self.avail)
+			local n = self.write_func(self.avail.front, #self.avail)
 			nbytes = nbytes + n
 			self.avail:pop_front(n)
 		end
@@ -104,25 +106,31 @@ buffer.Buffer = Class({
 	end,
 
 	write = function(self, data)
-		local r			= self.free:save()
-		local n			= math.min(#data, #r)
-		copy(r.front, data, n)
+		if #self.free < #data then
+			self:flush_write()
+		end
+		assert(#data <= #self.free)
+		local written	= self.free:save()
+		local n		= #data
+		copy(self.free.front, data, n)
 		self.free:pop_front(n)
-		self.avail.back		= self.avail.back + n
-		r.back			= r.front + n
-		return r
+		self.avail.back	= self.avail.back + n
+		written.back = written.front + n
+		return written
 	end,
 
 	writef = function(self, ...)
-		local r			= self.free:save()
-		local n			= C.snprintf(r.front, #r, ...)
-		if n > #r then
-			return 0 -- cannot satisfy the writef with this buffer.
+		local n		= C.snprintf(nil, 0, ...)
+		if #self.free < n then
+			self:flush_write()
 		end
+		assert(n <= #self.free)
+		local written	= self.free:save()
+		C.snprintf(written.front, #written, ...)
+		self.avail.back	= self.avail.back + n
+		written.back	= written.front + n
 		self.free:pop_front(n)
-		self.avail.back		= self.avail.back + n
-		r.back			= r.front + n
-		return r
+		return written
 	end,
 })
 
