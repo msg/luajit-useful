@@ -52,7 +52,7 @@ local function getaddrinfo(host, port, protocol)
 			s = sprintf('getaddrinfo(%s %s): %d %s\n',
 				host, port, ret, fstring(C.gai_strerror(ret)))
 		end
-		error(s)
+		return nil, s
 	end
 
 	local a = ai[0]
@@ -166,7 +166,10 @@ socket.Socket = Class({
 	end,
 
 	bind = function(self, address, port)
-		local addr	= getaddrinfo(address, port)
+		local addr,err	= getaddrinfo(address, port)
+		if addr == nil then
+			return nil, err
+		end
 		local addrp	= cast('struct sockaddr *', addr)
 		local rc	= C.bind(self.fd, addrp, sizeof(addr[0]))
 		if rc < 0 then
@@ -176,7 +179,10 @@ socket.Socket = Class({
 	end,
 
 	connect = function(self, host, port)
-		local addr	= getaddrinfo(host, port)
+		local addr,err	= getaddrinfo(address, port)
+		if addr == nil then
+			return nil, err
+		end
 		local addrp	= cast('struct sockaddr *', addr)
 		local size	= sizeof(addr)
 		local rc	= C.connect(self.fd, addrp, size)
