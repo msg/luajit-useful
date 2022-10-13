@@ -39,7 +39,6 @@ end
 local function getaddrinfo(host, port, protocol)
 	local hint		= new('struct addrinfo [1]')
 	local ai		= new('struct addrinfo *[1]')
-	hint[0].ai_flags	= C.AI_CANONNAME
 	if host == '*' then
 		host = '0.0.0.0'
 	end
@@ -49,7 +48,7 @@ local function getaddrinfo(host, port, protocol)
 		if ret == C.EAI_SYSTEM then
 			s = socket.syserror('getaddrinfo')
 		else
-			s = sprintf('getaddrinfo(%s %s): %d %s\n',
+			s = sprintf('getaddrinfo(%s, %s): %d %s\n',
 				host, port, ret, fstring(C.gai_strerror(ret)))
 		end
 		return nil, s
