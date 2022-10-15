@@ -82,7 +82,6 @@ connection.url_read = function(url, options)
 	option = options or {}
 	options.host, options.port, options.path = parse_url(url)
 	sock = socket.TCP()
-	transaction:set_sock(sock)
 	assert(sock:connect(options.host, options.port) == 0)
 	local transaction = Transaction(options.max_size or 32768)
 	transaction:reset()
@@ -99,6 +98,7 @@ connection.url_read = function(url, options)
 		transaction.request:set('Content-Length', tostring(#options.output))
 	end
 	--connection.dump_status(transaction.request)
+	transaction:set_sock(sock)
 	transaction.request:send_request(options.method or 'GET', options.path)
 	if output ~= nil then
 		local o = int8.from_string(output)
