@@ -9,15 +9,14 @@ local  concat	=  table.concat
 
 local class	= require('useful.class')
 local  Class	=  class.Class
+local status	= require('useful.http.status')
+local  Status	=  status.Status
 local range	= require('useful.range')
 local  int8	=  range.int8
 local rbase64	= require('useful.range.base64')
 local rstring	= require('useful.range.string')
 local  rstrip	=  rstring.rstrip
 local socket	= require('useful.socket')
-
-local status	= require('http.status')
-local  Status	=  status.Status
 
 local Request = Status
 local Response = Status
