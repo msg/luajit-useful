@@ -1,0 +1,102 @@
+application/ecmascript				es
+application/epub+zip				epub
+application/geo+json				geojson
+application/geopackage+sqlite3			gpkg
+application/gzip				gz tgz
+application/javascript				js
+application/json				json
+application/mbox				mbox
+application/msword				doc
+application/octet-stream		bin lha lzh exe class so dll img iso
+application/ogg					ogx
+application/pdf					pdf
+application/pgp-encrypted			pgp
+application/pgp-signature			sig
+application/pkcs10				p10
+application/pkcs12				p12 pfx
+application/postscript				ps eps ai
+application/rtf					rtf
+audio/mp4					m4a
+audio/mpeg					mp3 mpga mp1 mp2
+audio/ogg					oga ogg opus spx
+audio/prs.sid					sid psid
+font/collection					ttc
+font/otf					otf
+font/ttf					ttf
+font/woff					woff
+font/woff2					woff2
+image/gif					gif
+image/jpeg					jpg jpeg jpe jfif
+image/png					png
+image/svg+xml					svg svgz
+model/gltf-binary				glb
+text/css					css
+text/csv					csv
+text/html					html htm
+text/markdown					markdown md
+text/plain		txt asc text pm el c h cc hh cxx hxx f90 conf log
+text/prs.fallenstein.rst			rst
+text/SGML					sgml sgm
+text/tab-separated-values			tsv
+text/troff					t tr roff
+text/uri-list					uris uri
+text/vnd.abc					abc
+text/vnd.ascii-art				ascii
+text/vnd.graphviz				gv dot
+text/xml					xml xsd rng
+video/mp4					mp4 mpg4 m4v
+video/mpeg					mpeg mpg mpe m1v m2v
+video/ogg					ogv
+video/quicktime					mov qt
+video/vnd.mpegurl				mxu m4u
+video/vnd.youtube.yt				yt
+application/x-bittorrent			torrent
+application/x-bzip2				bz2
+application/x-cpio				cpio
+application/x-csh				csh
+application/x-dvi				dvi
+application/x-gtar				gtar
+application/x-hdf				hdf
+application/x-java-archive			jar
+application/x-java-jnlp-file			jnlp
+application/x-java-pack200			pack
+application/x-latex				latex
+application/x-perl				pl
+application/x-rpm				rpm
+application/x-sh				sh
+application/x-shar				shar
+application/x-stuffit				sit
+application/x-tar				tar
+application/x-tcl				tcl
+application/x-tex				tex
+application/x-texinfo				texinfo texi
+application/x-troff-man				man 1 2 3 4 5 6 7 8
+application/x-troff-me				me
+application/x-troff-ms				ms
+application/x-ustar				ustar
+application/x-xz				xz
+audio/midi					mid midi kar
+audio/x-aiff					aif aiff aifc
+audio/x-flac					flac
+audio/x-matroska				mka
+audio/x-mod					mod ult uni m15 mtm 669 med
+audio/x-mpegurl					m3u
+audio/x-wav					wav
+image/webp					webp
+image/x-portable-anymap				pnm
+image/x-portable-bitmap				pbm
+image/x-portable-graymap			pgm
+image/x-portable-pixmap				ppm
+image/x-rgb					rgb
+image/x-targa					tga
+image/x-xbitmap					xbm
+image/x-xpixmap					xpm
+image/x-xwindowdump				xwd
+text/x-pod					pod
+video/webm					webm
+video/x-flv					flv
+video/x-javafx					fxm
+video/x-matroska				mkv
+video/x-matroska-3d				mk3d
+video/x-msvideo					avi
+video/x-sgi-movie				movie
