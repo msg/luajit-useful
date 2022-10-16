@@ -560,7 +560,11 @@ local function format_array(a, indent, visited)
 end
 
 local function escape(s)
-	return string.format("%q", s)
+	if type(s) == 'number' then
+		return tostring(s)
+	else
+		return string.format("%q", s)
+	end
 end
 
 yaml.encode = function(t, indent, visited)
