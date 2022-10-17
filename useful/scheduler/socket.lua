@@ -17,9 +17,30 @@ local class		= require('useful.class')
 local  Class		=  class.Class
 local scheduler		= require('useful.scheduler')
 local  check		=  scheduler.check
+local  spawn		=  scheduler.spawn
+local  yield		=  scheduler.yield
+local poll		= require('useful.scheduler.poll')
+local  Poll		=  poll.Poll
 local socket		= require('useful.socket')
 local time		= require('useful.time')
 local  now		=  time.now
+
+socket.spawn_poll = function()
+	socket.timeout		= 0.001
+	socket.poll		= Poll()
+	-- NOTE: this function can be spawned anytime because it will call `poll()`
+	--       to adjust the `.revents`.  So the scheduler loop could run super
+	--       fast for one iteration.  Also, if `.events` has `POLLOUT` set, it
+	--       usually will always be ready which could cause 100% cpu usage.
+	--       `POLLOUT` can be used when large amounts of data are to be sent or
+	--       the amount of data to be sent is known.
+	spawn(function()
+		while true do
+			poll.poll(socket.timeout)
+			yield()
+		end
+	end)
+end
 
 local wait_for_events = function(pfd, timeout)
 	local start = now()
@@ -49,10 +70,13 @@ local TCP = Class(socket_TCP, {
 		self:nonblock()
 		self.timeout		= 0.001
 		self.on_error_func	= self.default_error_func
+		if socket.poll ~= nil then
+			socket.poll:add(self)
+		end
 	end,
 
 	set_timeout = function(self, timeout)
-		self.timeout	= timtout
+		self.timeout	= timeout
 	end,
 
 	on_error = function(self, func)
@@ -62,6 +86,9 @@ local TCP = Class(socket_TCP, {
 	end,
 
 	default_error_func = function(self)		--luacheck:ignore
+		if socket.poll ~= nil then
+			socket.poll:remove(self)
+		end
 		error('error: '..tostring(errno())..'\n'..debug.traceback())
 	end,
 
