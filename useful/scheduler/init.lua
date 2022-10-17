@@ -168,7 +168,7 @@ scheduler.on_error = function(error_func)
 end
 
 local last
-scheduler.step = function()
+local step = function()
 	local current		= now()
 	last			= last or current
 	local dt		= time.dt(current, last)
@@ -191,6 +191,7 @@ scheduler.step = function()
 		end
 	end
 end
+scheduler.step = step
 
 scheduler.run = function()
 	while true do
