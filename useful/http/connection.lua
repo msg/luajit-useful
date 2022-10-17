@@ -86,10 +86,12 @@ connection.url_read = function(url, options)
 	local transaction = Transaction(options.max_size or 32768)
 	transaction:reset()
 	transaction.request:set('Host', options.host)
-	transaction.request:set('Keep-Alive', '5')
-	transaction.request:set('Connection', 'keep-alive')
+	if options.keep_alive ~= nil then
+		transaction.request:set('Keep-Alive', options.keep_alive)
+		transaction.request:set('Connection', 'keep-alive')
+	end
 	transaction.request:set('User-Agent', 'connection.lua')
-	transaction.request:set('Accept', '*/*')
+	transaction.request:set('Accept', options.accept or '*/*')
 	if options.user_password ~= nil then
 		local encoded = base64_encode(options.user_password)
 		transaction.request:set('Authorization', 'Basic '..encoded)
