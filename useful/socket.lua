@@ -178,7 +178,7 @@ socket.Socket = Class({
 	end,
 
 	connect = function(self, host, port)
-		local addr,err	= getaddrinfo(address, port)
+		local addr,err	= getaddrinfo(host, port)
 		if addr == nil then
 			return nil, err
 		end
