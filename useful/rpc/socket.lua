@@ -38,7 +38,7 @@ socket.TCP_RPC = Class(RPC, {
 		self.sock:set_timeout(timeout)
 		i8.back = i8.front + self.sock:recv_all(i8.front, HEADER_SIZE)
 		local length	= decode_header(i8)
-		assert(length <= #i8)
+		assert(length <= #self.u8)
 		i8		= self.u8:save()
 		i8.back = i8.front + self.sock:recv_all(i8.front, length)
 		return decode(i8), nil
