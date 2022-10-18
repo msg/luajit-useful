@@ -117,7 +117,7 @@ range_string.is_numeric		= function(c) return numeric[c] == 1 end
 range_string.is_hexadecimal	= function(c) return hexadecimal[c] == 1 end
 
 local end_of_line		= range_string.make_char_table(NL, CR)
-range_string.end_of_line		= end_of_line
+range_string.end_of_line	= end_of_line
 range_string.is_end_of_line	= function(c) return end_of_line[c] == 1 end
 
 local whitespace		= range_string.make_char_table(SPACE, NL, CR, TAB)
