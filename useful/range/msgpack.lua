@@ -200,14 +200,6 @@ end
 
 local encode
 
-local function table_size(value)
-	local size = 0
-	for _,_ in pairs(value) do
-		size = size + 1
-	end
-	return size
-end
-
 local function encode_map(value, size, r8)
 	if     size < 0x10 then
 		r8:write_front(bor(FIXMAP, size))
@@ -239,8 +231,17 @@ local function encode_array(value, size, r8)
 	end
 end
 
+local function table_size(value)
+	local size = 0
+	for _,_ in pairs(value) do
+		size = size + 1
+	end
+	return size
+end
+
 local function encode_table(value, r8)
 	local size = table_size(value)
+	assert(size >= #value)
 	if size ~= value then
 		encode_map(value, size, r8)
 	else
