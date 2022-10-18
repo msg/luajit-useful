@@ -4,19 +4,21 @@
 --
 local connection = { }
 
-local  insert	=  table.insert
-local  concat	=  table.concat
+local  insert		=  table.insert
+local  concat		=  table.concat
 
-local class	= require('useful.class')
-local  Class	=  class.Class
-local status	= require('useful.http.status')
-local  Status	=  status.Status
-local range	= require('useful.range')
-local  int8	=  range.int8
-local rbase64	= require('useful.range.base64')
-local rstring	= require('useful.range.string')
-local  rstrip	=  rstring.rstrip
-local socket	= require('useful.socket')
+local class		= require('useful.class')
+local  Class		=  class.Class
+local status		= require('useful.http.status')
+local  Status		=  status.Status
+local range		= require('useful.range')
+local  int8		=  range.int8
+local rbase64		= require('useful.range.base64')
+local rstring		= require('useful.range.string')
+local  make_until	=  rstring.make_until
+local  rstrip		=  rstring.rstrip
+local  skip_ws		=  rstring.skip_ws
+local socket		= require('useful.socket')
 
 local Request = Status
 local Response = Status
@@ -78,6 +80,8 @@ connection.dump_status = function(status) --luacheck:ignore
 	end
 end
 
+local do_status	= make_until(rstring.SPACE)
+
 connection.url_read = function(url, options)
 	option = options or {}
 	options.host, options.port, options.path = parse_url(url)
@@ -90,7 +94,7 @@ connection.url_read = function(url, options)
 		transaction.request:set('Keep-Alive', options.keep_alive)
 		transaction.request:set('Connection', 'keep-alive')
 	end
-	transaction.request:set('User-Agent', 'connection.lua')
+	transaction.request:set('User-Agent', options.agent or 'connection.lua')
 	transaction.request:set('Accept', options.accept or '*/*')
 	if options.user_password ~= nil then
 		local encoded = base64_encode(options.user_password)
@@ -108,6 +112,10 @@ connection.url_read = function(url, options)
 	end
 
 	transaction.response:recv()
+	local protocol		= do_status(transaction.response.status)
+	local status,found	= do_status(transaction.response.status)
+	local message		= skip_ws(transaction.response.status)
+
 	local encoding = transaction.response:get('Transfer-Encoding')
 	local chunks = { }
 	if encoding == 'chunked' then
@@ -129,7 +137,7 @@ connection.url_read = function(url, options)
 		end
 	end
 	sock:close()
-	return concat(chunks)
+	return tonumber(status.s), concat(chunks), message.s
 end
 
 return connection
