@@ -147,7 +147,7 @@ local function test_one(s)
 	return failures
 end
 
-local function test()
+local function main()
 	local s = "The quick brown fox" -- jumps over the lazy dog"
 	local failures = 0
 	for i=1,#s do
@@ -158,7 +158,11 @@ local function test()
 	end
 end
 
-if arg[1] ~= nil then
-	test()
+local system	= require('useful.system')
+local  is_main	=  system.is_main
+if is_main() then
+	main()
+else
+	return base64
 end
-return base64
+
