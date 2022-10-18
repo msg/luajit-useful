@@ -83,9 +83,9 @@ end
 local do_status	= make_until(rstring.SPACE)
 
 connection.url_read = function(url, options)
-	option = options or {}
+	options = options or {}
 	options.host, options.port, options.path = parse_url(url)
-	sock = socket.TCP()
+	local sock = socket.TCP()
 	assert(sock:connect(options.host, options.port) == 0)
 	local transaction = Transaction(options.max_size or 32768)
 	transaction:reset()
@@ -106,15 +106,17 @@ connection.url_read = function(url, options)
 	--connection.dump_status(transaction.request)
 	transaction:set_sock(sock)
 	transaction.request:send_request(options.method or 'GET', options.path)
-	if output ~= nil then
-		local o = int8.from_string(output)
+	if options.output ~= nil then
+		local o = int8.from_string(options.output)
 		transaction.request:write(o.front, #o)
 	end
 
 	transaction.response:recv()
+	-- luacheck: push ignore
 	local protocol		= do_status(transaction.response.status)
 	local status,found	= do_status(transaction.response.status)
 	local message		= skip_ws(transaction.response.status)
+	-- luacheck: pop
 
 	local encoding = transaction.response:get('Transfer-Encoding')
 	local chunks = { }
@@ -129,7 +131,7 @@ connection.url_read = function(url, options)
 			insert(chunks, chunk.s)
 		until size == 0
 	else
-		length = tonumber(transaction.response:get('Content-Length','0'))
+		local length = tonumber(transaction.response:get('Content-Length','0'))
 		while length > 0 do
 			local s = transaction.response:read(length)
 			length = length - #s

@@ -32,14 +32,14 @@ local function class(impl)
 end
 
 -- not used yet: TODO replace is_* below
-local function is_a(impl, object) return object._impl == impl end
+local function is_a(impl, object) return object._impl == impl end --luacheck:ignore
 
 local NODE, ATTRIBUTE, MARKER = 1, 2, 3
 
 local function is_function(o)	return type(o) == 'function' end
 local function is_node(o)	return o.type == NODE end
 local function is_attribute(o)	return o.type == ATTRIBUTE end
-local function is_marker(o)	return o.type == MARKER end
+local function is_marker(o)	return o.type == MARKER end --luacheck:ignore
 
 function h.map(t, f)
 	local new = { }
@@ -88,7 +88,7 @@ end
 
 h.indent_char = ' '
 
-Node = class({
+local Node = class({
 	new = function(self, name, ...)
 		self.type		= NODE
 		self.indent		= 0
