@@ -38,8 +38,9 @@ local encode_message = function(data, r8)
 	p8.back		= r8.front
 	sr8.back	= r8.front
 	assert(p8.front[0] ~= 0x80,
-		'it is bad here: '..p8.front[0]..'\n'..serialize(data, nil, '', '')..'\n'..
-		strings.hexdump(sr8:to_string()))
+		'it is bad here: '..p8.front[0]..'\n'
+		..serialize(data, nil, '', '')..'\n'
+		..strings.hexdump(sr8:to_string()))
 
 	encode_header(#p8, sr8:save())
 	return uint8.meta(sr8.front, r8.front)
