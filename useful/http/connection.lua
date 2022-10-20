@@ -7,6 +7,8 @@ local connection = { }
 local  insert		=  table.insert
 local  concat		=  table.concat
 
+local ffi		= require('ffi')
+
 local class		= require('useful.class')
 local  Class		=  class.Class
 local status		= require('useful.http.status')
@@ -32,8 +34,6 @@ local Transaction = Class({
 	reset = function(self)
 		self.request:reset()
 		self.response:reset()
-			self.request:reset()
-			self.response:reset()
 	end,
 
 	set_sock = function(self, sock)
@@ -108,7 +108,14 @@ connection.url_read = function(url, options)
 	transaction.request:send_request(options.method or 'GET', options.path)
 	if options.output ~= nil then
 		local o = int8.from_string(options.output)
-		transaction.request:write(o.front, #o)
+		while #o > 0 do
+			local rc = transaction.request:write(o.front, #o)
+			if rc < 0 then
+				error('write error rc='..tonumber(rc)
+					..'errno='..tonumber(ffi.errno()))
+			end
+			o:pop_front(rc)
+		end
 	end
 
 	transaction.response:recv()
