@@ -37,39 +37,44 @@ buffer.Buffer = Class({
 	end,
 
 	reset = function(self)
+		assert(#self.avail == 0)
 		self.free.front		= self.buffer
 		self.avail.front	= self.buffer
 		self.avail.back		= self.avail.front
 	end,
 
-	copy_to = function(self, to_buffered)
-		local r			= to_buffered.free:save()
-		local n			= math.min(#self.avail, #r)
-		copy(r.front, self.avail.front, n)
-		to_buffered.free:pop_front(n)
-		self.avail:pop_front(n)
-		to_buffered.avail.back	= to_buffered.free.front + n
-		r.back			= r.front + n
-		return r
+	adjust_free_avail = function(self, n)
+		self.free:pop_front(n)
+		self.avail:pop_back(-n)
 	end,
 
-	flush_read = function(self)
+	read_avail = function(self, n)
+		n = n or 1
+		assert(n <= #self.avail)
+		return self.avail:read_front_size(n or 1)
+	end,
+
+	flush = function(self)
+		self.avail:pop_front(#self.avail)
 		self:reset()
 	end,
 
 	read_more = function(self, nbytes)
+		nbytes = math.min(nbytes, #self.free)
 		local n = self.read_func(self.free.front, nbytes)
 		if n > 0 then
-			self.avail.back = self.avail.back + n
-			self.free:pop_front(n)
+			self:adjust_free_avail(n)
 		end
 		return tonumber(n)
 	end,
 
 	read = function(self, nbytes)
-		nbytes = math.min(nbytes, #self.free + #self.avail)
+		nbytes = math.min(nbytes, #self.avail + #self.free)
 		while #self.avail < nbytes do
-			self:read_more(nbytes - #self.avail)
+			local rc = self:read_more(nbytes - #self.avail)
+			if rc < 0 then
+				return nil, rc
+			end
 		end
 		local avail = self.avail:save()
 		avail.back = avail.front + nbytes
@@ -78,28 +83,37 @@ buffer.Buffer = Class({
 	end,
 
 	read_line = function(self)
+		local line
 		while true do
-			local line = find_nl(self.avail)
-			if line:empty() then
-				if #self.free == 0 then
-					return self.avail.read_front_size(#self.avail)
-				end
-				self:read_more(#self.free)
-			else
-				line.back	= line.front + 1
-				line.front	= self.avail.front
-				self.avail:pop_front(#line)
-				return line
+			line = find_nl(self.avail)
+			if not line:empty() then
+				break
+			elseif #self.free == 0 then
+				return self.avail.read_front_size(#self.avail)
+			end
+			local rc = self:read_more(#self.free)
+			if rc < 0 then
+				return nil, rc
 			end
 		end
+		line.back	= line.front + 1
+		line.front	= self.avail.front
+		self.avail:pop_front(#line)
+		return line
 	end,
 
 	flush_write = function(self)
 		local nbytes = 0
 		while #self.avail > 0 do
 			local n = self.write_func(self.avail.front, #self.avail)
-			nbytes = nbytes + n
-			self.avail:pop_front(n)
+			if n >= 0 then
+				nbytes = nbytes + n
+				self.avail:pop_front(n)
+			elseif nbytes > 0 then
+				return nbytes
+			else
+				return n
+			end
 		end
 		self:reset()
 		return nbytes
@@ -107,14 +121,16 @@ buffer.Buffer = Class({
 
 	write = function(self, data)
 		if #self.free < #data then
-			self:flush_write()
+			local rc = self:flush_write()
+			if rc <= 0 then
+				return rc
+			end
 		end
 		assert(#data <= #self.free)
 		local written	= self.free:save()
 		local n		= #data
 		copy(self.free.front, data, n)
-		self.free:pop_front(n)
-		self.avail.back	= self.avail.back + n
+		self.adjust_free_avail(n)
 		written.back = written.front + n
 		return written
 	end,
