@@ -31,9 +31,9 @@ local Transaction = Class({
 		self.response	= Response(response_size or request_size)
 	end,
 
-	reset = function(self)
-		self.request:reset()
-		self.response:reset()
+	flush = function(self)
+		self.request:flush()
+		self.response:flush()
 	end,
 
 	set_sock = function(self, sock)
@@ -66,20 +66,6 @@ local base64_encode = function(s)
 end
 connection.base64_encode = base64_encode
 
-local printf = require('useful.stdio').printf
-
-connection.dump_status = function(status) --luacheck:ignore
-	if status.status then
-		local line = status.status
-		printf('status=<%s>\n', line.s)
-	end
-	for i=0,status.nheader-1 do
-		local header = status.header[i]
-		rstrip(header)
-		printf('<%s>\n', header.s)
-	end
-end
-
 local do_status	= make_until(rstring.SPACE)
 
 connection.url_read = function(url, options)
@@ -88,7 +74,7 @@ connection.url_read = function(url, options)
 	local sock = socket.TCP()
 	assert(sock:connect(options.host, options.port) == 0)
 	local transaction = Transaction(options.max_size or 32768)
-	transaction:reset()
+	transaction:flush()
 	transaction.request:set('Host', options.host)
 	if options.keep_alive ~= nil then
 		transaction.request:set('Keep-Alive', options.keep_alive)
@@ -103,7 +89,7 @@ connection.url_read = function(url, options)
 	if options.output ~= nil then
 		transaction.request:set('Content-Length', tostring(#options.output))
 	end
-	--connection.dump_status(transaction.request)
+	transaction.request:dump()
 	transaction:set_sock(sock)
 	transaction.request:send_request(options.method or 'GET', options.path)
 	if options.output ~= nil then

@@ -21,6 +21,8 @@ local  is_end_of_line	=  rstring.is_end_of_line
 local  is_whitespace	=  rstring.is_whitespace
 local  rstrip		=  rstring.rstrip
 local  skip_ws		=  rstring.skip_ws
+local stdio	= require('useful.stdio')
+local  printf	=  stdio.printf
 
 local do_header	= rstring.make_until(rstring.COLON)
 status.do_header = do_header
@@ -56,9 +58,10 @@ status.code_strings = {
 local Status = Class({
 	new = function(self, size, header_size)
 		local read = function(p, sz)
-			return self.sock:recv(p, sz, C.MSG_DONTWAIT)
+			return self.sock:recv(p, sz)
 		end
 		local write = function(p, sz)
+			--print('write <'..ffi.string(p, sz)..'>')
 			return self.sock:send(p, sz)
 		end
 		self.write	= write
@@ -67,9 +70,9 @@ local Status = Class({
 		self.header	= char_range_array(MAXENTRIES)
 	end,
 
-	reset = function(self)
-		self.buffer:reset()
-		self.header_buf:reset()
+	flush = function(self)
+		self.buffer:flush()
+		self.header_buf:flush()
 		self.status	= nil
 		self.nheader	= 0
 	end,
@@ -138,6 +141,7 @@ local Status = Class({
 	set = function(self, name, value)
 		local r = self.header_buf:write(name..': '..value..'\r\n')
 		rstrip(r)
+		--print('r='..tostring(r)..'=')
 		self.header[self.nheader] = r
 		self.nheader = self.nheader + 1
 		return r
@@ -163,6 +167,18 @@ local Status = Class({
 		self.buffer:writef('HTTP/1.1 %d %s\r\n', code, message)
 		local n = self:send_status()
 		return n + self:send_header()
+	end,
+
+	dump = function(self)
+		if self.status then
+			local line = self.status
+			printf('status=<%s>\n', line.s)
+		end
+		for i=0,self.nheader-1 do
+			local header = self.header[i]
+			rstrip(header)
+			printf('<%s>\n', header.s)
+		end
 	end,
 })
 status.Status = Status
