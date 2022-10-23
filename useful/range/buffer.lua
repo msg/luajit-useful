@@ -90,10 +90,9 @@ buffer.Buffer = Class({
 				return nil, rc
 			end
 		end
-		local avail = self.avail:save()
-		avail.back = avail.front + nbytes
-		self.avail:pop_front(#avail)
-		return avail
+		local r8 = self.avail:front_range(nbytes)
+		self.avail:pop_front(#r8)
+		return r8
 	end,
 
 	read_line = function(self)
@@ -117,18 +116,23 @@ buffer.Buffer = Class({
 	end,
 
 	write = function(self, data)
-		local nbytes = min(#data, #self.free)
-		copy(self.free.front, data.front, nbytes)
+		if type(data) == 'string' then
+			data = self.free.from_string(data)
+		end
+		local nbytes	= min(#data, #self.free)
+		local r8	= self.free:front_range(nbytes)
+		copy(r8.front, data.front, nbytes)
 		self:pop_insert(nbytes)
-		return nbytes
+		return r8
 	end,
 
 	writef = function(self, ...)
 		local nbytes = C.snprintf(nil, 0, ...)
-		assert(nbytes <= #self.free, 'not enough space to writef')
-		C.snprintf(self.free.front, nbytes, ...)
-		self:pop_inset(nbytes)
-		return nbytes
+		assert(nbytes + 1 <= #self.free, 'not enough space to writef')
+		local r8	= self.free:front_range(nbytes)
+		C.snprintf(r8.front, nbytes+1, ...)
+		self:pop_insert(nbytes)
+		return r8
 	end,
 })
 
