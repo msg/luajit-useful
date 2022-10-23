@@ -143,6 +143,9 @@ local timespec_mt = {
 			return a.tv_sec < b.tv_sec
 		end
 	end,
+	__len = function(a)
+		return timespec_to_number(a)
+	end,
 	gmtime = function(ts)
 		local t = new('int64_t[1]', ts.tv_sec)
 		return C.gmtime(t)
