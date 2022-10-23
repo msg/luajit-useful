@@ -1,6 +1,8 @@
 --
 -- b u f f e r . l u a
 --
+local  min	=  math.min
+
 local ffi	= require('ffi')
 local  C	=  ffi.C
 local  copy	=  ffi.copy
@@ -25,8 +27,7 @@ buffer.find_nl = find_nl
 
 buffer.Buffer = Class({
 	new = function(self, size, read_func, write_func)
-		self.buffer	= int8.vla(size)
-		self.free	= int8.from_vla(self.buffer)
+		self.buffer, self.free = int8.vla(size)
 		self.avail	= int8(self.free.front, self.free.front)
 		self.read_func	= read_func
 		self.write_func	= write_func
@@ -36,16 +37,43 @@ buffer.Buffer = Class({
 		return #self.avail
 	end,
 
-	reset = function(self)
-		assert(#self.avail == 0)
+	pop_insert = function(self, n)
+		self.free:pop_front(n)
+		self.avail:pop_back(-n)
+	end,
+
+	flush = function(self, force)
+		assert(force or #self.avail == 0, 'available bytes in buffer')
 		self.free.front		= self.buffer
 		self.avail.front	= self.buffer
 		self.avail.back		= self.avail.front
 	end,
 
-	adjust_free_avail = function(self, n)
-		self.free:pop_front(n)
-		self.avail:pop_back(-n)
+	flush_write = function(self)
+		local nbytes = 0
+		local avail = self.avail
+		while #avail > 0 do
+			local n = self.write_func(avail.front, #avail)
+			if n >= 0 then
+				nbytes = nbytes + n
+				avail:pop_front(n)
+			elseif nbytes > 0 then
+				return nbytes
+			else
+				return n
+			end
+		end
+		self:flush()
+		return nbytes
+	end,
+
+	read_more = function(self, nbytes)
+		nbytes = min(nbytes, #self.free)
+		local n = self.read_func(self.free.front, nbytes)
+		if n > 0 then
+			self:pop_insert(n)
+		end
+		return tonumber(n)
 	end,
 
 	read_avail = function(self, n)
@@ -54,22 +82,8 @@ buffer.Buffer = Class({
 		return self.avail:read_front_size(n or 1)
 	end,
 
-	flush = function(self)
-		self.avail:pop_front(#self.avail)
-		self:reset()
-	end,
-
-	read_more = function(self, nbytes)
-		nbytes = math.min(nbytes, #self.free)
-		local n = self.read_func(self.free.front, nbytes)
-		if n > 0 then
-			self:adjust_free_avail(n)
-		end
-		return tonumber(n)
-	end,
-
 	read = function(self, nbytes)
-		nbytes = math.min(nbytes, #self.avail + #self.free)
+		nbytes = min(nbytes, #self.avail + #self.free)
 		while #self.avail < nbytes do
 			local rc = self:read_more(nbytes - #self.avail)
 			if rc < 0 then
@@ -102,51 +116,19 @@ buffer.Buffer = Class({
 		return line
 	end,
 
-	flush_write = function(self)
-		local nbytes = 0
-		while #self.avail > 0 do
-			local n = self.write_func(self.avail.front, #self.avail)
-			if n >= 0 then
-				nbytes = nbytes + n
-				self.avail:pop_front(n)
-			elseif nbytes > 0 then
-				return nbytes
-			else
-				return n
-			end
-		end
-		self:reset()
+	write = function(self, data)
+		local nbytes = min(#data, #self.free)
+		copy(self.free.front, data.front, nbytes)
+		self:pop_insert(nbytes)
 		return nbytes
 	end,
 
-	write = function(self, data)
-		if #self.free < #data then
-			local rc = self:flush_write()
-			if rc <= 0 then
-				return rc
-			end
-		end
-		assert(#data <= #self.free)
-		local written	= self.free:save()
-		local n		= #data
-		copy(self.free.front, data, n)
-		self.adjust_free_avail(n)
-		written.back = written.front + n
-		return written
-	end,
-
 	writef = function(self, ...)
-		local n		= C.snprintf(nil, 0, ...)
-		if #self.free < n then
-			self:flush_write()
-		end
-		assert(n <= #self.free)
-		local written	= self.free:save()
-		C.snprintf(written.front, #written, ...)
-		self.avail.back	= self.avail.back + n
-		written.back	= written.front + n
-		self.free:pop_front(n)
-		return written
+		local nbytes = C.snprintf(nil, 0, ...)
+		assert(nbytes <= #self.free, 'not enough space to writef')
+		C.snprintf(self.free.front, nbytes, ...)
+		self:pop_inset(nbytes)
+		return nbytes
 	end,
 })
 
