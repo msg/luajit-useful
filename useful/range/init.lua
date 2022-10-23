@@ -45,8 +45,8 @@ function range.range_type(declaration)
 				cast(type_range.pointer, self.back))
 	end
 	function rmt.set(self, from)
-		self.front = cast(rmt.pointer, from.front)
-		self.back = cast(rmt.pointer, from.back)
+		self.front	= cast(rmt.pointer, from.front)
+		self.back	= cast(rmt.pointer, from.back)
 	end
 	function rmt.swap(value)
 		value = cast('int64_t',value)
@@ -85,8 +85,8 @@ function range.range_type(declaration)
 	end
 	-- bi-directional range api
 	function rmt.pop_back(self, n)
-		assert(self.front < self.back, 'out of range')
 		self.back = self.back - (n or 1)
+		assert(self.front < self.back, 'out of range')
 	end
 	function rmt.get_back(self)
 		assert(self.front < self.back, 'out of range')
@@ -148,6 +148,14 @@ function range.range_type(declaration)
 	function rmt.write_back_type(self, type, value)
 		self:pop_back(sizeof(type))
 		cast(type..'*', self.back)[0] = value
+	end
+
+	-- create new range from front or back
+	function rmt.front_range(self, n)
+		return rmt.meta(self.front, self.front + n)
+	end
+	function rmt.back_range(self, n)
+		return rmt.meta(self.back - n, self.back)
 	end
 
 	-- array manipulation functions
