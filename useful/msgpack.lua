@@ -184,14 +184,6 @@ end
 
 local encode
 
-local function table_size(value)
-	local size = 0
-	for _,_ in pairs(value) do
-		size = size + 1
-	end
-	return size
-end
-
 local function encode_map(value)
 	local parts = {}
 	local count = 0
@@ -229,12 +221,20 @@ local function encode_array(value, size)
 	end
 end
 
+local function table_size(value)
+	local size = 0
+	for _,_ in pairs(value) do
+		size = size + 1
+	end
+	return size
+end
+
 local function encode_table(value)
 	local size = table_size(value)
 	if size ~= #value then
-		encode_map(value, size)
+		return encode_map(value, size)
 	else
-		encode_array(value, size)
+		return encode_array(value, size)
 	end
 end
 
