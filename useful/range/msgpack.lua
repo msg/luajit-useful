@@ -241,7 +241,6 @@ end
 
 local function encode_table(value, r8)
 	local size = table_size(value)
-	assert(size >= #value)
 	if size ~= value then
 		encode_map(value, size, r8)
 	else
