@@ -122,7 +122,7 @@ local function linearize(tbl, leader, visited, new)
 		end
 	end
 	table.sort(new)
-	return new
+	return table.concat(new, '\n')
 end
 tables.linearize = linearize
 
@@ -250,9 +250,7 @@ function tables.reverse(t)
 end
 
 local function offset(t, i)
-	if not i or i > #t then
-		return #t
-	elseif i < 0 then
+	if i < 0 then
 		return #t + i + 1
 	else
 		return i
