@@ -6,6 +6,7 @@ local socket = { }
 local ffi		= require('ffi')
 local  C		=  ffi.C
 local  cast		=  ffi.cast
+local  errno		=  errno
 local  fstring		=  ffi.string
 local  new		=  ffi.new
 local  sizeof		=  ffi.sizeof
@@ -32,8 +33,8 @@ local stdio		= require('useful.stdio')
 local  sprintf		=  stdio.sprintf
 
 function socket.syserror(call)
-	local errno = ffi.errno()
-	return sprintf("%s: %d %s\n", call, errno, fstring(C.strerror(errno)))
+	local err = errno()
+	return sprintf("%s: %d %s\n", call, err, fstring(C.strerror(err)))
 end
 
 local function getaddrinfo(host, port, protocol)
@@ -76,7 +77,7 @@ end
 socket.getaddrinfo = getaddrinfo
 
 socket.addr_to_ip_port = function(addr)
-	local host = ffi.string(C.inet_ntoa(addr.sin_addr))
+	local host = fstring(C.inet_ntoa(addr.sin_addr))
 	local port = C.htons(addr.sin_port)
 	return host, port
 end
@@ -125,7 +126,7 @@ socket.Socket = Class({
 		pfd[0].events	= events
 		local rc = C.poll(pfd, 1, timeout * 1000)
 		if rc <= 0 then
-			ffi.errno(C.EAGAIN)
+			errno(C.EAGAIN)
 		end
 		return rc
 	end,
@@ -206,8 +207,8 @@ socket.Socket = Class({
 			if rc > 0 then
 				p	= p + rc
 				len	= len - rc
-			elseif rc == 0 then
-				return rc
+			elseif p - buf > 0 then
+				return p - buf
 			else
 				return rc
 			end
@@ -219,8 +220,14 @@ socket.Socket = Class({
 		local p		= cast('char *', buf)
 		while len > 0 do
 			local n = self:send(buf, len)
-			p	= p + n
-			len	= len - n
+			if rc > 0 then
+				p	= p + n
+				len	= len - n
+			elseif p - buf > 0 then
+				return p - buf
+			else
+				return rc
+			end
 		end
 		return p - buf
 	end,
