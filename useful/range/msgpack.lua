@@ -315,10 +315,6 @@ local function decode_map(size, r8)
 	return map
 end
 
-local function decode_with_size(size, r8)
-	return r8:read_front_size(size)
-end
-
 local decoders		= { }
 
 for i=0x00,0xff do
@@ -343,6 +339,11 @@ for i=FIXARRAY,FIXARRAY+16 do
 		return decode_array(band(code, 0x0f), r8)
 	end
 end
+
+local function decode_with_size(size, r8)
+	return r8:read_front_size(size)
+end
+
 for i=FIXSTR,FIXSTR+31 do
 	decoders[i]	= function(r8, code)
 		return decode_with_size(band(code, 0x1f), r8):to_string()
