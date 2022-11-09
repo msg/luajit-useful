@@ -7,8 +7,8 @@ local system		= require('useful.system')
 local  loadstring	=  system.loadstring
 
 function functional.callable(obj)
-	return type(obj) == 'function' or getmetatable(obj) and
-			getmetatable(obj).__call
+	return type(obj) == 'function'
+		or getmetatable(obj) and getmetatable(obj).__call
 end
 
 function functional.memoize(func)
@@ -55,6 +55,14 @@ function functional.bind2(func, b)
 	end
 end
 
+function functional.take2(func)
+	func = function_arg(func)
+	return function(...)
+		local _,value = func(...)
+		return value
+	end
+end
+
 function functional.compose(...)
 	local funcs = { }
 	for _,func in pairs({...}) do
@@ -66,14 +74,6 @@ function functional.compose(...)
 			v = funcs[i](v)
 		end
 		return v
-	end
-end
-
-function functional.take2(func)
-	func = function_arg(func)
-	return function(...)
-		local _,value = func(...)
-		return value
 	end
 end
 
