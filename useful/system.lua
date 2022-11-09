@@ -6,6 +6,7 @@ function system.is_main()
 end
 
 system.unpack	= unpack or table.unpack		-- luacheck:ignore
+
 system.pack	= function(...)	-- luacheck:ignore
 	local new = {...}
 	new.n = select('#', ...)
@@ -14,12 +15,15 @@ end
 
 system.loadstring = loadstring or load			-- luacheck:ignore
 
+local upvaluejoin	= debug.upvaluejoin
+local getupvalue	= debug.getupvalue
+
 system.setfenv = setfenv or function(fn, env)		-- luacheck:ignore
 	local i = 1
 	while true do
-		local name = debug.getupvalue(fn, i)
+		local name = getupvalue(fn, i)
 		if name == '_ENV' then
-			debug.upvaluejoin(fn, i, function() -- luacheck:ignore
+			upvaluejoin(fn, i, function() -- luacheck:ignore
 				return env
 			end, 1)
 			break
@@ -34,7 +38,7 @@ end
 system.getfenv = getfenv or function(fn)		-- luacheck:ignore
 	local i = 1
 	while true do
-		local name, value = debug.getupvalue(fn, i)
+		local name, value = getupvalue(fn, i)
 		if name == '_ENV' then
 			return value
 		elseif not name then
