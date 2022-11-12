@@ -3,23 +3,26 @@
 --
 local filesystem = { }
 
-local ffi	= require('ffi')
-local  C	=  ffi.C
-local bit	= require('bit')
-local  band	=  bit.band
+local ffi		= require('ffi')
+local  C		=  ffi.C
+local  errno		=  ffi.errno
+local bit		= require('bit')
+local  band		=  bit.band
 
-		  require('posix.dirent')
-		  require('posix.errno')
-local stat	= require('posix.sys.stat')
-		  require('posix.string')
-		  require('posix.unistd')
+			  require('posix.dirent')
+			  require('posix.errno')
+local stat		= require('posix.sys.stat')
+			  require('posix.string')
+			  require('posix.unistd')
 
-local path	= require('useful.path')
-local system	= require('useful.system')
-local  unpack	=  system.unpack
+local path_		= require('useful.path')
+local  split_path	=  path_.split_path
+local system		= require('useful.system')
+local  unpack		=  system.unpack
 
-local function strerror(errno)
-	return ffi.string(C.strerror(errno or ffi.errno()))
+local function errno_string(err)
+	err = err or errno()
+	return tostring(err)..' '..ffi.string(C.strerror(err))
 end
 
 local function convert_permissions(st)
@@ -58,7 +61,7 @@ end
 local function make_convert_time(name)
 	return function(st)
 		return tonumber(st[name].tv_sec) +
-			tonumber(st[name].tv_nsec) * 1e-9
+		       tonumber(st[name].tv_nsec) * 1e-9
 	end
 end
 
@@ -98,7 +101,7 @@ filesystem.attributes = function(filepath, arg, stat_func)
 	local st = ffi.new('struct stat')
 	local rc = (stat_func or stat.stat)(filepath, st)
 	if rc < 0 then
-		error(strerror())
+		error(errno_string())
 	end
 	return stat_to_attributes(st, arg)
 end
@@ -115,11 +118,11 @@ filesystem.symlinkattributes = function(filepath, arg)
 	return unpack(result)
 end
 
-filesystem.exists = function(path) -- luacheck:ignore
+filesystem.exists = function(path)
 	return pcall(filesystem.attributes, path, 'mode')
 end
 
-local function is_mode(path, what_mode) -- luacheck:ignore
+local function is_mode(path, what_mode)
 	local ok, mode = filesystem.exists(path)
 	if not ok then
 		return false
@@ -128,19 +131,19 @@ local function is_mode(path, what_mode) -- luacheck:ignore
 	end
 end
 
-filesystem.is_block_device = function(path) -- luacheck:ignore
+filesystem.is_block_device = function(path)
 	return is_mode(path, 'block device')
 end
 
-filesystem.is_char_device = function(path) -- luacheck:ignore
+filesystem.is_char_device = function(path)
 	return is_mode(path, 'char device')
 end
 
-filesystem.is_directory = function(path) -- luacheck:ignore
+filesystem.is_directory = function(path)
 	return is_mode(path, 'directory')
 end
 
-filesystem.is_file = function(path) -- luacheck:ignore
+filesystem.is_file = function(path)
 	return is_mode(path, 'file')
 end
 
@@ -154,13 +157,13 @@ local dir_iter = function(state)
 	return ffi.string(state.ent.d_name)
 end
 
-filesystem.dir = function(path) -- luacheck:ignore
+filesystem.dir = function(path)
 	local state = {
 		dir = C.opendir(path),
 		ent = nil,
 	}
 	if state.dir == nil then
-		error(strerror())
+		error(errno_string())
 	end
 	state.dir = ffi.gc(state.dir, function()
 		if state.dir ~= nil then
@@ -170,7 +173,7 @@ filesystem.dir = function(path) -- luacheck:ignore
 	return dir_iter, state
 end
 
-filesystem.list = function(path) -- luacheck:ignore
+filesystem.list = function(path)
 	local list = { }
 	for name in filesystem.dir(path) do
 		if name ~= '.' and name ~= '..' then
@@ -181,10 +184,10 @@ filesystem.list = function(path) -- luacheck:ignore
 	return list
 end
 
-filesystem.chdir = function(path) -- luacheck:ignore
+filesystem.chdir = function(path)
 	local rc = C.chdir(path)
 	if rc < 0 then
-		error(strerror())
+		error(errno_string())
 	end
 	return rc
 end
@@ -193,7 +196,7 @@ filesystem.currentdir = function()
 	local buf = ffi.new('char[4096]')
 	local rc = C.getcwd(buf, 4096)
 	if rc < 0 then
-		error(strerror())
+		error(errno_string())
 	end
 	return rc
 end
@@ -206,7 +209,7 @@ filesystem.link = function(old, new, symlink)
 		rc = C.link(old, new)
 	end
 	if rc < 0 then
-		error(strerror())
+		error(errno_string())
 	end
 	return rc
 end
@@ -214,7 +217,7 @@ end
 filesystem.mkdir = function(dirname, permissions)
 	local rc = C.mkdir(dirname, permissions or tonumber(0755, 8))
 	if rc < 0 then
-		error(strerror())
+		error(errno_string())
 	end
 	return rc
 end
@@ -222,14 +225,14 @@ end
 filesystem.rmdir = function(dirname)
 	local rc = C.rmdir(dirname)
 	if rc < 0 then
-		error(strerror())
+		error(errno_string())
 	end
 	return rc
 end
 
 filesystem.mkdirp = function(_path, permissions)
 	permissions = permissions or tonumber(0755, 8)
-	local dir = path.split_path(_path)
+	local dir = split_path(_path)
 	while not filesystem.exists(dir) do
 		local rc = filesystem.mkdirp(dir, permissions)
 		if rc < 0 and ffi.errno() ~= C.EEXIST then
@@ -244,7 +247,7 @@ filesystem.mkdirp = function(_path, permissions)
 end
 
 local ftw
-ftw = function(path, func) -- luacheck:ignore
+ftw = function(path, func)
 	local attributes = filesystem.symlinkattributes
 	for entry in filesystem.dir(path) do
 		if entry ~= '.' and entry ~= '..' then
