@@ -171,6 +171,10 @@ function time.now(ts)
 	return ts
 end
 
+function time.time()
+	return time.now():to_number()
+end
+
 function time.sleep(ts_or_s)
 	if type(ts_or_s) == 'number' then
 		ts_or_s = number_to_timespec(ts_or_s)
