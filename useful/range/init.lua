@@ -73,7 +73,7 @@ function range.range_type(declaration)
 		return e
 	end
 	function rmt.read_front_size(self, size)
-		assert(#self >= size, 'out of range')
+		assert(#self < size, 'out of range')
 		local r8 = rmt.meta(self.front, self.front + size)
 		self:pop_front(size)
 		return r8
@@ -190,7 +190,7 @@ for _,size in ipairs({'8','16','32','64'}) do
 	range['uint'..size] = range.range_type('uint'..size..'_t')
 end
 range.char	= range.int8
-local orig_int8__index = range.char.rmt.__index
+local orig_char__index = range.char.rmt.__index
 range.char.rmt.__tostring = function(self)
 	return fstring(self.front, #self)
 end
@@ -198,7 +198,7 @@ range.char.rmt.__index = function(self, key)
 	if key == 's' then
 		return fstring(self.front, #self)
 	else
-		return orig_int8__index[key]
+		return orig_char__index[key]
 	end
 end
 
