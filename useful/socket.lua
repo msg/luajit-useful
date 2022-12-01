@@ -32,10 +32,12 @@ local  Class		=  class.Class
 local stdio		= require('useful.stdio')
 local  sprintf		=  stdio.sprintf
 
-function socket.syserror(call)
+local errno_string = function(call)
 	local err = errno()
 	return sprintf("%s: %d %s\n", call, err, fstring(C.strerror(err)))
 end
+
+socket.errno_string = errno_string
 
 local function getaddrinfo(host, port, protocol)
 	local hint		= new('struct addrinfo [1]')
@@ -47,7 +49,7 @@ local function getaddrinfo(host, port, protocol)
 	if ret ~= 0 then
 		local s
 		if ret == C.EAI_SYSTEM then
-			s = socket.syserror('getaddrinfo')
+			s = errno_string('getaddrinfo')
 		else
 			s = sprintf('getaddrinfo(%s, %s): %d %s\n',
 				host, port, ret, fstring(C.gai_strerror(ret)))
@@ -76,9 +78,9 @@ local function getaddrinfo(host, port, protocol)
 end
 socket.getaddrinfo = getaddrinfo
 
-socket.addr_to_ip_port = function(addr)
-	local host = fstring(C.inet_ntoa(addr.sin_addr))
-	local port = C.htons(addr.sin_port)
+socket.addr_to_ip_port = function(addrp)
+	local host = fstring(C.inet_ntoa(addrp[0].sin_addr))
+	local port = C.htons(addrp[0].sin_port)
 	return host, port
 end
 
@@ -89,7 +91,9 @@ socket.Socket = Class({
 	end,
 
 	__gc = function(self)
-		self:close()
+		if self.fd > -1 then
+			self:close()
+		end
 	end,
 
 	setsockopt = function(self, level, option, value, valuelen)
@@ -99,7 +103,7 @@ socket.Socket = Class({
 		valuelen = valuelen or sizeof(value)
 		local rc = C.setsockopt(self.fd, level, option, value, valuelen)
 		if rc < 0 then
-			return nil, socket.syserror('setsockopt')
+			return nil, errno_string('setsockopt')
 		end
 		return rc
 	end,
@@ -173,7 +177,7 @@ socket.Socket = Class({
 		local addrp	= cast('struct sockaddr *', addr)
 		local rc	= C.bind(self.fd, addrp, sizeof(addr[0]))
 		if rc < 0 then
-			return nil, socket.syserror('bind')
+			return nil, errno_string('bind')
 		end
 		return rc, addr
 	end,
@@ -187,30 +191,38 @@ socket.Socket = Class({
 		local size	= sizeof(addr)
 		local rc	= C.connect(self.fd, addrp, size)
 		if rc < 0 then
-			return nil, socket.syserror('connect')
+			return nil, errno_string('connect')
 		end
 		return rc
 	end,
 
 	recv = function(self, buf, len, flags)
-		return C.recv(self.fd, buf, len, flags or 0)
+		local rc = C.recv(self.fd, buf, len, flags or 0)
+		if rc < 0 then
+			return nil, errno_string('recv')
+		end
+		return rc
 	end,
 
 	send = function(self, buf, len, flags)
-		return C.send(self.fd, buf, len, flags or 0)
+		local rc = C.send(self.fd, buf, len, flags or 0)
+		if rc < 0 then
+			return nil, errno_string('send')
+		end
+		return rc
 	end,
 
 	recv_all = function(self, buf, len)
 		local p		= cast('char *', buf)
 		while len > 0 do
-			local rc = self:recv(p, len, C.MSG_WAITALL)
-			if rc > 0 then
-				p	= p + rc
-				len	= len - rc
+			local n, err = self:recv(p, len)
+			if n then
+				p	= p + n
+				len	= len - n
 			elseif p - buf > 0 then
 				return p - buf
 			else
-				return rc
+				return n, err
 			end
 		end
 		return p - buf
@@ -219,14 +231,14 @@ socket.Socket = Class({
 	send_all = function(self, buf, len)
 		local p		= cast('char *', buf)
 		while len > 0 do
-			local n = self:send(buf, len)
-			if rc > 0 then
+			local n, err = self:send(buf, len)
+			if n then
 				p	= p + n
 				len	= len - n
 			elseif p - buf > 0 then
 				return p - buf
 			else
-				return rc
+				return n, err
 			end
 		end
 		return p - buf
@@ -246,14 +258,14 @@ socket.TCP = Class(socket.Socket, {
 			self.fd = C.socket(C.AF_INET, C.SOCK_STREAM, 0)
 		end
 		if self.fd < 0 then
-			return nil, socket.syserror("socket")
+			return nil, errno_string("socket")
 		end
 	end,
 
 	listen = function(self, backlog)
 		local rc = C.listen(self.fd, backlog or 5)
 		if rc < 0 then
-			return nil, socket.syserror('listen')
+			return nil, errno_string('listen')
 		end
 		return rc
 	end,
@@ -271,6 +283,21 @@ socket.TCP = Class(socket.Socket, {
 		return rc, from[0]
 	end,
 
+	shutdown = function(self)
+		local rc = C.shutdown(self.fd, C.SHUT_WR)
+		if rc <= 0 then
+			local err = errno()
+			self:close()
+			errno(err)
+			return nil, errno_string('shutdown')
+		end
+		rc = C.recv(self.fd, new('char[?]', 1))
+		self:close()
+		if rc < 0 then
+			return nil, errno_string('recv')
+		end
+		return 0
+	end,
 })
 
 socket.UDP = Class(socket.Socket, {
@@ -278,7 +305,7 @@ socket.UDP = Class(socket.Socket, {
 		socket.Socket.new(self)
 		self.fd = C.socket(C.AF_INET, C.SOCK_DGRAM, 0)
 		if self.fd < 0 then
-			return nil, socket.syserror("socket")
+			return nil, errno_string('socket')
 		end
 	end,
 
