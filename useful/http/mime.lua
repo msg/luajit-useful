@@ -13,11 +13,14 @@ local function open_file(name)
 	end
 end
 
-mime.exts = { }
-local f = open_file('http/mime.types')
+local info	= debug.getinfo(open_file)
+local mime_file	= info.short_src:sub(1,-5)..'.types'
+
+local f		= open_file(mime_file)
 if f == nil then
 	error('http/mime.types not found')
 end
+mime.exts	= { }
 for line in f:lines() do
 	local match = line:gmatch('%S+')
 	local type = match()
