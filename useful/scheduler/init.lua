@@ -40,13 +40,17 @@ local  co_status	=  coroutine.status
 local  co_yield		=  coroutine.yield
 
 local  insert		=  table.insert
-local  remove		=  table.remove
 
+local class		= require('useful.class')
+local  Class		=  class.Class
+local functional	= require('useful.functional')
+local  bind1		=  functional.bind1
 local system		= require('useful.system')
 local  pack		=  system.pack
 local  unpack		=  system.unpack
-local time		= require('useful.time')
-local  now		=   time.now
+local time_		= require('useful.time')
+local  now		=  time_.now
+local  time_dt		=  time_.dt
 
 local READY	= 0	scheduler.READY		= READY
 local RUNNING	= 1	scheduler.RUNNING	= RUNNING
@@ -55,148 +59,201 @@ local SLEEPING	= 3	scheduler.SLEEPING	= SLEEPING
 local CHECKING	= 4	scheduler.CHECKING	= CHECKING
 local EXIT	= 5	scheduler.EXIT		= EXIT
 
-local pool = {}
-scheduler.pool	= pool
+local ThreadState = Class({
+	new = function(self, scheduler_, thread, args, status, value, time)
+		self.scheduler	= scheduler_
+		self.thread	= thread
+		self.args	= args
+		self.error	= self.default_error
+		self:set(status, value, time)
+		self.scheduler:add(self)
+	end,
 
-local function set_state(status, value, time)		--luacheck:ignore
-	local state	= pool[co_running()]
-	state.status	= status
-	state.value	= value
-	state.time	= time
-end
+	set = function(self, status, value, time)
+		self.status	= status
+		self.value	= value
+		self.time	= time
+	end,
 
-scheduler.yield = function(...)
-	set_state(READY, nil)
-	return co_yield(...)
-end
+	default_error = function(results, thread)	--luacheck:ignore
+		print('thread traceback:\n'
+		      ..results) --:gsub('^.*stack traceback:\n', ''))
+	end,
 
-scheduler.sleep = function(time, ...)			--luacheck:ignore
-	assert(type(time) == 'number')
-	set_state(SLEEPING, nil, time)
-	return co_yield(...)
-end
-
-scheduler.check = function(predicate, ...)
-	assert(type(predicate) == 'function')
-	set_state(CHECKING, predicate)
-	return co_yield(...)
-end
-
-scheduler.exit = function(...)
-	set_state(EXIT)
-	return co_yield(...)
-end
-
-scheduler.wait = function(id, ...)
-	assert(type(id) ~= 'function')
-	set_state(WAITING, id)
-	return co_yield(...)
-end
-
-scheduler.timed_wait = function(id, time, ...)		--luacheck:ignore
-	assert(type(id) ~= 'function')
-	assert(type(time) == 'number')
-	set_state(WAITING, id, time)
-	return co_yield(...)
-end
-
-scheduler.signal = function(id)
-	for _,state in pairs(pool) do
-		if state.status == WAITING and state.value == id then
-			state.status = READY
-			state.value = nil
-		end
-	end
-end
-
-scheduler.spawn = function(procedure, ...)
-	local thread = co_create(procedure)
-	pool[thread] = {
-		args	= pack(...),		--luacheck:ignore
-		status	= READY,
-		value	= nil,
-	}
-	return thread
-end
-
-scheduler.stop = function(thread)
-	local state	= pool[thread]
-	state.status	= EXIT
-end
-
-local thread_ready = function(thread, state, dt)
-	local status = co_status(thread)
-	if status == "dead" then
-		pool[thread] = nil
-	elseif status == "suspended" then
-		if state.status == SLEEPING then
-			state.time = state.time - dt
-			if state.time <= 0 then
-				state.status = READY
+	ready = function(self, dt)
+		local status = co_status(self.thread)
+		if status == "dead" then
+			self.scheduler:remove(self)
+			return false
+		elseif status ~= "suspended" then
+			return false
+		elseif self.status == EXIT then
+			self.scheduler:remove(self)
+			return false
+		elseif self.status == SLEEPING then
+			self.time = self.time - dt
+			if self.time <= 0 then
+				self.status = READY
 			end
-		elseif state.status == CHECKING then
-			if state.value() then
+		elseif self.status == CHECKING then
+			if self.value() then
+				self.status = READY
+				self.value = nil
+			end
+		elseif self.status == WAITING then
+			if self.time == nil then
+				self.time = self.time - dt
+				if self.value.time <= 0 then
+					self.status = READY
+					self.time = nil
+					-- self.value == nil when signaled
+				end
+			end
+		end
+		return self.status == READY
+	end,
+
+	resume = function(self)
+		local function pack_ok(ok, ...)
+			return ok, {...}
+		end
+		return pack_ok(co_resume(self.thread, unpack(self.args)))
+	end,
+})
+
+local Scheduler = Class({
+	new = function(self)
+		self.states	= { }
+		self.thread	= co_running()
+	end,
+
+	state = function(self)
+		return self.states[co_running()]
+	end,
+
+	set = function(self, ...)
+		local thread = co_running()
+		assert(thread ~= self.thread, 'cannot call set on main thread')
+		self.states[thread]:set(...)
+	end,
+
+	add = function(self, state)
+		self.states[state.thread] = state
+	end,
+
+	remove = function(self, state)
+		self.states[state.thread] = nil
+	end,
+
+	yield = function(self, ...)
+		self:set(READY, nil)
+		return co_yield(...)
+	end,
+
+	sleep = function(self, time, ...)
+		assert(type(time) == 'number')
+		self:set(SLEEPING, nil, time)
+		return co_yield(...)
+	end,
+
+	check = function(self, predicate, ...)
+		assert(type(predicate) == 'function')
+		self:set(CHECKING, predicate)
+		return co_yield(...)
+	end,
+
+	wait = function(self, id, ...)
+		assert(type(id) ~= 'function')
+		self:set(WAITING, id)
+		return co_yield(...)
+	end,
+
+	timed_wait = function(self, id, time, ...)
+		assert(type(id) ~= 'function')
+		assert(type(time) == 'number')
+		self:set(WAITING, id, time)
+		return co_yield(...)
+	end,
+
+	signal = function(self, id)
+		for _,state in pairs(self.states) do
+			if state.status == WAITING and state.value == id then
 				state.status = READY
 				state.value = nil
 			end
-		elseif state.status == WAITING then
-			if state.time == nil then
-				state.time = state.time - dt
-				if state.value.time <= 0 then
-					state.status = READY
-					state.time = nil
-					-- state.value == nil when signaled
+		end
+	end,
+
+	spawn = function(self, procedure, ...)
+		local thread	= co_create(procedure)
+		local state	= ThreadState(self, thread, pack(...), READY)
+		return state
+	end,
+
+	stop = function(self, thread)
+		local state	= self.states[thread]
+		state.status	= EXIT
+	end,
+
+	collect_runnable = function(self, dt)
+		local runnable	= {}
+		for _,state in pairs(self.states) do
+			if state:ready(dt) then
+				insert(runnable, state)
+			end
+		end
+		return runnable
+	end,
+
+	resume_runnable = function(self, runnable)	--luacheck:ignore
+		for _,state in ipairs(runnable) do
+			-- some other thread stopped this one?
+			if state.status ~= EXIT then
+				state.status	= RUNNING
+				local ok, ret = state:resume()
+				if not ok then
+					state.error(ret[1])
+				else
+					state.args = ret or { n=0 }
 				end
 			end
-		elseif state.status == EXIT then
-			pool[thread] = nil
 		end
-		return state.status == READY
-	end
-end
-scheduler.thread_ready = thread_ready
+	end,
 
-local default_error_func = function(results)
-	print(results[1])
-end
+	step = function(self)
+		local current	= now()
+		local dt	= time_dt(current, self.last or current)
+		self.last	= current
 
-local on_error_func = default_error_func
-scheduler.on_error = function(error_func)
-	local prev_error_func	= on_error_func
-	on_error_func		= error_func
-	return prev_error_func
-end
+		local runnable	= self:collect_runnable(dt)
+		self:resume_runnable(runnable)
+	end,
 
-local last
-local step = function()
-	local current		= now()
-	last			= last or current
-	local dt		= time.dt(current, last)
-	last			= current
-	local threads_to_resume	= {}
-
-	for thread,state in pairs(pool) do
-		if thread_ready(thread, state, dt) then
-			insert(threads_to_resume, thread)
+	run = function(self)
+		while next(self.states) do
+			self:step()
 		end
-	end
+	end,
 
-	for _,thread in ipairs(threads_to_resume) do
-		local state	= pool[thread]
-		state.status	= RUNNING
-		local results = pack(co_resume(thread, unpack(state.args)))
-		if remove(results, 1) == false then
-			results[1] = results[1]..'\n'..debug.traceback(thread)
-			on_error_func(results)
+	make_bind = function(self, t)
+		local methods = {
+			'check', 'signal', 'sleep', 'spawn',
+			'state', 'step', 'stop', 'timed_wait', 'wait', 'yield',
+		}
+		for _,method in ipairs(methods) do
+			t[method] = bind1(self[method], self)
 		end
-	end
-end
-scheduler.step = step
+		t['scheduler']	= self
+		t['run']	= function()
+			while next(self.states) do
+				t['step']() -- this function can be modified
+			end
+		end
+	end,
+})
+scheduler.Scheduler = Scheduler
 
-scheduler.run = function()
-	while true do
-		step()
-	end
-end
+local main_scheduler	= Scheduler()
+main_scheduler:make_bind(scheduler)
 
 return scheduler
