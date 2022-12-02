@@ -419,7 +419,7 @@ end
 --     0xd8, -1, 32-bit nano-seconds, 64-bit seconds
 
 decode = function(r8)
-	local code = decode_8(r8)
+	local code = band(decode_8(r8), 0xff)
 	return decoders[code](r8, code)
 end
 
