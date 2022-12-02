@@ -4,6 +4,8 @@
 --
 local rpc = { }
 
+local  traceback	=  debug.traceback
+
 local  insert		=  table.insert
 local  remove		=  table.remove
 
@@ -25,29 +27,15 @@ local  unpack		=  system.unpack
 --   result: array of arguments (nil, on error)
 --
 
-local function removen(argn, i)
-	local item = remove(argn, i)
-	argn.n = argn.n - 1
-	return item
+-- packn - pack arguments and remove .n
+local function packn(...)
+	local t = pack(...)
+	t.n = nil
+	return t
 end
-rpc.removen = removen
 
-local function unpackn(args)
-	return unpack(args, 1, args.n)
-end
-rpc.unpackn = unpackn
-
--- packing 1 to 10 arguments
---   this is required because arguments can be nil
-local packs = { }
-packs[0] = function() return pack() end
-for i=1,10 do
-	local s = 'return function(t) return table.pack('
-	for j=1,i do
-		s = s..'t['..tostring(j)..'],'
-	end
-	s = s:sub(1, -2)..') end'
-	insert(packs, loadstring(s)())
+local function unpackn(t, f, l)
+	return unpack(t, f or 1, l or t.n)
 end
 
 local REQUEST		= 0	rpc.REQUEST		= REQUEST
@@ -55,27 +43,23 @@ local RESPONSE		= 1	rpc.RESPONSE		= RESPONSE
 local NOTIFICATION	= 2	rpc.NOTIFICATION	= NOTIFICATION
 
 local Request = Class({
-	new = function(self, id, rpc, name, to)		--luacheck:ignore
+	new = function(self, id, rpc, name, params)	--luacheck:ignore
 		self.id		= id
 		self.rpc	= rpc
 		self.name	= name
-		self.to		= to
+		self.params	= params
+
+		self.msg 	= packn(REQUEST, id, name, params)
 		self.completed	= false
 		self.result	= nil
-		self.err	= nil
+		self.error	= nil
 	end,
-
-	step = function(self, timeout)
-		return self.rpc:step(timeout)
-	end
 })
 rpc.Request = Request
 
 local RPC = Class({
-	new = function(self, timeout, request_seed)
-		self.timeout		= timeout or 1
+	new = function(self, request_seed)
 		self.request_id		= request_seed or 1
-		self.max_size		= 64 * 1024
 		self.methods		= { }
 		self.requests		= { }
 	end,
@@ -88,32 +72,6 @@ local RPC = Class({
 		self.methods[name] = nil
 	end,
 
-	send = function(self, msg, to) --luacheck:ignore
-		print('RPC.send', msg, to)
-	end,
-
-	recv = function(self, timeout) --luacheck:ignore
-		print('RPC.recv')
-		return nil, nil -- msg, from
-	end,
-
-	[REQUEST] = function(self, from, id, method_name, params)
-		local method = self.methods[method_name]
-		local result
-		if method ~= nil then
-			result = pack(pcall(method, unpackn(params)))
-		else
-			result = pack(false, 'unknown method '..method_name)
-		end
-		local ok, err
-		ok = removen(result, 1)
-		if ok == false then
-			err = removen(result, 1)
-		end
-		local msg = pack(RESPONSE, id, err, result)
-		self:send(msg, from)
-	end,
-
 	find_request = function(self, id)
 		for i,request in ipairs(self.requests) do
 			if id == request.id then
@@ -124,91 +82,62 @@ local RPC = Class({
 		return nil
 	end,
 
-	[RESPONSE] = function(self, from, id, err, result) --luacheck:ignore
-		-- TODO: check request queue
+	request = function(self, name, ...)
+		local request = Request(self.request_id, self, name, packn(...))
+		self.request_id = self.request_id + 1
+		insert(self.requests, request)
+		return request
+	end,
+
+	notify = function(self, method, params)		--luacheck:ignore
+		return packn(NOTIFICATION, method, params or {})
+	end,
+
+	[REQUEST] = function(self, id, method_name, params)
+		local method = self.methods[method_name]
+		local ok, result
+		if method ~= nil then
+			ok, result = xpcall(function()
+				return packn(method(unpackn(params)))
+			end, traceback)
+		else
+			result = packn('unknown method '..method_name)
+		end
+		if not ok then
+			return packn(RESPONSE, id, result)
+		else
+			return packn(RESPONSE, id, nil, result)
+		end
+	end,
+
+	[RESPONSE] = function(self, id, err, result)
 		local request = self:find_request(id)
 		if request == nil then
-			error('unknown response')
-		elseif request.from ~= nil then
-			local msg = pack(RESPONSE, request.from_id, err, result)
-			self:send(msg, request.from)
+			error('unknown request id='..tostring(id))
 		else
 			request.completed	= true
-			request.err		= err
-			result			= result or pack()
-			request.result		= packs[result.n](result)
-			return request
+			request.error		= err
+			request.result		= result
 		end
 	end,
 
-	notify = function(self, to, method, params)
-		local msg = pack(NOTIFICATION, method, params)
-		self:send(msg, to)
-	end,
-
-	[NOTIFICATION] = function(self, from, method, params) --luacheck:ignore
-		method = self.methods[method]
-		local ok, msg = xpcall(method, debug.traceback,
-						unpackn(params or { n=0 }))
-		if not ok then
-			print('NOTIFICATION error: '..msg)
+	[NOTIFICATION] = function(self, method_name, params) --luacheck:ignore
+		local method = self.methods[method_name]
+		if method ~= nil then
+			local ok, err = xpcall(method, traceback, unpackn(params))
+			if not ok then
+				error('notify error: '..err)
+			end
+		else
+			error('unknown method '..method_name)
 		end
 	end,
 
-	process = function(self, msg, from)
+	process = function(self, msg)
 		assert(type(msg) == 'table', 'type '..type(msg)..' not a table.')
-		local type = remove(msg, 1)
-		return self[type](self, from, unpackn(msg))
-	end,
-
-	step = function(self, timeout)
-		local msg, from = self:recv(timeout)
-		if msg ~= nil then
-			return self:process(msg, from)
-		end
-	end,
-
-	call = function(self, name)			--luacheck:ignore
-		assert(name, 'call name nil')
-		return function(self, to, ...)		--luacheck:ignore
-			local params	= pack(...)
-			local id	= self.request_id
-			self.request_id	= self.request_id + 1
-			local request	= Request(id, self, name, to)
-			insert(self.requests, request)
-			request.msg 	= pack(REQUEST, id, name, params)
-			return request
-		end
-	end,
-
-	asynchronous = function(self, name)
-		return function(...)
-			return self:call(name)(self, ...)
-		end
-	end,
-
-	synchronous = function(self, name, timeout)
-		local func = self:asynchronous(name)
-		return function(...)
-			local req = func(...)
-			req:step(timeout or 1)
-			if not req.completed then
-				error('timeout')
-			end
-			if req.err then
-				error(req.err)
-			end
-			return unpackn(req.result)
-		end
-	end,
-
-	__index = function(self, name)
-		local value = rawget(self._class, name)
-		if value ~= nil then
-			return value
-		end
-		assert(name)
-		return self:call(name)
+		local type = msg[1]
+		assert(0 <= type and type <= 2, 'invalid msg: '..tostring(type))
+		return self[type](self, unpackn(msg, 2, msg.n))
 	end,
 })
 rpc.RPC = RPC
