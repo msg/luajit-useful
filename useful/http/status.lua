@@ -4,30 +4,33 @@
 --
 local status = { }
 
-local ffi	= require('ffi')
-local  C	=  ffi.C
-local  cast	=  ffi.cast
+local ffi		= require('ffi')
+local  C		=  ffi.C
+local  cast		=  ffi.cast
 
-		  require('posix.stdio')
-		  require('posix.unistd')
+			  require('posix.stdio')
+			  require('posix.unistd')
 
-local class	= require('useful.class')
-local  Class	=  class.Class
-local range	= require('useful.range')
-local rbuffer	= require('useful.range.buffer')
-local  Buffer	=  rbuffer.Buffer
-local rstring	= require('useful.range.string')
+local class		= require('useful.class')
+local  Class		=  class.Class
+local protect_		= require('useful.protect')
+local  unprotect1	=  protect_.unprotect1
+local range		= require('useful.range')
+local  char		=  range.char
+local buffer		= require('useful.range.buffer')
+local  Buffer		=  buffer.Buffer
+local rstring		= require('useful.range.string')
 local  is_end_of_line	=  rstring.is_end_of_line
 local  is_whitespace	=  rstring.is_whitespace
 local  rstrip		=  rstring.rstrip
 local  skip_ws		=  rstring.skip_ws
-local stdio	= require('useful.stdio')
-local  printf	=  stdio.printf
+local stdio		= require('useful.stdio')
+local  printf		=  stdio.printf
 
 local do_header	= rstring.make_until(rstring.COLON)
 status.do_header = do_header
 
-local char_range_array	= ffi.typeof('$[?]', range.int8)
+local char_range_array	= ffi.typeof('$[?]', char)
 status.char_range_array	= char_range_array
 
 local MAXENTRIES	= 64
@@ -71,33 +74,46 @@ local Status = Class({
 	end,
 
 	flush = function(self)
-		self.buffer:flush()
-		self.header_buf:flush()
+		self.buffer:flush(true)
+		self.header_buf:flush(true)
 		self.status	= nil
 		self.nheader	= 0
 	end,
 
-	set_sock = function(self, sock)
+	setup = function(self, sock)
+		self:flush()
 		self.sock = sock
 	end,
 
+	avail = function(self)
+		return self.buffer.avail:size()
+	end,
+
+	read = unprotect1(function(self, n)
+		return self.buffer:read(n)
+	end),
+
+	read_line = unprotect1(function(self)
+		return self.buffer:read_line()
+	end),
+
 	recv_status = function(self)
-		self.status = rstrip(self.buffer:read_line())
+		self.status = rstrip(self:read_line())
 	end,
 
 	recv_header = function(self)
 		local header = self.header
 		local nheader = 0
 		while nheader < MAXENTRIES do
-			local line = self.buffer:read_line()
+			local line = self:read_line()
 			local c = line:get_front()
 			if is_end_of_line(c) then
 				break
 			elseif is_whitespace(c) then
-				header[nheader-1].back = line.back
+				header[nheader-1].back	= line.back
 			else
-				header[nheader] = line
-				nheader = nheader + 1
+				header[nheader]		= line
+				nheader			= nheader + 1
 			end
 		end
 		self.nheader = nheader
@@ -106,18 +122,6 @@ local Status = Class({
 	recv = function(self)
 		self:recv_status()
 		self:recv_header()
-	end,
-
-	avail = function(self)
-		return self.buffer.avail:size()
-	end,
-
-	read = function(self, n)
-		return self.buffer:read(n)
-	end,
-
-	read_line = function(self)
-		return self.buffer:read_line()
 	end,
 
 	get = function(self, name, default)
@@ -147,26 +151,30 @@ local Status = Class({
 		return r
 	end,
 
-	send_header = function(self)
-		self.header_buf:write('\r\n', 2)
-		return self.header_buf:flush_write()
-	end,
-
-	send_status = function(self)
+	flush_status = unprotect1(function(self)
 		return self.buffer:flush_write()
+	end),
+
+	flush_header = unprotect1(function(self)
+		return self.header_buf:flush_write()
+	end),
+
+	send_status_and_header = function(self)
+		local n = self:flush_status()
+		self.header_buf:write('\r\n', 2)
+		n = n + self:flush_header()
+		return n
 	end,
 
 	send_request = function(self, method, path)
 		self.buffer:writef('%s %s HTTP/1.1\r\n', method, path)
-		local n = self:send_status()
-		return n + self:send_header()
+		return self:send_status_and_header()
 	end,
 
 	send_response = function(self, code, message)
-		code = cast('int', code)
+		message = message or status.code_strings[code] or 'Unknown'
 		self.buffer:writef('HTTP/1.1 %d %s\r\n', code, message)
-		local n = self:send_status()
-		return n + self:send_header()
+		return self:send_status_and_header()
 	end,
 
 	dump = function(self)
