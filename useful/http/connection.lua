@@ -36,9 +36,9 @@ local Transaction = Class({
 		self.response:flush()
 	end,
 
-	set_sock = function(self, sock)
-		self.request:set_sock(sock)
-		self.response:set_sock(sock)
+	setup = function(self, sock)
+		self.request:setup(sock)
+		self.response:setup(sock)
 	end
 })
 connection.Transaction = Transaction
@@ -72,16 +72,21 @@ connection.url_read = function(url, options)
 	options = options or {}
 	options.host, options.port, options.path = parse_url(url)
 	local sock = socket.TCP()
-	assert(sock:connect(options.host, options.port) == 0)
+	local ok, err = sock:connect(options.host, options.port)
+	if not ok then
+		return ok, err
+	end
+	sock:nonblock()
+
 	local transaction = Transaction(options.max_size or 32768)
-	transaction:flush()
+	transaction:setup(sock)
 	transaction.request:set('Host', options.host)
+	transaction.request:set('User-Agent', options.agent or 'connection.lua')
+	transaction.request:set('Accept', options.accept or '*/*')
 	if options.keep_alive ~= nil then
 		transaction.request:set('Keep-Alive', options.keep_alive)
 		transaction.request:set('Connection', 'keep-alive')
 	end
-	transaction.request:set('User-Agent', options.agent or 'connection.lua')
-	transaction.request:set('Accept', options.accept or '*/*')
 	if options.user_password ~= nil then
 		local encoded = base64_encode(options.user_password)
 		transaction.request:set('Authorization', 'Basic '..encoded)
@@ -89,8 +94,6 @@ connection.url_read = function(url, options)
 	if options.output ~= nil then
 		transaction.request:set('Content-Length', tostring(#options.output))
 	end
-	transaction.request:dump()
-	transaction:set_sock(sock)
 	transaction.request:send_request(options.method or 'GET', options.path)
 	if options.output ~= nil then
 		local o = int8.from_string(options.output)
@@ -116,7 +119,7 @@ connection.url_read = function(url, options)
 	if encoding == 'chunked' then
 		repeat
 			local size = rstrip(transaction.response:read_line())
-			size = tonumber('0x'..size.s)
+			size = tonumber(size.s, 16)
 			local chunk = transaction.response:read(size)
 			if transaction.response:read_line().s ~= '\r\n' then
 				error('invalid transfer')
