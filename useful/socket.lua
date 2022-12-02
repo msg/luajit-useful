@@ -262,6 +262,11 @@ socket.TCP = Class(socket.Socket, {
 		end
 	end,
 
+	nodelay = function(self, nodelay)
+		local value = new('int[1]', nodelay)
+		return self:setsockopt(C.IPPROTO_TCP, C.TCP_NODELAY, value)
+	end,
+
 	listen = function(self, backlog)
 		local rc = C.listen(self.fd, backlog or 5)
 		if rc < 0 then
