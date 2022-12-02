@@ -3,50 +3,101 @@
 --
 local poll = { }
 
-local ffi	= require('ffi')
-local  C	=  ffi.C
-local  errno	=  ffi.errno
-local  new	=  ffi.new
+local ffi		= require('ffi')
+local  C		=  ffi.C
+local  new		=  ffi.new
 
-		  require('posix.poll')
+			  require('posix.errno')
+			  require('posix.poll')
 
-local class	= require('useful.class')
-local  Class	=  class.Class
+local class		= require('useful.class')
+local  Class		=  class.Class
+local scheduler		= require('useful.scheduler')
+local  Scheduler	=  scheduler.Scheduler
+local time		= require('useful.time')
+local  now		=  time.now
 
-poll.Poll = Class({
-	new = function(self, npfds)
-		npfds = npfds or 32
-		self.pfds	= new('struct pollfd[?]', npfds)
+local Poll = Class({
+	new = function(self, max)
+		max		= max or 32
+		self.max	= max
 		self.npfds	= 0
+		self.socks	= { }
+		self:resize(max)
+	end,
+
+	__len = function(self)
+		return self.npfds
+	end,
+
+	resize = function(self, new_size)
+		assert(new_size >= self.max, 'size less then used')
+		local new_pfds = new('struct pollfd[?]', new_size)
+		for i=0,self.npfds-1 do
+			new_pfds[i] = self.pfds[i]
+		end
+		self.pfds	= new_pfds
+		self.max	= new_size
+		return new_size
 	end,
 
 	add = function(self, sock)
-		local npfds		= self.npfds
-		self.pfds[npfds].fd	= sock.fd
-		self.npfds		= npfds + 1
-		sock.pfd		= self.pfds + npfds
+		assert(self.npfds < self.max)
+		self.socks[self.npfds]		= sock
+		sock.ipfd			= self.npfds
+		self.pfds[self.npfds].fd	= sock.fd
+		self.npfds			= self.npfds + 1
 	end,
 
 	remove = function(self, sock)
-		local npfds = self.npfds - 1
-		for i=0,npfds do
-			if self.pfds[i].fd == sock.fd then
-				self.pfds[i].events	= 0
-				self.pfds[npfds]	= self.pfds[i]
-				self.npfds		= self.npfds - 1
-				sock.pfd		= nil
-				return
-			end
+		local pfds		= self.pfds
+		local i			= sock.ipfd
+		assert(pfds[i].fd == sock.fd)
+		self.npfds		= self.npfds - 1
+		if self.npfds == 0 or self.npfds == i then
+			return
 		end
+		-- swap removed pollfd with last pollfd
+		local nsock		= self.socks[self.npfds]
+		self.socks[self.npfds]	= nil
+		self.socks[i]		= nsock
+		nsock.ipfd		= i
+
+		pfds[i].fd		= pfds[self.npfds].fd
+		pfds[i].events		= pfds[self.npfds].events
 	end,
 
 	poll = function(self, timeout)
-		local rc = C.poll(self.pfds, self.npfds, timeout * 1000)
-		if rc <= 0 then
-			errno(C.EAGAIN)
-		end
-		return rc
+		return C.poll(self.pfds, self.npfds, timeout * 1000)
 	end,
 })
+poll.Poll = Poll
+
+local PollScheduler = Class(Scheduler, {
+	new = function(self, timeout, max)
+		Scheduler.new(self)
+		self.timeout	= timeout or 0.1
+		self.max	= max or 2
+		self.poll	= Poll(self.max)
+		self.current	= now()
+	end,
+
+	__len = function(self)
+		return #self.poll
+	end,
+
+	resize = function(self, new_size)
+		self.poll:resize(new_size)
+	end,
+
+	step = function(self)
+		self.n = self.poll:poll(self.timeout)
+		Scheduler.step(self)
+	end,
+})
+poll.PollScheduler = PollScheduler
+
+local poll_scheduler	= PollScheduler()
+poll_scheduler:make_bind(poll)
 
 return poll
