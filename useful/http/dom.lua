@@ -222,7 +222,7 @@ local tags = {
 	'html', 'head', 'body', 'title',
 	'header',
 	-- links, img
-	'a', '-img',
+	'a', '-img', 'style',
 	-- regular
 	'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
 	'ital', 'i', 'bold', 'b', 'font', 'p', 'pre', '-br', '-hr',
@@ -267,7 +267,7 @@ h.comment = function(content)
 end
 
 local attributes = {
-	'class', 'id', 'style',
+	'class', 'id', -- 'style',
 	'rel', 'src', 'ref', 'href',
 	'lang', 'charset',
 	'name', 'content',
@@ -278,6 +278,7 @@ h.attributes = attributes
 for _,name in ipairs(attributes) do
 	h[name] = h.bind(attribute, name)
 end
+h.astyle = h.bind(attribute, 'style') -- ambiguity with tag <style>
 
 h.data = function(rest, ...) -- data-node
 	return attribute('data-'..rest, ...)
