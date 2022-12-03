@@ -66,15 +66,6 @@ local wait_for_event = function(sock, timeout)
 			return false
 		end
 	end)
-	if not ok and timeout > 0.5 then
-		print('timeout=', timeout, 'dt=', dt)
-		print('err=', err)
-		local pfd = sock.poll.pfds[sock.ipfd]
-		print('pfd.fd=', pfd.fd, 'sock.fd=', sock.fd)
-		print('ipfd=', sock.ipfd, 'npfds=', sock.poll.npfds)
-		print('events=', pfd.events, 'revents=', pfd.revents)
-		print(debug.traceback())
-	end
 	return ok, err
 end
 
