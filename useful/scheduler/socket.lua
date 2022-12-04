@@ -57,8 +57,7 @@ local wait_for_event = function(sock, timeout)
 		elseif band(revents, bor(C.POLLHUP, C.POLLERR, C.POLLNVAL)) ~= 0 then
 			ok = pfd.revents
 			return true
-		--elseif band(revents, pfd.events) ~= 0 then
-		elseif revents ~= 0 then
+		elseif band(revents, pfd.events) ~= 0 then
 			ok = pfd.revents
 			return true
 		else
@@ -73,7 +72,6 @@ local TCP = Class(socket_TCP, {
 	new = function(self, fd, port, timeout, poll_)
 		socket_TCP.new(self, fd, port)
 		self:nonblock()
-		--self:rcvtimeo(0.1)
 		self.timeout	= timeout or 0.05
 		self.poll	= poll_ or scheduler.poll
 		if self.poll ~= nil then
