@@ -15,6 +15,18 @@ local function is_identifier(s)
 	return s:match('^[_A-Za-z][_A-Za-z0-9]*$') ~= nil
 end
 
+local keywords = {}
+for _,keyword in ipairs({ 'function', 'end', 'do', 'while', 'repeat',
+			'until', 'if', 'then', 'else', 'elseif', 'for',
+			'in', 'function', 'local', 'return', 'break',
+			'continue', 'false', 'true', 'nil', }) do
+	keywords[keyword] = true
+end
+
+local function is_keyword(s)
+	return keywords[s] ~= nil
+end
+
 local function encode(s)
 	local data = string.format('%q', s)
 	return data
@@ -41,7 +53,7 @@ local function serialize(o, indent, sp, nl, visited)
 		for k,v in pairs(o) do
 			local ktype = type(k)
 			if ktype == 'string' then
-				if not is_identifier(k) then
+				if is_keyword(k) or not is_identifier(k) then
 					k = '['..encode(k)..']'
 				end
 				k = k..sp..'='..sp
