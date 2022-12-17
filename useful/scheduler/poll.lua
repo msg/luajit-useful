@@ -77,7 +77,7 @@ local PollScheduler = Class(Scheduler, {
 	new = function(self, timeout, max)
 		Scheduler.new(self)
 		self.timeout	= timeout or 0.1
-		self.max	= max or 2
+		self.max	= max or 32
 		self.poll	= Poll(self.max)
 		self.current	= now()
 	end,
