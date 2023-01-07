@@ -89,8 +89,8 @@ local RPC = Class({
 		return request
 	end,
 
-	notify = function(self, method, params)		--luacheck:ignore
-		return packn(NOTIFICATION, method, params or {})
+	notify = function(self, method, ...)		--luacheck:ignore
+		return packn(NOTIFICATION, method, {...})
 	end,
 
 	[REQUEST] = function(self, id, method_name, params)
@@ -138,6 +138,12 @@ local RPC = Class({
 		local type = msg[1]
 		assert(0 <= type and type <= 2, 'invalid msg: '..tostring(type))
 		return self[type](self, unpackn(msg, 2, msg.n))
+	end,
+
+	wrap = function(self, name)
+		return function(...)
+			return self:request(name, ...)
+		end
 	end,
 })
 rpc.RPC = RPC
