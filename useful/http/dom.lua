@@ -16,15 +16,15 @@ local function copy(to, ...)
 	return to
 end
 
-local function class(impl)
-	impl.__index	= impl
+local function Class(class)
+	class.__index	= class
 
-	return setmetatable(impl, {
-		__call = function (impl, ...) -- luacheck: ignore
-			local instance = setmetatable({ _impl=impl }, impl)
+	return setmetatable(class, {
+		__call = function (class, ...) -- luacheck: ignore
+			local instance = setmetatable({ _class=class }, class)
 			-- run the new method if it's there
-			if impl.new then
-				impl.new(instance, ...)
+			if class.new then
+				class.new(instance, ...)
 			end
 			return instance
 		end
@@ -32,7 +32,7 @@ local function class(impl)
 end
 
 -- not used yet: TODO replace is_* below
-local function is_a(impl, object) return object._impl == impl end --luacheck:ignore
+local function is_a(class, object) return object._class == class end
 
 local NODE, ATTRIBUTE, MARKER = 1, 2, 3
 
@@ -88,7 +88,7 @@ end
 
 h.indent_char = ' '
 
-local Node = class({
+local Node = Class({
 	new = function(self, name, ...)
 		self.type		= NODE
 		self.indent		= 0
@@ -117,7 +117,7 @@ local Node = class({
 })
 h.Node = Node
 
-local tag = class(copy({}, Node, {
+local tag = Class(copy({}, Node, {
 	new = function(self, name, ...)
 		self.indent		= 1
 		self.attributes		= { }
@@ -181,6 +181,10 @@ local tag = class(copy({}, Node, {
 				insert(self.content, arg)
 			elseif is_attribute(arg) then
 				self:update_attribute(arg)
+			elseif type(arg) == 'table' and not arg._class then
+				for _,a in ipairs(arg) do
+					insert(self.content, a)
+				end
 			else
 				insert(self.content, arg)
 			end
@@ -190,7 +194,7 @@ local tag = class(copy({}, Node, {
 }))
 h.tag = tag
 
-local single_tag = class(copy({}, tag, {
+local single_tag = Class(copy({}, tag, {
 	lines = function(self)
 		return { self:render() }
 	end,
@@ -203,7 +207,7 @@ local single_tag = class(copy({}, tag, {
 }))
 h.single_tag = single_tag
 
-local attribute = class({
+local attribute = Class({
 	new = function(self, name, value)
 		self.type	= ATTRIBUTE
 		self.name	= name
@@ -240,6 +244,7 @@ local tags = {
 	'form', '-input', 'button',
 	-- css scripting
 	'-meta', '-link', 'script',
+	'canvas',
 }
 h.tags = tags
 
@@ -271,7 +276,8 @@ local attributes = {
 	'rel', 'src', 'ref', 'href',
 	'lang', 'charset',
 	'name', 'content',
-	'type',
+	'type', 'charset',
+	'width', 'height',
 }
 h.attributes = attributes
 
