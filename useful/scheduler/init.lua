@@ -101,9 +101,9 @@ local ThreadState = Class({
 				self.value = nil
 			end
 		elseif self.status == WAITING then
-			if self.time == nil then
+			if self.time ~= nil then
 				self.time = self.time - dt
-				if self.value.time <= 0 then
+				if self.time <= 0 then
 					self.status = READY
 					self.time = nil
 					-- self.value == nil when signaled
