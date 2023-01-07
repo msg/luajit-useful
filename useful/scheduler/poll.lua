@@ -31,7 +31,7 @@ local Poll = Class({
 	end,
 
 	resize = function(self, new_size)
-		assert(new_size >= self.max, 'size less then used')
+		assert(new_size >= self.npfds, 'size less then used')
 		local new_pfds = new('struct pollfd[?]', new_size)
 		for i=0,self.npfds-1 do
 			new_pfds[i] = self.pfds[i]
