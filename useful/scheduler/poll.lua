@@ -99,5 +99,6 @@ poll.PollScheduler = PollScheduler
 
 local poll_scheduler	= PollScheduler()
 poll_scheduler:make_bind(poll)
+poll.scheduler		= poll_scheduler
 
 return poll
