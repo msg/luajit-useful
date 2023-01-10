@@ -229,8 +229,12 @@ local Scheduler = Class({
 		self:resume_runnable(runnable)
 	end,
 
+	has_threads = function(self)
+		return next(self.states) ~= nil
+	end,
+
 	run = function(self)
-		while next(self.states) do
+		while self:has_threads() do
 			self:step()
 		end
 	end,
