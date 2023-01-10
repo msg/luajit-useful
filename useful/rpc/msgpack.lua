@@ -4,9 +4,16 @@
 
 local msgpack = { }
 
+local class		= require('useful.class')
+local  Class		=  class.Class
+local protect_		= require('useful.protect')
+local  protect		=  protect_.protect
+local  try1		=  protect_.try1
 local range		= require('useful.range')
 local  uint8		=  range.uint8
 local  uint16		=  range.uint16
+local buffer		= require('useful.range.buffer')
+local  Buffer		=  buffer.Buffer
 local msgpack_		= require('useful.range.msgpack')
 local  encode		=  msgpack_.encode
 local  decode		=  msgpack_.decode
@@ -20,7 +27,8 @@ local  serialize	=  tables.serialize
 --          8-bytes(header) + LEN-bytes
 local HEADER_SIZE	= 8
 msgpack.HEADER_SIZE	= HEADER_SIZE
-msgpack.MAX_SIZE	= 64 * 1024
+local MAX_SIZE		= 64 * 1024
+msgpack.MAX_SIZE	= MAX_SIZE
 
 -- NOTE: these functions modify the incoming range (r8) which is useful
 --       to append more messages before sending the output.
@@ -72,5 +80,36 @@ local decode_payload = function(r8, length)
 	return decode(r8)
 end
 msgpack.decode_payload = decode_payload
+
+msgpack.Buffer = Class({
+	new = function(self, read, write)
+		self.buffer = Buffer(MAX_SIZE, read, write)
+	end,
+
+	recv = function(self)
+		local buffer	= self.buffer
+		local r8	= try1(buffer:read(HEADER_SIZE))
+		local length	= try1(decode_header(r8))
+		r8		= try1(buffer:read(length))
+		buffer:flush()
+		return		  try1(decode_payload(r8, length))
+	end,
+
+	recv_p = protect(function(self, ...)
+		return self:recv(...)
+	end),
+
+	send = function(self, msg)
+		local buffer	= self.buffer
+		buffer:flush()
+		local r8	= try1(encode_message(msg, buffer.free))
+		buffer:pop_insert(#r8)
+		return		  try1(buffer:flush_write())
+	end,
+
+	send_p = protect(function(self, ...)
+		return self:send(...)
+	end),
+})
 
 return msgpack
