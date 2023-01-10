@@ -46,7 +46,7 @@ local wait_for_event = function(sock, timeout)
 	local start = now()
 	local ok, err, dt
 	check(function()
-		local pfd = sock.poll.pfds[sock.ipfd]
+		local pfd = sock.pfd
 		local revents = pfd.revents
 		pfd.revents = 0
 		dt = time.dt(now(), start)
@@ -98,7 +98,7 @@ local TCP = Class(socket_TCP, {
 	end,
 
 	wait_for_events = function(self, timeout, events)
-		self.poll.pfds[self.ipfd].events = events
+		self.pfd.events = events
 		local ok, err = wait_for_event(self, timeout)
 		--if not ok then
 		--	return ok, err

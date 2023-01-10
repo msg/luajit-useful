@@ -22,7 +22,7 @@ local Poll = Class({
 		max		= max or 32
 		self.max	= max
 		self.npfds	= 0
-		self.socks	= { }
+		self.fd_objects	= { }
 		self:resize(max)
 	end,
 
@@ -41,30 +41,30 @@ local Poll = Class({
 		return new_size
 	end,
 
-	add = function(self, sock)
+	add = function(self, fd_object)
 		assert(self.npfds < self.max)
-		self.socks[self.npfds]		= sock
-		sock.ipfd			= self.npfds
-		self.pfds[self.npfds].fd	= sock.fd
+		self.fd_objects[self.npfds]	= fd_object
+		fd_object.pfd			= self.pfds + self.npfds
+		self.pfds[self.npfds].fd	= fd_object.fd
 		self.npfds			= self.npfds + 1
 	end,
 
-	remove = function(self, sock)
-		local pfds		= self.pfds
-		local i			= sock.ipfd
-		assert(pfds[i].fd == sock.fd)
-		self.npfds		= self.npfds - 1
+	remove = function(self, fd_object)
+		local pfds			= self.pfds
+		local i				= fd_object.pfd - self.pfds
+		assert(pfds[i].fd == fd_object.fd)
+		self.npfds			= self.npfds - 1
 		if self.npfds == 0 or self.npfds == i then
 			return
 		end
 		-- swap removed pollfd with last pollfd
-		local nsock		= self.socks[self.npfds]
-		self.socks[self.npfds]	= nil
-		self.socks[i]		= nsock
-		nsock.ipfd		= i
+		local nfd_object		= self.fd_objects[self.npfds]
+		self.fd_objects[self.npfds]	= nil
+		self.fd_objects[i]		= nfd_object
+		nfd_object.pfd			= pfds + i
 
-		pfds[i].fd		= pfds[self.npfds].fd
-		pfds[i].events		= pfds[self.npfds].events
+		pfds[i].fd			= pfds[self.npfds].fd
+		pfds[i].events			= pfds[self.npfds].events
 	end,
 
 	poll = function(self, timeout)
