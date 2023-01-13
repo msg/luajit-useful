@@ -112,7 +112,7 @@ socket.Socket = Class({
 		if self.fd < 0 then
 			return -1
 		end
-		valuelen = valuelen or sizeof(value)
+		valuelen = new('uint32_t[1]', valuelen or sizeof(value))
 		return C.getsockopt(self.fd, level, option, value, valuelen)
 	end,
 
