@@ -25,7 +25,9 @@ local  run		=  poll.run
 local  scheduler	=  poll.scheduler
 local  spawn		=  poll.spawn
 local socket_		= require('useful.socket')
+local  socket_Socket	=  socket_.Socket
 local  socket_TCP	=  socket_.TCP
+local  socket_UDP	=  socket_.UDP
 local  close		=  socket_TCP.close
 local time		= require('useful.time')
 local  now		=  time.now
@@ -68,9 +70,9 @@ local wait_for_event = function(sock, timeout)
 	return ok, err
 end
 
-local TCP = Class(socket_TCP, {
+local Socket = Class(socket_Socket, {
 	new = function(self, fd, port, timeout, poll_)
-		socket_TCP.new(self, fd, port)
+		socket_Socket.new(self, fd, port)
 		self:nonblock()
 		self.timeout	= timeout or 0.05
 		self.poll	= poll_ or scheduler.poll
@@ -87,39 +89,10 @@ local TCP = Class(socket_TCP, {
 		return close(self)
 	end,
 
-	shutdown = function(self)
-		local rc = C.shutdown(self.fd, C.SHUT_WR)
-		if rc < 0 then
-			return nil, errno_message()
-		end
-		local ok, err = self:recv(new('char[?]', 1), 1)
-		self:close()
-		return ok, err
-	end,
-
 	wait_for_events = function(self, timeout, events)
 		self.pfd.events = events
 		local ok, err = wait_for_event(self, timeout)
-		--if not ok then
-		--	return ok, err
-		--end
 		return ok, err
-	end,
-
-	accept = function(self)
-		local ok, err = self:wait_for_events(self.timeout, C.POLLIN)
-		if not ok then
-			return ok, err
-		end
-		local from	= new('struct sockaddr_in[1]')
-		local fromp	= cast('struct sockaddr *', from)
-		local size	= new('socklen_t[1]', sizeof(from))
-		local fd = C.accept(self.fd, fromp, size)
-		if fd < 0 then
-			return nil, errno_message()
-		else
-			return fd, from
-		end
 	end,
 
 	recv = function(self, buf, len, flags)
@@ -179,7 +152,113 @@ local TCP = Class(socket_TCP, {
 		return nbytes
 	end,
 })
+socket.Socket = Socket
+
+local TCP = Class(socket_TCP, Socket, {
+	new = function(self, fd, port, timeout, poll_)
+		socket_TCP.new(self, fd, port)
+		Socket.new(self, self.fd, self.port, timeout, poll_)
+	end,
+
+	shutdown = function(self)
+		local rc = C.shutdown(self.fd, C.SHUT_WR)
+		if rc < 0 then
+			return nil, errno_message()
+		end
+		local ok, err = self:recv(new('char[?]', 1), 1)
+		self:close()
+		return ok, err
+	end,
+
+	accept = function(self)
+		local ok, err = self:wait_for_events(self.timeout, C.POLLIN)
+		if not ok then
+			return ok, err
+		end
+		local from	= new('struct sockaddr_in[1]')
+		local fromp	= cast('struct sockaddr *', from)
+		local size	= new('socklen_t[1]', sizeof(from))
+		local fd = C.accept(self.fd, fromp, size)
+		if fd < 0 then
+			return nil, errno_message()
+		else
+			return fd, from
+		end
+	end,
+})
 socket.TCP = TCP
+
+local UDP = Class(socket_UDP, Socket, {
+	new = function(self, fd, port, timeout, poll_)
+		socket_UDP.new(self, fd, port)
+		Socket.new(self, self.fd, self.port, timeout, poll_)
+	end,
+
+
+	sendto = function(self, buf, len, addr)
+		local ok, err = self:wait_for_events(self.timeout, C.POLLOUT)
+		if not ok then
+			return ok,err
+		end
+		local addrp = cast('struct sockaddr *', addr)
+		local n = C.sendto(self.fd, buf, len, 0, addrp, sizeof(addr))
+		if n < 0 then
+			return nil, errno_message()
+		else
+			return tonumber(n)
+		end
+	end,
+
+	recvfrom = function(self, buf, len)
+		local ok, err = self:wait_for_events(self.timeout, C.POLLIN)
+		if not ok then
+			return ok,err
+		end
+		local from      = new('struct sockaddr_in[1]')
+		local fromp     = cast('struct sockaddr *', from)
+		local size      = new('uint32_t[1]', sizeof(from))
+		local n = C.recvfrom(self.fd, buf, len, 0, fromp, size)
+		if n == 0 then
+			errno(C.EBADF)
+			return nil, errno_message()
+		elseif n < 0 then
+			return nil, errno_message()
+		else
+			return tonumber(n), from[0]
+		end
+	end,
+
+	sendmmsg = function(self, msgs, nmsgs, flags)
+		local ok, err = self:wait_for_events(self.timeout, C.POLLOUT)
+		if not ok then
+			return ok,err
+		end
+		local n = C.sendmmsg(self.fd, msgs, nmsgs, flags or 0)
+		if n == 0 then
+			return nil, errno_message()
+		elseif n < 0 then
+			return nil, errno_message()
+		else
+			return tonumber(n)
+		end
+	end,
+
+	recvmmsg = function(self, msgs, nmsgs, flags, timeout)
+		local ok, err = self:wait_for_events(self.timeout, C.POLLIN)
+		if not ok then
+			return ok,err
+		end
+		local n = C.recvmmsg(self.fd, msgs, nmsgs, flags or 0, timeout or nil)
+		if n == 0 then
+			return nil, errno_message()
+		elseif n < 0 then
+			return nil, errno_message()
+		else
+			return tonumber(n)
+		end
+	end,
+})
+socket.UDP = UDP
 
 socket.TCPServer = Class({
 	new = function(self, port, client_func, options)
