@@ -327,6 +327,14 @@ socket.UDP = Class(socket.Socket, {
 		return C.sendto(self.fd, buf, len, 0, addrp, sizeof(addr))
 	end,
 
+	sendmmsg = function(self, msgs, nmsgs, flags)
+		return C.sendmmsg(self.fd, msgs, nmsgs, flags or 0)
+	end,
+
+	recvmmsg = function(self, msgs, nmsgs, flags, timeout)
+		return C.recvmmsg(self.fd, msgs, nmsgs, flags or 0, timeout or nil)
+	end,
+
 	ip_multicast_if = function(self, addr)
 		addr		= getaddrinfo(addr, 0)
 		local imreq	= new('struct ip_mreqn[1]')
