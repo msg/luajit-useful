@@ -158,6 +158,7 @@ local TCP = Class(socket_TCP, Socket, {
 	new = function(self, fd, port, timeout, poll_)
 		socket_TCP.new(self, fd, port)
 		Socket.new(self, self.fd, self.port, timeout, poll_)
+		self:nodelay(1)
 	end,
 
 	shutdown = function(self)
