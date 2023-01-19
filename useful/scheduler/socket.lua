@@ -90,15 +90,19 @@ local Socket = Class(socket_Socket, {
 	end,
 
 	wait_for_events = function(self, timeout, events)
-		self.pfd.events = events
-		local ok, err = wait_for_event(self, timeout)
-		return ok, err
+		if self.timeout == nil or self.timeout == 0 then
+			return true
+		else
+			self.pfd.events = events
+			local ok, err = wait_for_event(self, timeout)
+			return ok, err
+		end
 	end,
 
 	recv = function(self, buf, len, flags)
 		local ok, err = self:wait_for_events(self.timeout, C.POLLIN)
 		if not ok then
-			return ok,err
+			return ok, err
 		end
 		local n = C.recv(self.fd, buf, len, flags or 0)
 		if n == 0 then
@@ -128,7 +132,7 @@ local Socket = Class(socket_Socket, {
 	send = function(self, buf, len, flags)
 		local ok, err = self:wait_for_events(self.timeout, C.POLLOUT)
 		if not ok then
-			return ok,err
+			return ok, err
 		end
 		local n = C.send(self.fd, buf, len, flags or 0)
 		if n < 0 then
@@ -199,7 +203,7 @@ local UDP = Class(socket_UDP, Socket, {
 	sendto = function(self, buf, len, addr)
 		local ok, err = self:wait_for_events(self.timeout, C.POLLOUT)
 		if not ok then
-			return ok,err
+			return ok, err
 		end
 		local addrp = cast('struct sockaddr *', addr)
 		local n = C.sendto(self.fd, buf, len, 0, addrp, sizeof(addr))
@@ -213,7 +217,7 @@ local UDP = Class(socket_UDP, Socket, {
 	recvfrom = function(self, buf, len)
 		local ok, err = self:wait_for_events(self.timeout, C.POLLIN)
 		if not ok then
-			return ok,err
+			return ok, err
 		end
 		local from      = new('struct sockaddr_in[1]')
 		local fromp     = cast('struct sockaddr *', from)
@@ -232,7 +236,7 @@ local UDP = Class(socket_UDP, Socket, {
 	sendmmsg = function(self, msgs, nmsgs, flags)
 		local ok, err = self:wait_for_events(self.timeout, C.POLLOUT)
 		if not ok then
-			return ok,err
+			return ok, err
 		end
 		local n = C.sendmmsg(self.fd, msgs, nmsgs, flags or 0)
 		if n == 0 then
@@ -247,7 +251,7 @@ local UDP = Class(socket_UDP, Socket, {
 	recvmmsg = function(self, msgs, nmsgs, flags, timeout)
 		local ok, err = self:wait_for_events(self.timeout, C.POLLIN)
 		if not ok then
-			return ok,err
+			return ok, err
 		end
 		local n = C.recvmmsg(self.fd, msgs, nmsgs, flags or 0, timeout or nil)
 		if n == 0 then
