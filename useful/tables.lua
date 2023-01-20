@@ -32,54 +32,90 @@ local function encode(s)
 	return data
 end
 
-local function serialize(o, indent, sp, nl, visited)
-	local new = {}
-	visited = visited or { }
-	sp = sp or ' '
-	nl = nl or '\n'
-	indent = indent or ''
-	local otype = type(o)
-	if otype == 'number' or otype == 'boolean' then
-		insert(new, tostring(o))
-	elseif otype == 'string' then
-		insert(new, encode(o))
-	elseif otype == 'table' then
-		if visited[o] == true then
-			error('table loop')
+local serialize_entry
+
+local serialize_table = function(t, indent, sp, nl, unknown_ok)
+	local new = { }
+	insert(new, '{')
+	local prev = 0
+	for _,kv in ipairs(t) do
+		local kt, k, vt, v = unpack(kv)
+		k, prev = handle_table_key(kt, k, prev, unknown_ok)
+		if k ~= '' then
+			k = k..sp..'='..sp
 		end
-		visited[o] = true
-		insert(new, '{')
-		local last = 0
-		for k,v in pairs(o) do
-			local ktype = type(k)
-			if ktype == 'string' then
-				if is_keyword(k) or not is_identifier(k) then
-					k = '['..encode(k)..']'
-				end
-				k = k..sp..'='..sp
-			elseif ktype == 'boolean'  then
-				k = '['..tostring(k)..']'..sp..'='..sp
-			elseif ktype == 'number'  then
-				if last + 1 == k then
-					last = k
-					k = ''
-				else
-					last = 0
-					k = '['..k..']'..sp..'='..sp
-				end
-			end
-			v = serialize(v, indent .. sp, sp, nl, visited)
-			insert(new, concat({ indent, sp, k, v, ',' }, ''))
-		end
-		insert(new, indent .. '}')
+		v = serialize_entry(vt, v, indent, sp, nl, unknown_ok)
+		insert(new, concat({ indent, sp, k, v, ',' }, ''))
+	end
+	insert(new, indent..'}')
+	local s = concat(new, nl)
+	local ns = s:gsub('%s+', ' ')
+	if #ns < 80 then
+		s = ns
+	end
+	return s
+end
+
+serialize_entry = function(et, e, indent, sp, nl, unknown_ok)
+	local new = { }
+	if et == 'table' then
+		insert(new, serialize_table(e, indent, sp, nl, unknown_ok))
+	elseif et == 'string' or et == 'boolean' or et == 'number' then
+		insert(new, e)
+	elseif unknown_ok then
+		insert(new, e)
 	else
-		error('cannot serialize a ' ..type(o)..': '..tostring(o))
+		error('cannot serialize a '..et)
 	end
 	return concat(new, nl)
 end
+
+local serialize = function(o, indent, sp, nl, unknown_ok)
+	sp = sp or ' '
+	nl = nl or '\n'
+	indent = indent or ''
+	local et, e = unpack(build_entry(o))
+	return serialize_entry(et, e, indent, sp, nl, unknown_ok)
+end
 tables.serialize = serialize
 
-function tables.deserialize(t)
+local linearize_table
+linearize_table = function(e, leader, unknown_ok, new)
+	new = new or { leader..' = {}'}
+	leader = leader or ''
+	for _,kv in ipairs(e) do
+		local kt, k, vt, v = unpack(kv)
+		local prev --luacheck:ignore
+		k, prev = handle_table_key(kt, k, -1, unknown_ok)
+		if k:sub(1,1) == '[' then --luacheck:ignore
+		elseif k == '' then
+			k = '['..k..']'
+		else
+			k = '.'..k
+		end
+		local name = leader..k
+		if vt == 'table' then
+			insert(new, name..' = {}')
+			linearize_table(v, name, unknown_ok, new)
+		else
+			insert(new, name..' = '..v)
+		end
+	end
+	table.sort(new)
+	return new
+end
+
+local linearize = function(t, leader, unknown_ok)
+	local et, e = unpack(build_entry(t))
+	if et == 'table' then
+		return concat(linearize_table(e, leader, unknown_ok), '\n')
+	else
+		error('cannot linearize a '..et)
+	end
+end
+tables.linearize = linearize
+
+local deserialze = function(t)
 	local func, err = loadstring('return ' .. t) -- luacheck: ignore
 	if func ~= nil then
 		setfenv(func, {})
@@ -87,60 +123,12 @@ function tables.deserialize(t)
 	end
 	return nil
 end
-tables.unserialize = tables.deserialize
-
-local function linearize(tbl, leader, visited, new)
-	new = new or { }
-	visited = visited or { }
-	leader = leader or ''
-	local last
-	if leader ~= '' then
-		insert(new, leader..' = {}')
-	end
-	for key, value in pairs(tbl) do
-		local vtype = type(value)
-		local ktype = type(key)
-		if ktype == 'string' then
-			if not is_identifier(key) then
-				key = string.format('[%q]', key)
-			end
-			key = '.'..key
-		elseif ktype == 'boolean'  then
-			key = '['..tostring(key)..']'
-		elseif ktype == 'number'  then
-			if last == key - 1 then
-				last = key
-				key = ''
-			else
-				last = nil
-				key = '['..key..']'
-			end
-		else
-			error('unknown key type '..ktype)
-		end
-		local name = leader..key
-		if vtype == 'number' or vtype == 'boolean' then
-			insert(new, name..' = '..tostring(value))
-		elseif vtype == 'string' then
-			insert(new, name..' = '..string.format('%q', value))
-		elseif vtype == 'table' then
-			if visited[value] == true then
-				error('table loop')
-			end
-			visited[value] = true
-			linearize(value, name, visited, new)
-		else
-			error('unknown value type '..vtype)
-		end
-	end
-	table.sort(new)
-	return table.concat(new, '\n')
-end
-tables.linearize = linearize
+tables.deserialize = deserialize
+tables.unserialize = deserialize
 
 function tables.save_table(filename, t)
 	local f = io.open(filename, 'w')
-	f:write(tables.serialize(t))
+	f:write(serialize(t))
 	f:close()
 end
 
@@ -151,7 +139,7 @@ function tables.load_table(filename)
 	end
 	local data = f:read('*a')
 	f:close()
-	return tables.unserialize(data)
+	return unserialize(data)
 end
 
 function tables.count(t)
