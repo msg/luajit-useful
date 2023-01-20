@@ -32,6 +32,51 @@ local function encode(s)
 	return data
 end
 
+local build_entry
+build_entry = function(o, visited)
+	visited = visited or { }
+	local ot = type(o)
+	if ot == 'table' then
+		if visited[o] == true then
+			error('table loop')
+		end
+		visited[o] = true
+		local entry = { }
+		for k,v in pairs(o) do
+			local ke = build_entry(k, visited)
+			local ve = build_entry(v, visited)
+			insert(entry, { ke[1], ke[2], ve[1], ve[2] })
+		end
+		return { ot, entry }
+	elseif ot == 'boolean' or ot == 'number' then
+		return { ot, tostring(o) }
+	else
+		return { ot, encode(o) }
+	end
+end
+
+local handle_table_key = function(kt, k, prev, unknown_ok)
+	if kt == 'string' then
+		local nk = k:sub(2,-2)
+		if is_keyword(nk) or not is_identifier(nk) then
+			k = '['..k..']'
+		else
+			k = nk
+		end
+		return k, prev
+	elseif kt == 'number' then
+		if prev + 1 == tonumber(k) then
+			prev = prev + 1
+			return '', prev
+		else
+			prev = 0
+			return '['..k..']', prev
+		end
+	else
+		return '['..k..']', prev
+	end
+end
+
 local serialize_entry
 
 local serialize_table = function(t, indent, sp, nl, unknown_ok)
@@ -44,13 +89,13 @@ local serialize_table = function(t, indent, sp, nl, unknown_ok)
 		if k ~= '' then
 			k = k..sp..'='..sp
 		end
-		v = serialize_entry(vt, v, indent, sp, nl, unknown_ok)
+		v = serialize_entry(vt, v, indent..sp, sp, nl, unknown_ok)
 		insert(new, concat({ indent, sp, k, v, ',' }, ''))
 	end
 	insert(new, indent..'}')
 	local s = concat(new, nl)
 	local ns = s:gsub('%s+', ' ')
-	if #ns < 80 then
+	if #indent + #ns < 64 then
 		s = ns
 	end
 	return s
