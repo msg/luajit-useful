@@ -333,46 +333,5 @@ function tables.import(env, from, ...)
 	end
 end
 
-function tables.enable_control_access(t)
-	-- metatable controls
-	local mt = {}
-	function mt.__newindex(_, n)
-		error('attempt to write an undeclared member "'..n..'"', 2)
-	end
-	function mt.__index(_, n)
-		error('attempt to read an undeclared member "'..n..'"', 2)
-	end
-	setmetatable(t, mt)
-
-	return t
-end
-
-function tables.disable_control_access(t)
-	setmetatable(t, nil)
-end
-
-function tables.structure(initializer)
-	local self = initializer or {}
-
-	-- add/clear member variable
-	function self.add_members(t)
-		for n,v in pairs(t) do
-			if v == nil then
-				error('attempt to set member ' .. n ..
-					' to nil', 2)
-			end
-			rawset(self, n, v)
-		end
-	end
-
-	function self.clear_member(name)
-		rawset(self, name, nil)
-	end
-
-	tables.enable_control_access(self)
-
-	return self
-end
-
 return tables
 
