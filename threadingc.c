@@ -96,6 +96,21 @@ static manager *get_manager(lua_State *lua, int handle_error) {
 	return man;
 }
 
+static void migrate_paths(lua_State *from, lua_State *to) {
+	lua_getglobal(from, "package");
+	lua_getfield(from, -1, "path");
+	lua_getfield(from, -2, "cpath");
+
+	lua_getglobal(to, "package");
+	lua_pushstring(to, lua_tostring(from, -2));
+	lua_setfield(to, -2, "path");
+	lua_pushstring(to, lua_tostring(from, -1));
+	lua_setfield(to, -2, "cpath");
+	lua_pop(to, 1);
+
+	lua_pop(from, 3);
+}
+
 static void push_value(lua_State *to_lua, lua_State *from_lua,
 		int index, lua_State *err_lua);
 
@@ -227,9 +242,14 @@ static int start_(lua_State *lua) {
 		luaL_error(lua, "unable to create new state");
 
 	manager *man = get_manager(lua, RAISE_ERROR);		// [-0 +0 e]
+
+	luaL_openlibs(new_lua);
+
+	migrate_paths(man->lua, new_lua);
+
 	lua_pushlightuserdata(new_lua, man);			// [-0 +1 m]
 	lua_setfield(new_lua, LUA_REGISTRYINDEX, "_MANAGER");	// [-0 +1 e]
-	luaL_openlibs(new_lua);
+
 	lua_cpcall(new_lua, MODULE, NULL);
 
 	load_code(new_lua, lua);				// [-0 +1 e]
@@ -416,6 +436,8 @@ int MODULE(lua_State *lua) {
 
 		luaL_openlibs(man->lua);
 		lua_settop(man->lua, 0);
+
+		migrate_paths(lua, man->lua);
 	}
 								// [-0 +1 m]
 #if 0
