@@ -245,7 +245,7 @@ static int start_(lua_State *lua) {
 
 	luaL_openlibs(new_lua);
 
-	migrate_paths(man->lua, new_lua);
+	migrate_paths(lua, new_lua);
 
 	lua_pushlightuserdata(new_lua, man);			// [-0 +1 m]
 	lua_setfield(new_lua, LUA_REGISTRYINDEX, "_MANAGER");	// [-0 +1 e]
