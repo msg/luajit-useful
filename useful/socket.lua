@@ -146,13 +146,23 @@ socket.Socket = Class({
 	end,
 
 	rcvbuf = function(self, size)
-		local value = new('int[1]', size)
-		return self:setsockopt(C.SOL_SOCKET, C.SO_RCVBUF, value)
+		local value = new('int[1]', size or 0)
+		if size ~= nil then
+			return self:setsockopt(C.SOL_SOCKET, C.SO_RCVBUF, value)
+		else
+			self:getsockopt(C.SOL_SOCKET, C.SO_RCVBUF, value)
+			return value[0]
+		end
 	end,
 
 	sndbuf = function(self, size)
-		local value = new('int[1]', size)
-		return self:setsockopt(C.SOL_SOCKET, C.SO_SNDBUF, value)
+		local value = new('int[1]', size or 0)
+		if size ~= nil then
+			return self:setsockopt(C.SOL_SOCKET, C.SO_SNDBUF, value)
+		else
+			self:getsockopt(C.SOL_SOCKET, C.SO_SNDBUF, value)
+			return value[0]
+		end
 	end,
 
 	rcvtimeo = function(self, timeout)
