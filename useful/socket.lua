@@ -12,6 +12,8 @@ local  new		=  ffi.new
 local  sizeof		=  ffi.sizeof
 
 local bit		= require('bit')
+local  band		=  bit.band
+local  bnot		=  bit.bnot
 local  bor		=  bit.bor
 
 			  require('posix.errno')
@@ -116,12 +118,18 @@ socket.Socket = Class({
 		return C.getsockopt(self.fd, level, option, value, valuelen)
 	end,
 
-	nonblock = function(self)
+	nonblock = function(self, nonblock)
+		nonblock = nonblock or true
 		if self.fd < 0 then
 			return -1
 		end
 		local ret = C.fcntl(self.fd, C.F_GETFL)
-		return C.fcntl(self.fd, C.F_SETFL, bor(ret, C.O_NONBLOCK))
+		if nonblock == true then
+			ret = bor(ret, C.O_NONBLOCK)
+		else
+			ret = band(ret, bnot(C.O_NONBLOCK))
+		end
+		return C.fcntl(self.fd, C.F_SETFL, ret)
 	end,
 
 	poll = function(self, events, timeout)
