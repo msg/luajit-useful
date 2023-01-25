@@ -77,7 +77,7 @@ local ThreadState = Class({
 
 	default_error = function(results, thread)	--luacheck:ignore
 		print('thread traceback:\n'
-		      ..results) --:gsub('^.*stack traceback:\n', ''))
+		      ..tostring(results)) --:gsub('^.*stack traceback:\n', ''))
 	end,
 
 	ready = function(self, dt)
