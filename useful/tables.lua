@@ -160,7 +160,7 @@ local linearize = function(t, leader, unknown_ok)
 end
 tables.linearize = linearize
 
-local deserialze = function(t)
+local deserialize = function(t)
 	local func, err = loadstring('return ' .. t) -- luacheck: ignore
 	if func ~= nil then
 		setfenv(func, {})
