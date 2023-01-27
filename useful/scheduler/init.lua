@@ -59,59 +59,64 @@ local SLEEPING	= 3	scheduler.SLEEPING	= SLEEPING
 local CHECKING	= 4	scheduler.CHECKING	= CHECKING
 local EXIT	= 5	scheduler.EXIT		= EXIT
 
-local ThreadState = Class({
-	new = function(self, scheduler_, thread, args, status, value, time)
+local Thread = Class({
+	new = function(self, scheduler_, thread, args, state, value, time)
 		self.scheduler	= scheduler_
 		self.thread	= thread
 		self.args	= args
 		self.resumes	= 0
 		self.error	= self.default_error
-		self:set(status, value, time)
+		self:set(state, value, time)
 		self.scheduler:add(self)
 	end,
 
-	set = function(self, status, value, time)
-		self.status	= status
+	set = function(self, state, value, time)
+		self.state	= state
 		self.value	= value
 		self.time	= time
 	end,
 
 	default_error = function(results, thread)	--luacheck:ignore
-		print('thread traceback:\n'
-		      ..tostring(results)) --:gsub('^.*stack traceback:\n', ''))
+		print('thread error:\n'..debug.traceback(thread))
+		io.stdout:flush()
+	end,
+
+	status = function(self)
+		return co_status(self.thread)
 	end,
 
 	ready = function(self, dt)
-		local status = co_status(self.thread)
+		local status = self:status()
 		if status == "dead" then
+			self.state = -1
 			self.scheduler:remove(self)
 			return false
 		elseif status ~= "suspended" then
 			return false
-		elseif self.status == EXIT then
+		elseif self.state == EXIT then
 			self.scheduler:remove(self)
 			return false
-		elseif self.status == SLEEPING then
+		elseif self.state == SLEEPING then
 			self.time = self.time - dt
 			if self.time <= 0 then
-				self.status = READY
+				self.state = READY
 			end
-		elseif self.status == CHECKING then
+		elseif self.state == CHECKING then
 			if self.value() then
-				self.status = READY
+				self.state = READY
 				self.value = nil
 			end
-		elseif self.status == WAITING then
+		elseif self.state == WAITING then
 			if self.time ~= nil then
 				self.time = self.time - dt
 				if self.time <= 0 then
-					self.status = READY
+					self.state = READY
 					self.time = nil
 					-- self.value == nil when signaled
 				end
 			end
 		end
-		return self.status == READY
+		return self.state == READY
 	end,
 
 	resume = function(self)
@@ -125,26 +130,26 @@ local ThreadState = Class({
 
 local Scheduler = Class({
 	new = function(self)
-		self.states	= { }
-		self.thread	= co_running()
+		self.threads	= { }
+		self.self	= co_running()
 	end,
 
-	state = function(self)
-		return self.states[co_running()]
+	thread = function(self)
+		return self.threads[co_running()]
 	end,
 
 	set = function(self, ...)
 		local thread = co_running()
-		assert(thread ~= self.thread, 'cannot call set on main thread')
-		self.states[thread]:set(...)
+		assert(thread ~= self.self, 'cannot call set on main thread')
+		self.threads[thread]:set(...)
 	end,
 
-	add = function(self, state)
-		self.states[state.thread] = state
+	add = function(self, thread)
+		self.threads[thread.thread] = thread
 	end,
 
-	remove = function(self, state)
-		self.states[state.thread] = nil
+	remove = function(self, thread)
+		self.threads[thread.thread] = nil
 	end,
 
 	yield = function(self, ...)
@@ -178,45 +183,45 @@ local Scheduler = Class({
 	end,
 
 	signal = function(self, id)
-		for _,state in pairs(self.states) do
-			if state.status == WAITING and state.value == id then
-				state.status = READY
-				state.value = nil
+		for _,thread in pairs(self.threads) do
+			if thread.state == WAITING and thread.value == id then
+				thread.state = READY
+				thread.value = nil
 			end
 		end
 	end,
 
 	spawn = function(self, procedure, ...)
 		local thread	= co_create(procedure)
-		local state	= ThreadState(self, thread, pack(...), READY)
+		local state	= Thread(self, thread, pack(...), READY)
 		return state
 	end,
 
-	stop = function(self, thread)
-		local state	= self.states[thread]
-		state.status	= EXIT
+	stop = function(self, thread_)
+		local thread	= self.threads[thread_]
+		thread.state	= EXIT
 	end,
 
 	collect_runnable = function(self, dt)
 		local runnable	= {}
-		for _,state in pairs(self.states) do
-			if state:ready(dt) then
-				insert(runnable, state)
+		for _,thread in pairs(self.threads) do
+			if thread:ready(dt) then
+				insert(runnable, thread)
 			end
 		end
 		return runnable
 	end,
 
 	resume_runnable = function(self, runnable)	--luacheck:ignore
-		for _,state in ipairs(runnable) do
+		for _,thread in ipairs(runnable) do
 			-- some other thread stopped this one?
-			if state.status ~= EXIT then
-				state.status	= RUNNING
-				local ok, ret = state:resume()
+			if thread.state ~= EXIT then
+				thread.state	= RUNNING
+				local ok, ret = thread:resume()
 				if not ok then
-					state.error(ret[1])
+					thread.error(ret[1])
 				else
-					state.args = ret or { n=0 }
+					thread.args = ret or { n=0 }
 				end
 			end
 		end
@@ -232,7 +237,7 @@ local Scheduler = Class({
 	end,
 
 	has_threads = function(self)
-		return next(self.states) ~= nil
+		return next(self.threads) ~= nil
 	end,
 
 	run = function(self)
@@ -244,14 +249,14 @@ local Scheduler = Class({
 	make_bind = function(self, t)
 		local methods = {
 			'check', 'signal', 'sleep', 'spawn',
-			'state', 'step', 'stop', 'timed_wait', 'wait', 'yield',
+			'thread', 'step', 'stop', 'timed_wait', 'wait', 'yield',
 		}
 		for _,method in ipairs(methods) do
 			t[method] = bind1(self[method], self)
 		end
 		t['scheduler']	= self
 		t['run']	= function()
-			while next(self.states) do
+			while next(self.threads) do
 				t['step']() -- this function can be modified
 			end
 		end
