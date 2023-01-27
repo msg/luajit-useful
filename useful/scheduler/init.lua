@@ -64,6 +64,7 @@ local ThreadState = Class({
 		self.scheduler	= scheduler_
 		self.thread	= thread
 		self.args	= args
+		self.resumes	= 0
 		self.error	= self.default_error
 		self:set(status, value, time)
 		self.scheduler:add(self)
@@ -117,6 +118,7 @@ local ThreadState = Class({
 		local function pack_ok(ok, ...)
 			return ok, {...}
 		end
+		self.resumes = self.resumes + 1
 		return pack_ok(co_resume(self.thread, unpack(self.args)))
 	end,
 })
