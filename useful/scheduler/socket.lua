@@ -56,17 +56,12 @@ local wait_for_event = function(sock, timeout)
 			err = errno_message(C.EAGAIN)
 			return true
 		elseif band(revents, bor(C.POLLHUP, C.POLLERR, C.POLLNVAL)) ~= 0 then
-			if band(revents, C.POLLNVAL) then
-				err = errno_message(C.EINVAL)
-			else
-				err = errno_message(C.EBADF)
-			end
+			err = errno_message(C.EBADF)
 			return true
 		elseif band(revents, pfd.events) ~= 0 then
 			ok = revents
 			return true
 		else
-			ok = -1
 			return false
 		end
 	end)
