@@ -32,8 +32,8 @@ local  close		=  socket_TCP.close
 local time		= require('useful.time')
 local  now		=  time.now
 
-local errno_message = function()
-	local e = errno()
+local errno_message = function(e)
+	e = e or errno()
 	if e == C.EAGAIN or e == C.EWOULDBLOCK or e == C.ETIMEDOUT then
 		return 'timeout'
 	elseif e == C.EBADF then
@@ -53,14 +53,17 @@ local wait_for_event = function(sock, timeout)
 		pfd.revents = 0
 		dt = time.dt(now(), start)
 		if timeout and timeout < dt then
-			errno(C.EAGAIN)
-			ok, err = nil, errno_message()
+			err = errno_message(C.EAGAIN)
 			return true
 		elseif band(revents, bor(C.POLLHUP, C.POLLERR, C.POLLNVAL)) ~= 0 then
-			ok = pfd.revents
+			if band(revents, C.POLLNVAL) then
+				err = errno_message(C.EINVAL)
+			else
+				err = errno_message(C.EBADF)
+			end
 			return true
 		elseif band(revents, pfd.events) ~= 0 then
-			ok = pfd.revents
+			ok = revents
 			return true
 		else
 			ok = -1
