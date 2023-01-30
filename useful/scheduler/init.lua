@@ -60,13 +60,13 @@ local CHECKING	= 4	scheduler.CHECKING	= CHECKING
 local EXIT	= 5	scheduler.EXIT		= EXIT
 
 local Thread = Class({
-	new = function(self, scheduler_, thread, args, state, value, time)
+	new = function(self, scheduler_, thread, args)
 		self.scheduler	= scheduler_
 		self.thread	= thread
 		self.args	= args
 		self.resumes	= 0
 		self.error	= self.default_error
-		self:set(state, value, time)
+		self:set(READY)
 		self.scheduler:add(self)
 	end,
 
@@ -77,7 +77,7 @@ local Thread = Class({
 	end,
 
 	default_error = function(results, thread)	--luacheck:ignore
-		print('thread error:\n'..debug.traceback(thread))
+		print('thread error:\n'..tostring(results))
 		io.stdout:flush()
 	end,
 
@@ -88,7 +88,6 @@ local Thread = Class({
 	ready = function(self, dt)
 		local status = self:status()
 		if status == "dead" then
-			self.state = -1
 			self.scheduler:remove(self)
 			return false
 		elseif status ~= "suspended" then
