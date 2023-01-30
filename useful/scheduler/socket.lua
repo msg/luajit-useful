@@ -269,7 +269,9 @@ socket.TCPServer = Class({
 		-- max must be >= 2 (1 for bound socket, +n for n clients)
 		options.max	= options.max or 2
 		self.options	= options
+
 		scheduler:resize(options.max)
+
 		local sock	= TCP()
 		sock:reuseaddr()
 		sock:bind(options.host or '*', port)
@@ -280,8 +282,9 @@ socket.TCPServer = Class({
 	end,
 
 	accept = function(self, client_func, fd, id, addr)	--luacheck:ignore
-		local sock = TCP(fd)
-		spawn(client_func, sock, id, addr)
+		local sock	= TCP(fd)
+		sock.addr	= addr
+		spawn(client_func, sock, id)
 	end,
 
 	idle = function(self)				--luacheck:ignore
@@ -289,9 +292,7 @@ socket.TCPServer = Class({
 
 	server = function(self, client_func)
 		local max = self.options.max
-		local limit = function()
-			return #scheduler < max
-		end
+		local limit = function() return #scheduler < max end
 		local id = 1
 		while true do
 			check(limit)
