@@ -21,7 +21,7 @@ log.ALL		= 5
 local Log = Class({
 	new = function(self, log_leader, level)
 		self.log_leader	= log_leader or ''
-		self.level		= level or log.ALL
+		self.level	= level or log.ALL
 	end,
 
 	write = function(self, buf) -- luacheck: ignore
