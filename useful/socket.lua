@@ -17,17 +17,20 @@ local  bnot		=  bit.bnot
 local  bor		=  bit.bor
 
 			  require('posix.errno')
-local unistd		= require('posix.unistd') -- luacheck: ignore
+			  require('posix.unistd')
 			  require('posix.fcntl')
-local sys_types		= require('posix.sys.types') -- luacheck: ignore
-local sys_time		= require('posix.sys.time') -- luacheck: ignore
+			  require('posix.sys.types')
+			  require('posix.sys.time')
 			  require('posix.sys.socket')
-local posix_string	= require('posix.string') -- luacheck: ignore
-local arpa_inet		= require('posix.arpa.inet') -- luacheck: ignore
+			  require('posix.string')
+			  require('posix.arpa.inet')
 			  require('posix.netdb')
 local netinet_in	= require('posix.netinet.in')
-local netinet_tcp	= require('posix.netinet.tcp') -- luacheck: ignore
+			  require('posix.netinet.tcp')
 			  require('posix.poll')
+			  require('posix.sys.ioctl')
+
+			  require('linux.asm.ioctls')
 
 local class		= require('useful.class')
 local  Class		=  class.Class
@@ -330,6 +333,12 @@ socket.UDP = Class(socket.Socket, {
 		if self.fd < 0 then
 			return nil, errno_string('socket')
 		end
+	end,
+
+	fionread = function(self)
+		local value = new('int[1]')
+		C.ioctl(self.fd, C.FIONREAD, value)
+		return value[0]
 	end,
 
 	recvfrom = function(self, buf, len)
