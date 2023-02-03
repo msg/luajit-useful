@@ -25,7 +25,7 @@ local  serialize	=  tables.serialize
 
 -- message: FIXSTR+3 M S G BIN8 BINLEN LENMSB LENLSB data:LEN
 --          8-bytes(header) + LEN-bytes
-local HEADER_SIZE	= 8
+local HEADER_SIZE	= 12
 msgpack.HEADER_SIZE	= HEADER_SIZE
 local MAX_SIZE		= 64 * 1024
 msgpack.MAX_SIZE	= MAX_SIZE
@@ -36,7 +36,7 @@ msgpack.MAX_SIZE	= MAX_SIZE
 local encode_header = function(length, r8)
 	local v16	= uint16.vla(1)
 	v16[0]		= uint16.swap(length)
-	encode('MSG', r8)
+	encode('MSGPACK', r8)
 	encode(v16, r8) -- encode a BIN8 containing length of payload
 end
 msgpack.encode_header = encode_header
@@ -62,10 +62,10 @@ msgpack.encode_message = encode_message
 
 local decode_header = function(r8)
 	local c = r8:get_front()
-	if c ~= FIXSTR + 3 then
+	if c ~= FIXSTR + 7 then
 		return nil, 'sync bad c='..c
-	elseif decode(r8) ~= 'MSG' then
-		return nil, 'sync MSG not found'
+	elseif decode(r8) ~= 'MSGPACK' then
+		return nil, 'sync MSGPACK not found'
 	elseif r8:get_front() ~= BIN8 then
 		return nil, 'BIN8 not found'
 	else
