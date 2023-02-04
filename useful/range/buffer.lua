@@ -45,7 +45,8 @@ buffer.Buffer = Class({
 
 	flush = function(self, force)
 		if not force and #self.avail ~= 0 then
-			error('#avail is not zero. #avail='..tostring(#self.avail))
+			return nil, '#avail is not zero. #avail='..
+					tostring(#self.avail)
 		end
 		self.free.front		= self.buffer
 		self.avail.front	= self.buffer
