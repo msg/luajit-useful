@@ -101,7 +101,7 @@ filesystem.attributes = function(filepath, arg, stat_func)
 	local st = ffi.new('struct stat')
 	local rc = (stat_func or stat.stat)(filepath, st)
 	if rc < 0 then
-		error(errno_string())
+		return nil, errno_string()
 	end
 	return stat_to_attributes(st, arg)
 end
