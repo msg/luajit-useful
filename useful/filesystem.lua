@@ -97,7 +97,7 @@ local stat_to_attributes = function(st, arg)
 end
 filesystem.stat_to_attributes = stat_to_attributes
 
-filesystem.attributes = function(filepath, arg, stat_func)
+local attributes = function(filepath, arg, stat_func)
 	local st = ffi.new('struct stat')
 	local rc = (stat_func or stat.stat)(filepath, st)
 	if rc < 0 then
@@ -105,9 +105,10 @@ filesystem.attributes = function(filepath, arg, stat_func)
 	end
 	return stat_to_attributes(st, arg)
 end
+filesystem.attributes = attributes
 
 filesystem.symlinkattributes = function(filepath, arg)
-	local result = { filesystem.attributes(filepath, arg, stat.lstat) }
+	local result = { attributes(filepath, arg, stat.lstat) }
 	if result[1] ~= nil then
 		local buf = ffi.new('char[4096]')
 		local rc = C.readlink(filepath, buf, 4096)
@@ -119,7 +120,7 @@ filesystem.symlinkattributes = function(filepath, arg)
 end
 
 filesystem.exists = function(path)
-	return pcall(filesystem.attributes, path, 'mode')
+	return attributes(path, 'mode')
 end
 
 local function is_mode(path, what_mode)
