@@ -249,12 +249,12 @@ end
 
 local ftw
 ftw = function(path, func)
-	local attributes = filesystem.symlinkattributes
+	local attributes_ = filesystem.symlinkattributes
 	for entry in filesystem.dir(path) do
 		if entry ~= '.' and entry ~= '..' then
 			local entry_path = path .. '/' .. entry
 			local entry_stat = { }
-			local ok = pcall(attributes, entry_path, entry_stat)
+			local ok = pcall(attributes_, entry_path, entry_stat)
 			if not ok then
 				entry_stat = nil
 			end

@@ -55,7 +55,7 @@ build_entry = function(o, visited)
 	end
 end
 
-local handle_table_key = function(kt, k, prev, unknown_ok)
+local handle_table_key = function(kt, k, prev)
 	if kt == 'string' then
 		local nk = k:sub(2,-2)
 		if is_keyword(nk) or not is_identifier(nk) then
@@ -119,7 +119,7 @@ local serialize = function(o, indent, sp, nl, unknown_ok)
 	sp = sp or ' '
 	nl = nl or '\n'
 	indent = indent or ''
-	local et, e = unpack(build_entry(o))
+	local et, e = unpack(build_entry(o, nil))
 	return serialize_entry(et, e, indent, sp, nl, unknown_ok)
 end
 tables.serialize = serialize
@@ -184,7 +184,7 @@ function tables.load_table(filename)
 	end
 	local data = f:read('*a')
 	f:close()
-	return unserialize(data)
+	return deserialize(data)
 end
 
 function tables.count(t)

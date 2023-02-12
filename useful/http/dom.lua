@@ -32,7 +32,7 @@ local function Class(class)
 end
 
 -- not used yet: TODO replace is_* below
-local function is_a(class, object) return object._class == class end
+--local function is_a(class, object) return object._class == class end
 
 local NODE, ATTRIBUTE, MARKER = 1, 2, 3
 
