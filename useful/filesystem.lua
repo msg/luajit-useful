@@ -144,6 +144,10 @@ filesystem.is_directory = function(path)
 	return is_mode(path, 'directory')
 end
 
+filesystem.is_link = function(path)
+	return is_mode(path, 'link')
+end
+
 filesystem.is_file = function(path)
 	return is_mode(path, 'file')
 end
