@@ -120,7 +120,7 @@ filesystem.symlinkattributes = function(filepath, arg)
 end
 
 filesystem.exists = function(path)
-	return attributes(path, 'mode')
+	return attributes(path, 'mode') ~= nil
 end
 
 local function is_mode(path, what_mode)
