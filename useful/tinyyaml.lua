@@ -487,7 +487,7 @@ local function parseseq(line, lines, indent)
     -- Check for a new document
     line = lines[1]
     if startswith(line, '---') then
-      while #lines > 0 and not startswith(lines, '---') do
+      while #lines > 0 and not startswith(lines[1], '---') do
         tremove(lines, 1)
       end
       return seq
@@ -623,9 +623,6 @@ function parsemap(line, lines, indent)
     -- Check for a new document
     line = lines[1]
     if startswith(line, '---') then
-      while #lines > 0 and not startswith(lines[#lines], '---') do
-        tremove(lines, 1)
-      end
       return map
     end
 
