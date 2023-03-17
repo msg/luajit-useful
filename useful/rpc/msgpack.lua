@@ -104,7 +104,7 @@ msgpack.Buffer = Class({
 		buffer:flush()
 		local r8	= try1(encode_message(msg, buffer.free))
 		buffer:pop_insert(#r8)
-		return		  try1(buffer:flush_write())
+		return		  buffer:flush_write()
 	end,
 
 	send_p = protect(function(self, ...)
