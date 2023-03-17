@@ -129,6 +129,31 @@ local Thread = Class({
 		self.resumes = self.resumes + 1
 		return pack_ok(co_resume(self.thread, unpack(self.args)))
 	end,
+
+	yield = function(self, ...)
+		return self.scheduler:yield(...)
+	end,
+
+	sleep = function(self, ...)
+		return self.scheduler:sleep(...)
+	end,
+
+	check = function(self, ...)
+		return self.scheduler:check(...)
+	end,
+
+	wait = function(self, ...)
+		return self.scheduler:wait(...)
+	end,
+
+	timed_wait = function(self, ...)
+		return self.scheduler:timed_wait(...)
+	end,
+
+	signal = function(self, ...)
+		return self.scheduler:signal(...)
+	end,
+
 })
 
 local Scheduler = Class({
