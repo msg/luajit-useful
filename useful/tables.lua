@@ -33,18 +33,22 @@ local function encode(s)
 end
 
 local build_entry
-build_entry = function(o, visited)
+build_entry = function(o, visited, ignore_loops)
 	visited = visited or { }
 	local ot = type(o)
 	if ot == 'table' then
 		if visited[o] == true then
-			error('table loop')
+			if ignore_loops == true then
+				return { 'string', '<cycle>' }
+			else
+				error('table loop')
+			end
 		end
 		visited[o] = true
 		local entry = { }
 		for k,v in pairs(o) do
-			local ke = build_entry(k, visited)
-			local ve = build_entry(v, visited)
+			local ke = build_entry(k, visited, ignore_loops)
+			local ve = build_entry(v, visited, ignore_loops)
 			insert(entry, { ke[1], ke[2], ve[1], ve[2] })
 		end
 		return { ot, entry }
@@ -73,7 +77,7 @@ local handle_table_key = function(kt, k, prev)
 			return '['..k..']', prev
 		end
 	else
-		return '['..k..']', prev
+		return '['..encode(k)..']', prev
 	end
 end
 
@@ -115,11 +119,11 @@ serialize_entry = function(et, e, indent, sp, nl, unknown_ok)
 	return concat(new, nl)
 end
 
-local serialize = function(o, indent, sp, nl, unknown_ok)
+local serialize = function(o, indent, sp, nl, unknown_ok, ignore_loops)
 	sp = sp or ' '
 	nl = nl or '\n'
 	indent = indent or ''
-	local et, e = unpack(build_entry(o, nil))
+	local et, e = unpack(build_entry(o, nil, ignore_loops))
 	return serialize_entry(et, e, indent, sp, nl, unknown_ok)
 end
 tables.serialize = serialize
@@ -150,8 +154,8 @@ linearize_table = function(e, leader, unknown_ok, new)
 	return new
 end
 
-local linearize = function(t, leader, unknown_ok)
-	local et, e = unpack(build_entry(t))
+local linearize = function(t, leader, unknown_ok, ignore_loops)
+	local et, e = unpack(build_entry(t, ignore_loops))
 	if et == 'table' then
 		return concat(linearize_table(e, leader, unknown_ok), '\n')
 	else
