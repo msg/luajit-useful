@@ -752,8 +752,8 @@ local function parsedocuments(lines)
   return root
 end
 
---- Parse yaml string into table.
-local function parse(source)
+--- Decode yaml string into table.
+local function decode(source)
   local lines = {}
   for line in string.gmatch(source .. '\n', '(.-)\r?\n') do
     tinsert(lines, line)
@@ -769,5 +769,5 @@ end
 
 return {
   version = 0.1,
-  parse = parse,
+  decode = decode,
 }
