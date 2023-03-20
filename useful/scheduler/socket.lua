@@ -90,6 +90,9 @@ local Socket = Class(socket_Socket, {
 	wait_for_events = function(self, timeout, events)
 		if self.timeout == nil or self.timeout == 0 then
 			return true
+		elseif band(events, C.POLLOUT) ~= 0 and
+		       self.no_out_poll == true then
+			return true
 		else
 			self.pfd.events = events
 			local ok, err = wait_for_event(self, timeout)
@@ -161,6 +164,7 @@ local TCP = Class(socket_TCP, Socket, {
 		socket_TCP.new(self, fd, port)
 		Socket.new(self, self.fd, self.port, timeout, poll_)
 		self:nodelay(1)
+		self.no_out_poll = true
 	end,
 
 	shutdown = function(self)
