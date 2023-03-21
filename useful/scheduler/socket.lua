@@ -19,11 +19,11 @@ local  bor		=  bit.bor
 
 local class		= require('useful.class')
 local  Class		=  class.Class
-local poll		= require('useful.scheduler.poll')
-local  check		=  poll.check
-local  run		=  poll.run
-local  scheduler	=  poll.scheduler
-local  spawn		=  poll.spawn
+local poll_		= require('useful.scheduler.poll')
+local  check		=  poll_.check
+local  run		=  poll_.run
+local  scheduler	=  poll_.scheduler
+local  spawn		=  poll_.spawn
 local socket_		= require('useful.socket')
 local  socket_Socket	=  socket_.Socket
 local  socket_TCP	=  socket_.TCP
@@ -69,11 +69,11 @@ local wait_for_event = function(sock, timeout)
 end
 
 local Socket = Class(socket_Socket, {
-	new = function(self, fd, port, timeout, poll_)
+	new = function(self, fd, port, timeout, poll)
 		socket_Socket.new(self, fd, port)
 		self:nonblock()
 		self.timeout	= timeout or 0.05
-		self.poll	= poll_ or scheduler.poll
+		self.poll	= poll or scheduler.poll
 		if self.poll ~= nil then
 			self.poll:add(self)
 		end
@@ -160,9 +160,9 @@ local Socket = Class(socket_Socket, {
 socket.Socket = Socket
 
 local TCP = Class(socket_TCP, Socket, {
-	new = function(self, fd, port, timeout, poll_)
+	new = function(self, fd, port, timeout, poll)
 		socket_TCP.new(self, fd, port)
-		Socket.new(self, self.fd, self.port, timeout, poll_)
+		Socket.new(self, self.fd, self.port, timeout, poll)
 		self:nodelay(1)
 		self.no_out_poll = true
 	end,
@@ -196,9 +196,9 @@ local TCP = Class(socket_TCP, Socket, {
 socket.TCP = TCP
 
 local UDP = Class(socket_UDP, Socket, {
-	new = function(self, fd, port, timeout, poll_)
+	new = function(self, fd, port, timeout, poll)
 		socket_UDP.new(self, fd, port)
-		Socket.new(self, self.fd, self.port, timeout, poll_)
+		Socket.new(self, self.fd, self.port, timeout, poll)
 	end,
 
 
