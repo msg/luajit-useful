@@ -579,8 +579,12 @@ yaml.encode = function(t, indent, visited)
 		local vtype = type(v)
 		if vtype == 'table' then
 			if is_array(v) then
-				insert(new, indent..n..':')
-				insert(new, format_array(v, indent..'  ', visited))
+				if #v == 0 then
+					insert(new, indent..n..': {}')
+				else
+					insert(new, indent..n..':')
+					insert(new, format_array(v, indent..'  ', visited))
+				end
 			else
 				insert(new, indent..n..':')
 				insert(new, yaml.encode(v, indent..'  ', visited))
