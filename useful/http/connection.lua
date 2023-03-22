@@ -14,7 +14,7 @@ local  Class		=  class.Class
 local status		= require('useful.http.status')
 local  Status		=  status.Status
 local range		= require('useful.range')
-local  int8		=  range.int8
+local  char		=  range.char
 local rbase64		= require('useful.range.base64')
 local rstring		= require('useful.range.string')
 local  make_until	=  rstring.make_until
@@ -60,8 +60,8 @@ end
 connection.parse_url = parse_url
 
 local base64_encode = function(s)
-	local i8	= int8.from_string(s)
-	local _,o8	= int8.vla(rbase64.encode_length(#s))
+	local i8	= char.from_string(s)
+	local _,o8	= char.vla(rbase64.encode_length(#s))
 	return rbase64.encode(i8, o8).s
 end
 connection.base64_encode = base64_encode
@@ -96,7 +96,7 @@ connection.url_read = function(url, options)
 	end
 	transaction.request:send_request(options.method or 'GET', options.path)
 	if options.output ~= nil then
-		local o = int8.from_string(options.output)
+		local o = char.from_string(options.output)
 		while #o > 0 do
 			local rc = transaction.request:write(o.front, #o)
 			if rc < 0 then
