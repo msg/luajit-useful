@@ -67,7 +67,6 @@ local Status = Class({
 			--print('write <'..ffi.string(p, sz)..'>')
 			return self.sock:send(p, sz)
 		end
-		self.write	= write
 		self.buffer	= Buffer(size, read, write)
 		self.header_buf	= Buffer(header_size or size, read, write)
 		self.header	= char_range_array(MAXENTRIES)
@@ -158,6 +157,10 @@ local Status = Class({
 	flush_header = unprotect1(function(self)
 		return self.header_buf:flush_write()
 	end),
+
+	write = function(self, buf, len)
+		return self.header_buf.write_func(buf, len)
+	end,
 
 	send_status_and_header = function(self)
 		local n = self:flush_status()
