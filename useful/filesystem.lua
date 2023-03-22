@@ -124,8 +124,8 @@ filesystem.exists = function(path)
 end
 
 local function is_mode(path, what_mode)
-	local ok, mode = filesystem.exists(path)
-	if not ok then
+	local mode = attributes(path, 'mode')
+	if mode == nil then
 		return false
 	else
 		return mode == what_mode
