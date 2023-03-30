@@ -306,7 +306,7 @@ socket.TCP = Class(socket.Socket, {
 		else
 			rc = -1
 		end
-		return rc, from[0]
+		return rc, from
 	end,
 
 	shutdown = function(self)
