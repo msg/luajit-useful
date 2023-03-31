@@ -43,9 +43,9 @@ local Transaction = Class({
 })
 connection.Transaction = Transaction
 
-local url_re = 'http://([^:/]+)(:?[^/]*)(/?.*)'
+local url_re = '(%l+)://([^:/]+)(:?[^/]*)(/?.*)'
 local parse_url = function(url)
-	local host, port, path = url:match(url_re)
+	local protocol, host, port, path = url:match(url_re)
 	assert(host ~= nil, 'bad url "'..url..'"')
 	if port == '' then
 		port = 80
@@ -55,7 +55,7 @@ local parse_url = function(url)
 	if path == '' then
 		path = '/'
 	end
-	return host, port, path
+	return host, port, path, protocol
 end
 connection.parse_url = parse_url
 
