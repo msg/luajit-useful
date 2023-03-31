@@ -228,8 +228,10 @@ static void *thread_(void *arg) {
 	int n = lua_gettop(lua);
 
 	add_traceback(lua);					// [-0 +1 e]
-	if (lua_pcall(lua, n-1, 0, 1) != 0)
+	if (lua_pcall(lua, n-1, 0, 1) != 0) {
 		fprintf(stderr, "thread error: %s\n", lua_tostring(lua, -1));
+		fflush(stderr);
+	}
 	pthread_cond_destroy(&get_self(lua)->cond);
 	lua_close(lua);
 
