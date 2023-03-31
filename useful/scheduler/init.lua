@@ -120,11 +120,11 @@ local Thread = Class({
 
 	resume = function(self)
 		local function pack_ok(ok, ...)
+			local a = {...}
 			if not ok then
-				return ok, debug.traceback(self.thread)
-			else
-				return ok, {...}
+				a[1] = a[1]..': '..debug.traceback(self.thread)
 			end
+			return ok, a
 		end
 		self.resumes = self.resumes + 1
 		return pack_ok(co_resume(self.thread, unpack(self.args)))
