@@ -298,7 +298,7 @@ socket.TCP = Class(socket.Socket, {
 
 	accept = function(self, timeout)
 		local from	= new('struct sockaddr_in[1]')
-		local fromp	= new('struct sockaddr *', from)
+		local fromp	= cast('struct sockaddr *', from)
 		local size	= new('socklen_t[1]', sizeof(from))
 		local rc	= self:poll(C.POLLIN, timeout)
 		if rc > 0 then
@@ -343,7 +343,7 @@ socket.UDP = Class(socket.Socket, {
 
 	recvfrom = function(self, buf, len)
 		local from	= new('struct sockaddr_in[1]')
-		local fromp	= new('struct sockaddr *', from)
+		local fromp	= cast('struct sockaddr *', from)
 		local size	= new('uint32_t[1]', sizeof(from))
 		local ret	= C.recvfrom(self.fd, buf, len, 0, fromp, size)
 		return ret, from
