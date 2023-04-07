@@ -195,5 +195,31 @@ function strings.deserialize(s)
 	return deserialize(s)
 end
 
+function strings.expand(s, ...)
+	local env = { args = {...} }
+	local t = { }
+	if type(env.args[1]) == 'table' then
+		t = table.remove(env.args, 1)
+	end
+	setmetatable(t, { __index = _G })
+	setmetatable(env, { __index = t })
+	local do_eval = function(expr)
+		if env[expr] ~= nil then
+			return tostring(env[expr])
+		else
+			local f = loadstring('return '..tostring(expr))
+			if not f then
+				return expr
+			end
+			setfenv(f, env)
+			return f()
+		end
+	end
+	s = s:gsub('$%b{}', function(var)
+		return do_eval(var:sub(3,-2), env)
+	end)
+	return s
+end
+
 return strings
 
