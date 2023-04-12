@@ -218,6 +218,7 @@ local attribute = Class({
 		return self.name .. '="' .. self.value .. '"'
 	end,
 })
+h.attribute = attribute
 
 -- prepend '-' for single node (no </end>)
 -- prepend '/' for single node with trailing '/' ie. <one/>
@@ -276,7 +277,7 @@ local attributes = {
 	'rel', 'src', 'ref', 'href',
 	'lang', 'charset',
 	'name', 'content',
-	'type', 'charset',
+	'type',
 	'width', 'height',
 }
 h.attributes = attributes
