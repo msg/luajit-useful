@@ -204,12 +204,11 @@ function tables.is_empty(t)
 end
 
 function tables.in_table(t, e)
-	for _,v in pairs(t) do
+	for n,v in pairs(t) do
 		if v == e then
-			return true
+			return n
 		end
 	end
-	return false
 end
 
 function tables.keys(t)
@@ -312,6 +311,7 @@ function tables.sub(t, s, e)
 	e = offset(t, e)
 	return { unpack(t, s, e) }
 end
+tables.slice = tables.sub
 
 function tables.iremove(t, keep, s, e)
 	s = offset(t, s or 1)
