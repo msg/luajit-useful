@@ -62,6 +62,7 @@ local function split_last(path, sep) -- luacheck: ignore path
 end
 
 local directory_sep = package.config:sub(1,1)
+path.directory_sep = directory_sep
 
 local function split_path(path) -- luacheck: ignore path
 	return split_last(path, directory_sep)
