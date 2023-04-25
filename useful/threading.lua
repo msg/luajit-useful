@@ -12,31 +12,30 @@
 local threading = { }
 local threadingc = require('useful.threadingc')
 
-local system	= require('useful.system')
-local  pack	= system.pack  --luacheck:ignore
+local  pack	=  pack or table.pack			--luacheck:ignore
 
 local exec	= threadingc.exec
 local lock	= threadingc.lock
 local unlock	= threadingc.unlock
 
 local function setup() -- this is run in the management thread
-	if init_ ~= nil then --luacheck:ignore
+	-- luacheck: push no global
+	if init_ ~= nil then
 		return
 	end
-	init_ = true --luacheck:ignore
+	init_ = true
 
 	local  min	=  math.min
 	local  insert	=  table.insert
-	local  remove	=  table.remove --luacheck:ignore
+	local  remove	=  table.remove
 	local  concat	=  table.concat
 
-	local system	= require('useful.system')	--luacheck:ignore
-	local  pack	=  system.pack			--luacheck:ignore
+	local  pack	=  pack or table.pack		--luacheck:ignore
 
 	--
 	-- global data related stuff
 	--
-	data	= { } --luacheck:ignore
+	data	= { }
 
 	local path = function(args, n)
 		while #args > n do
@@ -45,7 +44,7 @@ local function setup() -- this is run in the management thread
 		return concat(args, '.')
 	end
 
-	traverse_locked = function(tbl, n, except, args) --luacheck:ignore
+	traverse_locked = function(tbl, n, except, args)
 		local i = 1
 		while i <= n - except and tbl ~= nil do
 			tbl = tbl[args[i]]
@@ -59,27 +58,27 @@ local function setup() -- this is run in the management thread
 	end
 
 	-- `data` is a global table
-	set_locked = function(...) --luacheck:ignore
+	set_locked = function(...)
 		local args = pack(...)
 		local n = args.n
-		local tbl = traverse_locked(data, n, 2, args) --luacheck:ignore
+		local tbl = traverse_locked(data, n, 2, args)
 		tbl[args[n-1]] = args[n]
 	end
 
-	get_locked = function(...) --luacheck:ignore
+	get_locked = function(...)
 		local args = pack(...)
-		return traverse_locked(data, args.n, 0, args) --luacheck:ignore
+		return traverse_locked(data, args.n, 0, args)
 	end
 
-	insert_locked = function(...) --luacheck:ignore
+	insert_locked = function(...)
 		local args = pack(...)
-		local tbl = traverse_locked(data, args.n, 1, args) --luacheck:ignore
+		local tbl = traverse_locked(data, args.n, 1, args)
 		insert(tbl, args[args.n]) -- NOTE: above
 	end
 
-	remove_locked = function(...) --luacheck:ignore
+	remove_locked = function(...)
 		local args = pack(...)
-		local tbl = traverse_locked(data, args.n, 1, args) --luacheck:ignore
+		local tbl = traverse_locked(data, args.n, 1, args)
 		remove(tbl, args[args.n])
 	end
 
@@ -89,41 +88,42 @@ local function setup() -- this is run in the management thread
 
 	local channels	= { }
 
-	channel_locked = function(name) --luacheck:ignore
+	channel_locked = function(name)
 		local channel = channels[name] or { queue = { } }
 		channels[name] = channel
 		return channel
 	end
 
-	flush_locked = function(name) --luacheck:ignore
+	flush_locked = function(name)
 		channels[name] = nil
 	end
 
-	enqueue_locked = function(name, args) --luacheck:ignore
-		local channel = channel_locked(name) --luacheck:ignore
+	enqueue_locked = function(name, args)
+		local channel = channel_locked(name)
 		insert(channel.queue, args)
 	end
 
-	dequeue_locked = function(name, max) --luacheck:ignore
-		local channel = channel_locked(name) --luacheck:ignore
+	dequeue_locked = function(name, max)
+		local channel = channel_locked(name)
 		local results = { }
 		local n = min(max, #channel.queue)
 		for _=1,n do
 			insert(results, remove(channel.queue, 1))
 		end
 		if #channel.queue == 0 then -- remove queue when it's empty
-			flush_locked(name) --luacheck:ignore
+			flush_locked(name)
 		end
 		return results
 	end
 
-	queues_locked = function() --luacheck:ignore
+	queues_locked = function()
 		local queues = {}
 		for name,_ in pairs(channels) do
 			insert(queues, name)
 		end
 		return queues
 	end
+	-- luacheck: pop
 end
 
 local function pexec(code, ...)
