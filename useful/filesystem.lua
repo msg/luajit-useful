@@ -3,11 +3,19 @@
 --
 local filesystem = { }
 
+local  insert		=  table.insert
+local  sort		=  table.sort
+
 local ffi		= require('ffi')
 local  C		=  ffi.C
 local  errno		=  ffi.errno
+local  fstring		=  ffi.string
+local  gc		=  ffi.gc
+local  new		=  ffi.new
 local bit		= require('bit')
 local  band		=  bit.band
+local  bor		=  bit.bor
+local  lshift		=  bit.lshift
 
 			  require('posix.dirent')
 			  require('posix.errno')
@@ -22,14 +30,14 @@ local  unpack		=  system.unpack
 
 local function errno_string(err)
 	err = err or errno()
-	return tostring(err)..' '..ffi.string(C.strerror(err))
+	return tostring(err)..' '..fstring(C.strerror(err))
 end
 
-local function convert_permissions(st)
+local function to_permissions(st)
 	local all_permissions = 'xwr'--'rwxrwxrwx'
 	local permissions = ''
 	for i=0,8 do
-		if band(st.st_mode, bit.lshift(1,i)) ~= 0 then
+		if band(st.st_mode, lshift(1,i)) ~= 0 then
 			local flag = all_permissions:sub((i%3)+1,(i%3)+1)
 			permissions = flag..permissions
 		else
@@ -48,7 +56,7 @@ local attribute_modes = {
 	[C.S_IFSOCK] = 'socket',
 }
 
-local function convert_mode(st)
+local function to_mode(st)
 	return attribute_modes[band(st.st_mode, C.S_IFMT)]
 end
 
@@ -75,8 +83,8 @@ local attribute_convert = {
 	size		= make_convert('size'),
 	blksize		= make_convert('blksize'),
 	blocks		= make_convert('blocks'),
-	mode		= convert_mode,
-	permissions	= convert_permissions,
+	mode		= to_mode,
+	permissions	= to_permissions,
 	modification	= make_convert_time('st_mtim'),
 	access		= make_convert_time('st_atim'),
 	change		= make_convert_time('st_ctim'),
@@ -98,7 +106,7 @@ end
 filesystem.stat_to_attributes = stat_to_attributes
 
 local attributes = function(filepath, arg, stat_func)
-	local st = ffi.new('struct stat')
+	local st = new('struct stat')
 	local rc = (stat_func or stat.stat)(filepath, st)
 	if rc < 0 then
 		return nil, errno_string()
@@ -110,10 +118,10 @@ filesystem.attributes = attributes
 filesystem.symlinkattributes = function(filepath, arg)
 	local result = { attributes(filepath, arg, stat.lstat) }
 	if result[1] ~= nil then
-		local buf = ffi.new('char[4096]')
+		local buf = new('char[4096]')
 		local rc = C.readlink(filepath, buf, 4096)
 		if rc > -1 then
-			result[1].target = ffi.string(buf)
+			result[1].target = fstring(buf)
 		end
 	end
 	return unpack(result)
@@ -159,7 +167,7 @@ local dir_iter = function(state)
 		state.dir = nil
 		return nil
 	end
-	return ffi.string(state.ent.d_name)
+	return fstring(state.ent.d_name)
 end
 
 filesystem.dir = function(path)
@@ -170,7 +178,7 @@ filesystem.dir = function(path)
 	if state.dir == nil then
 		error(errno_string())
 	end
-	state.dir = ffi.gc(state.dir, function()
+	state.dir = gc(state.dir, function()
 		if state.dir ~= nil then
 			C.closedir(state.dir)
 		end
@@ -182,10 +190,10 @@ filesystem.list = function(path)
 	local list = { }
 	for name in filesystem.dir(path) do
 		if name ~= '.' and name ~= '..' then
-			table.insert(list, name)
+			insert(list, name)
 		end
 	end
-	table.sort(list)
+	sort(list)
 	return list
 end
 
@@ -198,7 +206,7 @@ filesystem.chdir = function(path)
 end
 
 filesystem.currentdir = function()
-	local buf = ffi.new('char[4096]')
+	local buf = new('char[4096]')
 	local rc = C.getcwd(buf, 4096)
 	if rc < 0 then
 		error(errno_string())
@@ -206,12 +214,12 @@ filesystem.currentdir = function()
 	return rc
 end
 
-filesystem.link = function(old, new, symlink)
+filesystem.link = function(old, new_, symlink)
 	local rc
 	if symlink == true then
-		rc = C.symlink(old, new)
+		rc = C.symlink(old, new_)
 	else
-		rc = C.link(old, new)
+		rc = C.link(old, new_)
 	end
 	if rc < 0 then
 		error(errno_string())
@@ -235,17 +243,17 @@ filesystem.rmdir = function(dirname)
 	return rc
 end
 
-filesystem.mkdirp = function(_path, permissions)
+filesystem.mkdirp = function(path, permissions)
 	permissions = permissions or tonumber(0755, 8)
-	local dir = split_path(_path)
-	while not filesystem.exists(dir) do
+	local dir = split_path(path)
+	while dir ~= '' and not filesystem.exists(dir) do
 		local rc = filesystem.mkdirp(dir, permissions)
-		if rc < 0 and ffi.errno() ~= C.EEXIST then
+		if rc < 0 and errno() ~= C.EEXIST then
 			return rc
 		end
 	end
-	if not filesystem.exists(_path) then
-		return C.mkdir(_path, permissions)
+	if not filesystem.exists(path) then
+		return C.mkdir(path, permissions)
 	else
 		return 0
 	end
