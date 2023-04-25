@@ -47,6 +47,16 @@ local function to_permissions(st)
 	return permissions
 end
 
+local function from_permissions(permissions)
+	local mode = 0
+	for i=0,8 do
+		if permissions:sub(9-i,9-i) ~= '-' then
+			mode = bor(mode, lshift(1, i))
+		end
+	end
+	return mode
+end
+
 local attribute_modes = {
 	[C.S_IFDIR] = 'directory',
 	[C.S_IFCHR] = 'char device',
@@ -125,6 +135,11 @@ filesystem.symlinkattributes = function(filepath, arg)
 		end
 	end
 	return unpack(result)
+end
+
+filesystem.set_permissions = function(path, permissions)
+	local mode = from_permissions(permissions)
+	return C.chmod(path, mode)
 end
 
 filesystem.exists = function(path)
