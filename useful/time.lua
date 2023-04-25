@@ -175,11 +175,20 @@ function time.time()
 	return time.now():to_number()
 end
 
-function time.sleep(ts_or_s)
-	if type(ts_or_s) == 'number' then
-		ts_or_s = number_to_timespec(ts_or_s)
+if ffi.os == 'OSX' then
+	function time.sleep(ts_or_s)
+		if type(ts_or_s) == 'number' then
+			ts_or_s = number_to_timespec(ts_or_s)
+		end
+		return C.nanosleep(ts_or_s, nil)
 	end
-	return C.clock_nanosleep(C.CLOCK_REALTIME, 0, ts_or_s, nil)
+else
+	function time.sleep(ts_or_s)
+		if type(ts_or_s) == 'number' then
+			ts_or_s = number_to_timespec(ts_or_s)
+		end
+		return C.clock_nanosleep(C.CLOCK_REALTIME, 0, ts_or_s, nil)
+	end
 end
 
 function time.dt(end_ts, begin_ts)
