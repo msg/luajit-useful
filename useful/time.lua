@@ -32,25 +32,27 @@ local time = { }
 --         This keeps the numbers from overflowing when doing many time
 --         calculations.
 --
-local  floor	=  math.floor
-local  modf	=  math.modf
+local  floor		=  math.floor
+local  modf		=  math.modf
+local  fmod		=  math.fmod
+local  format		=  string.format
 
-local ffi	= require('ffi')
-local  C	=  ffi.C
-local  fstring	=  ffi.string
-local  metatype	=  ffi.metatype
-local  new	=  ffi.new
-local  sizeof	=  ffi.sizeof
+local ffi		= require('ffi')
+local  C		=  ffi.C
+local  fstring		=  ffi.string
+local  metatype		=  ffi.metatype
+local  new		=  ffi.new
+local  sizeof		=  ffi.sizeof
 
-		  require('posix.time')
+			  require('posix.time')
 
-local umath	= require('useful.math')
-local  divmod	=  umath.divmod
+local umath		= require('useful.math')
+local  divmod		=  umath.divmod
 local timespec
 
-local MILLI_HZ	= 1000
-local MICRO_HZ	= 1000 * MILLI_HZ
-local NANO_HZ	= 1000 * MICRO_HZ
+local MILLI_HZ		= 1000
+local MICRO_HZ		= 1000 * MILLI_HZ
+local NANO_HZ		= 1000 * MICRO_HZ
 
 local function fix_nano(ts)
 	-- NOTE: this only handles overflow of < abs(NANO_HZ * 2)
@@ -88,6 +90,23 @@ end
 function time.iso8601(ts)
 	return time.strftime(time.iso8601_fmt, ts:gmtime())
 end
+
+function time.ftime(s, t)
+	local function frac(value, places)
+		return floor(10^places*fmod(value, 1)+0.5)
+	end
+	s = s:gsub('%%(%d*f)','%%%%%1')
+	local o = os.date(s, t)
+	local b,d,e = o:match('()%%(%d*)f()')
+	if b then
+		d = d ~= '' and d or '03'
+		local n = frac(t, tonumber(d))
+		return format('%s%'..d..'d%s', o:sub(1,b-1), n, o:sub(e))
+	else
+		return o
+	end
+end
+
 
 time.secs = function(s)		return number_to_timespec(s)		end
 time.msecs = function(ms)	return number_to_timespec(ms * MILLI_HZ)end
