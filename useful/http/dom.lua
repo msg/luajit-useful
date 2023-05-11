@@ -160,7 +160,7 @@ local tag = Class(copy({}, Node, {
 		if #lines == 0 then
 			lines = { start_tag .. end_tag }
 		elseif #lines == 1 then
-			lines[1] = lines[1]:gsub('^%s+','')
+			lines[1] = lines[1]:gsub('^[ \t]+','')
 			lines = { start_tag .. lines[1] .. end_tag }
 		else
 			insert(lines, 1, start_tag)
