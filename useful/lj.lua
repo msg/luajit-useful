@@ -4,12 +4,11 @@
 
 local lj = { }
 
+local  sprintf	=  string.foramt
+
 local ffi	= require('ffi')
 local  C	=  ffi.C
 local  fstring	=  ffi.string
-
-local stdio	= require('useful.stdio')
-local  sprintf	=  stdio.sprintf
 
 ffi.cdef [[
 	typedef ptrdiff_t		LUA_INTEGER;
