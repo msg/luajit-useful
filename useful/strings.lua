@@ -3,13 +3,17 @@
 --
 local strings = { }
 
-local  insert		=  table.insert
-local  concat		=  table.concat
+local  abs		=  math.abs
+local  max		=  math.max
+local  min		=  math.min
 
 local  byte		=  string.byte
 local  char		=  string.char
+local  format		=  string.format
 local  rep		=  string.rep
-local  sprintf		=  string.format
+
+local  insert		=  table.insert
+local  concat		=  table.concat
 
 local bit		= require('bit')
 local  bor		=  bit.bor
@@ -31,11 +35,12 @@ strings.rstrip		= rstrip
 strings.strip		= strip
 strings.join		= concat -- join(s, sep)
 
-function strings.capitalize(s)
+local function capitalize(s)
 	return s:sub(1,1):upper() .. s:sub(2):lower()
 end
+strings.capitalize = capitalize
 
-function strings.split(s, sep, count)
+local function split(s, sep, count)
 	local fields = {}
 	sep = sep or '%s+'
 	count = count or #s
@@ -52,13 +57,14 @@ function strings.split(s, sep, count)
 	end
 	return fields
 end
+strings.split = split
 
 function strings.title(s)
 	local fields = { }
-	for i,field in ipairs(strings.split(s)) do
-		fields[i] = strings.capitalize(field)
+	for i,field in ipairs(split(s)) do
+		fields[i] = capitalize(field)
 	end
-	return strings.join(fields, ' ')
+	return concat(fields, ' ')
 end
 
 function strings.ljust(s, w, c)
@@ -91,8 +97,8 @@ end
 
 function strings.parse_ranges(str)
 	local ranges = {}
-	for _,range in ipairs(strings.split(str, ',')) do
-		local r = tables.imap(strings.split(range, '-'),
+	for _,range in ipairs(split(str, ',')) do
+		local r = tables.imap(split(range, '-'),
 			function (n, v)
 				return n, tonumber(v)
 			end)
@@ -131,7 +137,7 @@ function strings.hex_to_binary(s)
 			o = 1 - o
 		end
 	end
-	return strings.join(out)
+	return concat(out)
 end
 
 local hexs = '0123456789abcdef'
@@ -147,16 +153,16 @@ function strings.binary_to_hex(s, sep)
 			insert(out, sep)
 		end
 	end
-	return strings.join(out)
+	return concat(out)
 end
 
 function strings.hexdump(bytes, addr)
 	local function hex_data(bytes, at_most) -- luacheck:ignore
 		local hex = { }
 		at_most = at_most or 16
-		for i=1,math.min(#bytes, at_most) do
+		for i=1,min(#bytes, at_most) do
 			local s -- luacheck:ignore
-			s = sprintf("%02x", byte(bytes:sub(i,i)))
+			s = format("%02x", byte(bytes:sub(i,i)))
 			insert(hex, s)
 		end
 		return concat(hex, ' ')
@@ -164,7 +170,7 @@ function strings.hexdump(bytes, addr)
 
 	local function char_data(bytes) -- luacheck:ignore
 		local s = ''
-		for i=1,math.min(#bytes, 16) do
+		for i=1,min(#bytes, 16) do
 			local c = bytes:sub(i,i)
 			if byte(c) < 32 or 127 < byte(c) then
 				c = '.'
@@ -178,7 +184,7 @@ function strings.hexdump(bytes, addr)
 	addr = addr or 0
 	for off=1,#bytes,16 do
 		local line
-		line = sprintf("%06x: %-23s  %-23s | %s", addr + off -1,
+		line = format("%06x: %-23s  %-23s | %s", addr + off -1,
 			hex_data(bytes:sub(off,off+8-1), 8),
 			hex_data(bytes:sub(off+8,off+16-1), 8),
 			char_data(bytes:sub(off,off+16-1)))
@@ -220,6 +226,61 @@ function strings.expand(s, ...)
 		return do_eval(var:sub(3,-2), env)
 	end)
 	return s
+end
+
+-- NOTE: uppercase is log2 and lowercase is log10
+local si_units = {
+	E = lshift(1LL, 60),
+	P = lshift(1LL, 50),
+	T = lshift(1LL, 40),
+	G = lshift(1LL, 30),
+	M = lshift(1LL, 20),
+	K = lshift(1LL, 10),
+	e = 1000LL * 1000LL * 1000LL * 1000LL * 1000LL * 1000LL,
+	p = 1000LL * 1000LL * 1000LL * 1000LL * 1000LL,
+	t = 1000LL * 1000LL * 1000LL * 1000LL,
+	g = 1000LL * 1000LL * 1000LL,
+	m = 1000LL * 1000LL,
+	k = 1000LL,
+}
+strings.si_units = si_units
+
+function strings.parse_si_units(s)
+	local n, e	= s:match('(%d+)(.?)')
+	return tonumber(n) * (si_units[e] or 1)
+end
+
+function strings.format_engineering(value, places)
+        local prefixes = 'qryzafpnum kMGTPEZYRQ'
+        local p = 11
+        local neg
+
+        if value < 0 then
+                neg = '-'
+        else
+                neg = ' '
+        end
+        value = abs(value)
+
+        while p > 0 and value ~= 0.0 and value < 1.0 do
+                value = value * 1000.0
+                p = p - 1
+        end
+
+        while p < #prefixes and value ~= 0.0 and value > 1000.0 do
+                value = value / 1000.0
+                p = p + 1
+        end
+
+        if value >= 100.0 then
+                places = places - 2
+        elseif value >= 10.0 then
+                places = places - 1
+        end
+
+        places = max(places, 1)
+        local fmt = format('%%.%df%%s', places)
+        return format(neg .. fmt, value, prefixes:sub(p,p))
 end
 
 return strings
