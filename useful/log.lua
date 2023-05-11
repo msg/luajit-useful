@@ -3,13 +3,15 @@
 --
 local log = { }
 
-local ffi	= require('ffi')
+local ffi		= require('ffi')
+local  new		=  ffi.new
 
-local class	= require('useful.class')
-local  Class	=  class.Class
-local stdio	= require('useful.stdio')
-local  sprintf	=  stdio.sprintf
-local socket	= require('useful.socket')
+local class		= require('useful.class')
+local  Class		=  class.Class
+local stdio		= require('useful.stdio')
+local  sprintf		=  stdio.sprintf
+local socket		= require('useful.socket')
+local time		= require('useful.time')
 
 log.NONE	= 0
 log.ERROR	= 1
@@ -31,7 +33,7 @@ local Log = Class({
 		if self.log_leader == '' then
 			return ''
 		end
-		return os.date(self.log_leader)..' '
+		return time.ftime(self.log_leader, time.time())..' '
 	end,
 
 	clear = function(self) -- luacheck: ignore
@@ -110,7 +112,7 @@ log.UDPLog = Class(log.Log, {
 
 	write = function(self, buf)
 		buf = self:leader()..buf
-		local p = ffi.new('char[?]', #buf+1, buf) -- +1 for '\0'
+		local p = new('char[?]', #buf+1, buf) -- +1 for '\0'
 		self.udp:sendto(p, #buf, self.dest)
 	end,
 })
