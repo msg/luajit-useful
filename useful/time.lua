@@ -93,7 +93,7 @@ end
 
 function time.ftime(s, t)
 	local function frac(value, places)
-		return floor(10^places*fmod(value, 1)+0.5)
+		return floor(10^places*fmod(value, 1))
 	end
 	s = s:gsub('%%(%d*f)','%%%%%1')
 	local o = os.date(s, t)
