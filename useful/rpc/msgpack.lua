@@ -76,7 +76,7 @@ end
 msgpack.decode_header = decode_header
 
 local decode_payload = function(r8, length)
-	assert(length <= #r8, 'length smaller then range')
+	assert(length <= #r8, 'length larger then range')
 	return decode(r8)
 end
 msgpack.decode_payload = decode_payload
