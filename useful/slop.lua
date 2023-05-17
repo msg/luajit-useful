@@ -145,7 +145,7 @@ slop.Transaction = Class({
 	end,
 
 	send_binary = function(self, message, binary)
-		self:send(binary_start, #binary .. message)
+		self:send(binary_start, #binary..' '..message)
 		self:write(binary)
 		self:finish(binary_end)
 		return 0
@@ -187,10 +187,11 @@ slop.Transaction = Class({
 			remove(self.args, 1)
 		end
 
-		local arg = remove(self.args, 1)
-		if arg == nil or #arg < 1 then
+		if #self.args < 1 then
 			return
 		end
+
+		local arg = remove(self.args, 1)
 		local c = arg:sub(1,1):byte()
 		if not (48 <= c and c <= 57) then -- '0' <= c <= '9'
 			self.name = arg
@@ -232,7 +233,12 @@ slop.Transaction = Class({
 			return
 		end
 
-		self.binary = inp:read(size)
+		local buf = new('char[?]', size)
+		local rc = inp:read(buf, size)
+		if rc < 0 then
+			self.error_message = 'inp.read rc='..rc
+		end
+		self.binary = fstring(buf, rc)
 
 		local line = self:readline(inp)
 		if not line:sub(1, #binary_end) ~= binary_end then
@@ -246,7 +252,7 @@ slop.Transaction = Class({
 		self:reset()
 		self.status = self:readline(inp)
 		if self.status == '' or
-			self.status:sub(#self.status-(#eol-1)) ~= eol then
+		   self.status:sub(#self.status-(#eol-1)) ~= eol then
 			return -1
 		end
 		self.args = split(strip(self.status), '%s+')
@@ -258,8 +264,8 @@ slop.Transaction = Class({
 			self.name = self.name:sub(#multi_start+1)
 			self:recv_multi(inp)
 		elseif self.name:sub(1, #binary_start) == binary_start then
-			local ssize = self.args[1]
-			self.name = self.args[2]
+			local ssize = self.name:sub(2)
+			self.name = self.args[1]
 			self:recv_binary(ssize, inp)
 		end
 
