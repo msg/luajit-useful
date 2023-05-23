@@ -278,6 +278,19 @@ function tables.imap(t, f)
 	return tables.map(t, f, ipairs)
 end
 
+function tables.equal(a, b)
+	for n,v in pairs(a) do
+		if type(v) == 'table' then
+			if not tables.equal(v, b[n]) then
+				return false
+			end
+		elseif b[n] ~= v then
+			return false
+		end
+	end
+	return true
+end
+
 function tables.index(t, value)
 	local compare = type(value) == 'function' and value or
 			function(v) return v == value end
