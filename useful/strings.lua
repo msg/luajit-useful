@@ -251,8 +251,9 @@ function strings.parse_si_units(s)
 end
 
 function strings.format_engineering(value, places)
-        local prefixes = 'qryzafpnum kMGTPEZYRQ'
-        local p = 11
+	places		= places or 3
+        local prefixes	= 'qryzafpnum kMGTPEZYRQ'
+        local p		= 11
         local neg
 
         if value < 0 then
