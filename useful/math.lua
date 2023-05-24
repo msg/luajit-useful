@@ -11,4 +11,8 @@ useful_math.divmod = function(x, y)
 	return i64 / y, i64 % y
 end
 
+useful_math.round = function(x)
+	return math.floor(x + 0.5)
+end
+
 return useful_math
