@@ -62,9 +62,13 @@ network.gateway = function(ifname)
 end
 
 local interfaces = function()
-	local interfaces = { }
-	local address	= json.decode(io.popen('ip -j address show'):read('*a'))
-	for _,entry in ipairs(address) do
+	return json.decode(io.popen('ip -j address show'):read('*a'))
+end
+network.interfaces = interfaces
+
+local addresses = function()
+	local addresses = { }
+	for _,entry in ipairs(interfaces()) do
 		local info	= entry.addr_info[1]
 		if info then
 			local addr	= info['local']
@@ -76,16 +80,16 @@ local interfaces = function()
 				nm	= iptos(nm),
 				mac	= mactos(mac),
 			}
-			table.insert(interfaces, interface)
+			table.insert(addresses, interface)
 		end
 	end
-	return interfaces
+	return addresses
 end
-network.interfaces = interfaces
+network.addresses = addresses
 
 network.config = function(ifname)
 	-- TODO: handle interfaces with multiple addresses
-	for _,interface in ipairs(interfaces()) do
+	for _,interface in ipairs(addresses()) do
 		if interface.ifname == ifname then
 			return interface.ip, interface.nm, interface.mac
 		end
