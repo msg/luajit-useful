@@ -83,7 +83,7 @@ local function setup() -- this is run in the management thread
 	end
 
 	--
-	-- channeel queue related stuff
+	-- channel queue related stuff
 	--
 
 	local channels	= { }
