@@ -4,11 +4,11 @@
 
 local lj = { }
 
-local  sprintf	=  string.foramt
+local  format		=  string.format
 
-local ffi	= require('ffi')
-local  C	=  ffi.C
-local  fstring	=  ffi.string
+local ffi		= require('ffi')
+local  C		=  ffi.C
+local  fstring		=  ffi.string
 
 ffi.cdef [[
 	typedef ptrdiff_t		LUA_INTEGER;
@@ -603,28 +603,28 @@ end
 
 function lj.stack_dump(lua)
 	local top = lj.lua_gettop(lua)
-	local s = sprintf('stack %d: ', top)
+	local s = format('stack %d: ', top)
 	if top == 0 then
 		s = s..'<empty>'
 	end
 	for i=1,top do
-		s = s..sprintf('(%d)', i)
+		s = s..format('(%d)', i)
 		local t = lj.lua_type(lua, i)
-		if     t == C.LUA_TTABLE then		s = s..sprintf('t:')
-		elseif t == C.LUA_TNIL then		s = s..sprintf('0:')
-		elseif t == C.LUA_TFUNCTION then	s = s..sprintf('f:')
+		if     t == C.LUA_TTABLE then		s = s..format('t:')
+		elseif t == C.LUA_TNIL then		s = s..format('0:')
+		elseif t == C.LUA_TFUNCTION then	s = s..format('f:')
 		elseif t == C.LUA_TSTRING then
-			s = s..sprintf("s:'%s'", lj.lj_tostring(lua, i))
+			s = s..format("s:'%s'", lj.lj_tostring(lua, i))
 		elseif t == C.LUA_TBOOLEAN then
-			s = s..sprintf('b:%s', lj.lua_toboolean(lua, i) and
+			s = s..format('b:%s', lj.lua_toboolean(lua, i) and
 					'true' or 'false')
 		elseif t == C.LUA_TNUMBER then
-			s = s..sprintf('n:%g', lj.lua_tonumber(lua, i))
+			s = s..format('n:%g', lj.lua_tonumber(lua, i))
 		else
-			s = s..sprintf('u(%d):%s', t, lj.lj_typename(lua, i))
-			s = s..sprintf(' %s', lj.lua_topointer(lua, i))
+			s = s..format('u(%d):%s', t, lj.lj_typename(lua, i))
+			s = s..format(' %s', lj.lua_topointer(lua, i))
 		end
-		s = s..sprintf('  ')
+		s = s..format('  ')
 	end
 	return s
 end
