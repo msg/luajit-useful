@@ -6,8 +6,6 @@ local object = {}
 
 local class	= require('useful.class')
 local  Class	=  class.Class
-local system	= require('useful.system')
-local  is_main	=  system.is_main
 
 function object.is_object(o)
 	return type(o) == 'table' and o._class ~= nil
@@ -233,7 +231,8 @@ local function main()
 	o:method('a', 'b', 1, 2, 3)
 end
 
-if is_main() then
+local system	= require('useful.system')
+if system.is_main() then
 	main()
 else
 	return object

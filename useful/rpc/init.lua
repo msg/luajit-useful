@@ -11,9 +11,9 @@ local  remove		=  table.remove
 
 local class		= require('useful.class')
 local  Class		=  class.Class
-local system		= require('useful.system')
-local  pack		=  system.pack
-local  unpack		=  system.unpack
+			  require('useful.compatible')
+local  pack		=  table.pack			-- luacheck:ignore
+local  unpack		=  table.unpack			-- luacheck:ignore
 
 --
 -- { type, id, method_error, args_result }

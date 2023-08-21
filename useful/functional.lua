@@ -3,8 +3,8 @@
 --
 local functional = { }
 
-local system		= require('useful.system')
-local  loadstring	=  system.loadstring
+			  require('useful.compatible')
+local  loadstring	=  loadstring
 
 function functional.callable(obj)
 	return type(obj) == 'function'

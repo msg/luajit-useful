@@ -3,11 +3,10 @@
 --
 local command = { }
 
-local  sprintf	=  string.format
+local  sprintf		=  string.format
 
-local system	= require('useful.system')
-local  is_main	=  system.is_main
-local  unpack	=  system.unpack
+			  require('useful.compatible')
+local  unpack		=  table.unpack			-- luacheck:ignore
 
 command.Command = function(commands, name, params, description, func)
 	local self = {
@@ -189,7 +188,8 @@ local function main(args)
 	return command.Commands(printf).main(args)
 end
 
-if is_main() then
+local system		= require('useful.system')
+if system.is_main() then
 	main()
 else
 	return command

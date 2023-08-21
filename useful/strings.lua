@@ -21,8 +21,8 @@ local  band		=  bit.band
 local  lshift		=  bit.lshift
 local  rshift		=  bit.rshift
 
-local system		= require('useful.system')
-local  unpack		=  system.unpack
+			  require('useful.compatible')
+local  unpack		=  table.unpack			-- luacheck:ignore
 local tables		= require('useful.tables')
 local  serialize	=  tables.serialize
 local  deserialize	=  tables.deserialize

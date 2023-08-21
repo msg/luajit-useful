@@ -159,8 +159,7 @@ local function main()
 end
 
 local system	= require('useful.system')
-local  is_main	=  system.is_main
-if is_main() then
+if system.is_main() then
 	main()
 else
 	return base64

@@ -338,11 +338,8 @@ local function main()
 	print(test(10))
 end
 
-local function is_main()
-	return debug.getinfo(4) == nil
-end
-
-if is_main() then
+local system		= require('useful.system')
+if system.is_main() then
 	main()
 end
 

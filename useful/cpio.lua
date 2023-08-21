@@ -9,13 +9,12 @@ local  bor		=  bit.bor
 
 local class		= require('useful.class')
 local  Class		=  class.Class
+			  require('useful.compatible')
+local  loadstring	=  loadstring
 local iomem		= require('useful.iomem')
 local stdio		= require('useful.stdio')
 local  sprintf		=  stdio.sprintf
 local  printf		=  stdio.printf
-local system		= require('useful.system')
-local  is_main		=  system.is_main
-local  loadstring	=  system.loadstring
 
 local  insert		=  table.insert
 
@@ -225,7 +224,8 @@ local function main()
 	f:close()
 end
 
-if is_main() then
+local system		= require('useful.system')
+if system.is_main() then
 	main()
 else
 	return cpio

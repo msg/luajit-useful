@@ -43,11 +43,11 @@ local  insert		=  table.insert
 
 local class		= require('useful.class')
 local  Class		=  class.Class
+			  require('useful.compatible')
+local  pack		=  table.pack			-- luacheck:ignore
+local  unpack		=  table.unpack			-- luacheck:ignore
 local functional	= require('useful.functional')
 local  bind1		=  functional.bind1
-local system		= require('useful.system')
-local  pack		=  system.pack
-local  unpack		=  system.unpack
 local time_		= require('useful.time')
 local  now		=  time_.now
 local  time_dt		=  time_.dt

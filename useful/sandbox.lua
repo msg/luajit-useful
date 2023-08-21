@@ -3,12 +3,11 @@
 --
 local sandbox = { }
 
-local system		= require('useful.system')
-local  is_main		=  system.is_main
-local  getfenv		=  system.getfenv
-local  setfenv		=  system.setfenv
-local  unpack		=  system.unpack
-local  loadstring	= system.loadstring
+			  require('useful.compatible')
+local  getfenv		=  getfenv
+local  setfenv		=  setfenv
+local  loadstring	=  loadstring
+local  unpack		=  table.unpack			-- luacheck:ignore
 
 function sandbox.export(to_table, name, from_table)
 	local table = { }
@@ -99,7 +98,8 @@ local function main(args)
 	end
 end
 
-if is_main() then
+local system		= require('useful.system')
+if system.is_main() then
 	main(arg)
 else
 	return sandbox

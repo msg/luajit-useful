@@ -3,31 +3,30 @@
 --
 local slop = { }
 
-local ffi	= require('ffi')
-local  cast	=  ffi.cast
-local  fstring	=  ffi.string
-local  new	=  ffi.new
+local ffi		= require('ffi')
+local  cast		=  ffi.cast
+local  fstring		=  ffi.string
+local  new		=  ffi.new
 
 
-local class	= require('useful.class')
-local Class	= class.Class
-local strings	= require('useful.strings')
-local  strip	=  strings.strip
-local  split	=  strings.split
-local  ljust	=  strings.ljust
-local socket	= require('useful.socket')
-local  TCP	=  socket.TCP
-local stream	= require('useful.stream')
-local system	= require('useful.system')
-local  is_main	=  system.is_main
-local  unpack	=  system.unpack
-local tables	= require('useful.tables')
+local class		= require('useful.class')
+local Class		= class.Class
+			  require('useful.compatible')
+local  unpack		=  table.unpack			-- luacheck:ignore
+local strings		= require('useful.strings')
+local  strip		=  strings.strip
+local  split		=  strings.split
+local  ljust		=  strings.ljust
+local socket		= require('useful.socket')
+local  TCP		=  socket.TCP
+local stream		= require('useful.stream')
+local tables		= require('useful.tables')
 
-local  format	=  string.format
+local  format		=  string.format
 
-local  insert	=  table.insert
-local  remove	=  table.remove
-local  join	=  table.concat
+local  insert		=  table.insert
+local  remove		=  table.remove
+local  join		=  table.concat
 
 local line_limit	= 256
 local multi_limit	= 256
@@ -410,7 +409,8 @@ local function main()
 	end
 end
 
-if is_main() then
+local system		= require('useful.system')
+if system.is_main() then
 	main()
 else
 	return slop

@@ -3,13 +3,13 @@
 --
 local tables = { }
 
-local  insert	=  table.insert
-local  concat	=  table.concat
+local  insert		=  table.insert
+local  concat		=  table.concat
 
-local system	= require('useful.system')
-local  pack	=  system.pack
-local  setfenv	=  system.setfenv
-local  unpack	=  system.unpack
+			  require('useful.compatible')
+local  pack		=  table.pack			-- luacheck:ignore
+local  setfenv		=  setfenv
+local  unpack		=  table.unpack			-- luacheck:ignore
 
 local function is_identifier(s)
 	return s:match('^[_A-Za-z][_A-Za-z0-9]*$') ~= nil

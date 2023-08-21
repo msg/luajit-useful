@@ -12,7 +12,7 @@
 local threading = { }
 local threadingc = require('useful.threadingc')
 
-local  pack	=  pack or table.pack			--luacheck:ignore
+local  pack	=  table.pack			--luacheck:ignore
 
 local exec	= threadingc.exec
 local lock	= threadingc.lock
@@ -30,7 +30,7 @@ local function setup() -- this is run in the management thread
 	local  remove	=  table.remove
 	local  concat	=  table.concat
 
-	local  pack	=  pack or table.pack		--luacheck:ignore
+	local  pack	=  table.pack		--luacheck:ignore
 
 	--
 	-- global data related stuff

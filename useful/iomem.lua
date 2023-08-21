@@ -4,15 +4,15 @@
 
 local iomem = { }
 
-local  mmax	=  math.max
-local  mmin	=  math.min
-local  tconcat	=  table.concat
-local  tinsert	=  table.insert
+local  max		=  math.max
+local  min		=  math.min
+local  concat		=  table.concat
+local  insert		=  table.insert
 
-local class	= require('useful.class')
-local  Class	=  class.Class
-local system	= require('useful.system')
-local  unpack	=  system.unpack
+local class		= require('useful.class')
+local  Class		=  class.Class
+			  require('useful.compatible')
+local  unpack		=  table.unpack			-- luacheck:ignore
 
 local WriteIO = Class({
 	new = function(self)
@@ -24,7 +24,7 @@ local WriteIO = Class({
 	setvbuf = function() end,
 
 	seek = function(self, whence, offset)
-		local s = tconcat(self.data)
+		local s = concat(self.data)
 		offset = offset or 0
 		if whence == 'set' then
 			s = s:sub(1, offset)
@@ -45,12 +45,12 @@ local WriteIO = Class({
 
 	write = function(self, ...)
 		for _,v in ipairs({...}) do
-			tinsert(self.data, tostring(v))
+			insert(self.data, tostring(v))
 		end
 	end,
 
 	__tostring = function(self)
-		return tconcat(self.data)
+		return concat(self.data)
 	end,
 })
 iomem.WriteIO = WriteIO
@@ -74,7 +74,7 @@ local ReadIO = Class({
 		elseif whence == 'end' then
 			pos = #self.str + (offset or 0)
 		end
-		pos = mmax(1, mmin(#self.str, pos))
+		pos = max(1, min(#self.str, pos))
 		self.pos = pos
 		return pos
 	end,
@@ -91,23 +91,23 @@ local ReadIO = Class({
 		local args = {...}
 		local results = { }
 		if #args < 1 then
-			tinsert(args, '*l')
+			insert(args, '*l')
 		end
 		for i,arg in ipairs(args) do
 			if arg == '*l' then
 				local l = str:find('\n', pos) or #str + 1
 				arg = str:sub(pos, l - 1)
 				if pos < #str + 1 then
-					tinsert(results, arg)
+					insert(results, arg)
 				end
 				pos = l + 1
 			elseif arg == '*a' then
-				tinsert(results, str:sub(pos))
+				insert(results, str:sub(pos))
 				pos = #str + 1
 				break
 			elseif type(arg) == 'number' then
-				tinsert(results, str:sub(pos, pos + arg - 1))
-				pos = mmin(pos + arg, #str + 1)
+				insert(results, str:sub(pos, pos + arg - 1))
+				pos = min(pos + arg, #str + 1)
 			else
 				error('invalid format arg #'..i)
 			end

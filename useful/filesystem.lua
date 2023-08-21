@@ -23,10 +23,10 @@ local stat		= require('posix.sys.stat')
 			  require('posix.string')
 			  require('posix.unistd')
 
+			  require('useful.compatible')
+local  unpack		=  table.unpack			-- luacheck:ignore
 local path_		= require('useful.path')
 local  split_path	=  path_.split_path
-local system		= require('useful.system')
-local  unpack		=  system.unpack
 
 local function errno_string(err)
 	err = err or errno()

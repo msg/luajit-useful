@@ -10,9 +10,9 @@ local  fstring	=  ffi.string
 
 		  require('posix.string')
 
-local system	= require('useful.system')
-local  pack	=  system.pack
-local  unpack	=  system.unpack
+		  require('useful.compatible')
+local  pack	=  table.pack				-- luacheck:ignore
+local  unpack	=  table.unpack				-- luacheck:ignore
 
 local function pack_ok(ok, ...)
 	return ok, pack(...)

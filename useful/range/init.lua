@@ -3,23 +3,22 @@
 --
 local range = { }
 
-local ffi	= require('ffi')
-local  cast	=  ffi.cast
-local  copy	=  ffi.copy
-local  fstring	=  ffi.string
-local  metatype	=  ffi.metatype
-local  new	=  ffi.new
-local  sizeof	=  ffi.sizeof
-local  typeof	=  ffi.typeof
-local bit	= require('bit')
-local  bswap	=  bit.bswap
-local  rshift	=  bit.rshift
+local ffi		= require('ffi')
+local  cast		=  ffi.cast
+local  copy		=  ffi.copy
+local  fstring		=  ffi.string
+local  metatype		=  ffi.metatype
+local  new		=  ffi.new
+local  sizeof		=  ffi.sizeof
+local  typeof		=  ffi.typeof
+local bit		= require('bit')
+local  bswap		=  bit.bswap
+local  rshift		=  bit.rshift
 
-local stdio	= require('useful.stdio')
-local  printf	=  stdio.printf
-local system	= require('useful.system')
-local  is_main	=  system.is_main
-local  unpack	=  system.unpack
+			  require('useful.compatible')
+local  unpack		=  table.unpack			-- luacheck:ignore
+local stdio		= require('useful.stdio')
+local  printf		=  stdio.printf
 
 local range_types = { }
 
@@ -419,7 +418,8 @@ local function main()
 	end
 end
 
-if is_main() then
+local system		= require('useful.system')
+if system.is_main() then
         main()
 end
 
