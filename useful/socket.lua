@@ -156,6 +156,11 @@ socket.Socket = Class({
 		return self:setsockopt(C.SOL_SOCKET, C.SO_REUSEPORT, value)
 	end,
 
+	broadcast = function(self)
+		local value = new('int[1]', 1)
+		return self:setsockopt(C.SOL_SOCKET, C.SO_BROADCAST, value)
+	end,
+
 	rcvbuf = function(self, size)
 		local value = new('int[1]', size or 0)
 		if size ~= nil then
