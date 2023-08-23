@@ -240,7 +240,7 @@ slop.Transaction = Class({
 		self.binary = fstring(buf, rc)
 
 		local line = self:readline(inp)
-		if not line:sub(1, #binary_end) ~= binary_end then
+		if line:sub(1, #binary_end) ~= binary_end then
 			self.error_message = 'no binary end'
 		else
 			self.valid = true
