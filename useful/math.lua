@@ -3,16 +3,16 @@
 --
 local useful_math = { }
 
-local ffi	= require('ffi')
-local  new	=  ffi.new
+local  floor		=  math.floor
 
 useful_math.divmod = function(x, y)
-	local i64 = new('int64_t', x)
-	return i64 / y, i64 % y
+	x = x + 0LL
+	y = y + 0LL
+	return tonumber(x / y), tonumber(y % y)
 end
 
 useful_math.round = function(x)
-	return math.floor(x + 0.5)
+	return floor(x + 0.5)
 end
 
 return useful_math
