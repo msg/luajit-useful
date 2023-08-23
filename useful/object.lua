@@ -11,8 +11,8 @@ function object.is_object(o)
 	return type(o) == 'table' and o._class ~= nil
 end
 
-function object.verify_type(v, _type)
-	if type(v) == _type then
+function object.verify_type(v, type_)
+	if type(v) == type_ then
 		return true
 	else
 		return false, 'not a ' .. type(v)

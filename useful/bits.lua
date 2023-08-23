@@ -3,11 +3,6 @@
 --
 local bits = { }
 
-local ffi		= require('ffi')
-local  C		=  ffi.C
-local  cast		=  ffi.cast
-local  sizeof		=  ffi.sizeof
-
 local bit		= require('bit')
 local  band		=  bit.band
 local  bnot		=  bit.bnot
