@@ -203,13 +203,12 @@ end
 
 function strings.expand(s, ...)
 	local env = { args = {...} }
-	local t = { }
 	local mt = _G
 	if type(env.args[1]) == 'table' then
 		mt = table.remove(env.args, 1)
+		setmetatable(mt, { __index = _G })
 	end
-	setmetatable(t, { __index = mt })
-	setmetatable(env, { __index = t })
+	setmetatable(env, { __index = mt })
 	local do_eval = function(expr)
 		if env[expr] ~= nil then
 			return tostring(env[expr])
