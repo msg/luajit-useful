@@ -34,11 +34,11 @@ local try = function(ok, err, ...)
 end
 protect.try = try
 
-local try1 = function(v, err)
+local try1 = function(v, err, ...)
 	if not v then
 		protect.error(err, 2) -- non-localized so it can be changed
 	else
-		return v
+		return v, err, ...
 	end
 end
 protect.try1 = try1
