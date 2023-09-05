@@ -6,16 +6,17 @@ local stream = { }
 local ffi	= require('ffi')
 local  C	=  ffi.C
 local  cast	=  ffi.cast
+local  copy	=  ffi.copy
 local  new	=  ffi.new
 
 local bit	= require('bit')
 local  bor	=  bit.bor
 
-local sys_types = require('posix.sys.types') -- luacheck: ignore
-local unistd	= require('posix.unistd') -- luacheck: ignore
+		  require('posix.sys.types')
+		  require('posix.unistd')
 local poll	= require('posix.poll')
 		  require('posix.fcntl')
-local pstring	= require('posix.string') -- luacheck: ignore
+		  require('posix.string')
 		  require('posix.errno')
 
 local class	= require('useful.class')
@@ -83,11 +84,20 @@ stream.Stream = Class({
 		while p < self.out_next do
 			rc = self:stream_write(p, self.out_next - p)
 			if rc <= 0 then
-				return rc
+				break
 			end
 			p = p + rc
 		end
-		self.out_next = self.out_buffer
+		if p == self.out_buffer then
+			return rc
+		end
+		rc = p - self.out_buffer
+		if p ~= self.out_next then
+			copy(self.out_buffer, p, self.out_next - p)
+			self.out_next = self.out_buffer + (self.out_next - p)
+		else
+			self.out_next = self.out_buffer
+		end
 		return rc
 	end,
 
@@ -170,7 +180,7 @@ stream.Stream = Class({
 			if self.in_next ~= self.in_end then
 				local n
 				n = min(self.in_end - self.in_next, e - p)
-				C.memcpy(p, self.in_next, n)
+				copy(p, self.in_next, n)
 				p		= p + n
 				self.in_next	= self.in_next + n
 			else
@@ -203,7 +213,7 @@ stream.Stream = Class({
 				if spn < n then
 					n = spn + 1
 				end
-				C.memcpy(p, self.in_next, n)
+				copy(p, self.in_next, n)
 				p		= p + n
 				self.in_next	= self.in_next + n
 				if n == spn + 1 then
@@ -235,7 +245,7 @@ stream.Stream = Class({
 			return -1
 		end
 		self.in_next = self.in_next - n
-		C.memcpy(self.in_next, p + len - n, n)
+		copy(self.in_next, p + len - n, n)
 		return n
 	end,
 
@@ -247,16 +257,19 @@ stream.Stream = Class({
 		while p < e do
 			if out_end == self.out_next then
 				rc = self:flush_write()
-				if rc < 0 then
+				if rc <= 0 then
 					return rc
 				end
 			end
 			rc		= min(e - p, out_end - self.out_next)
-			C.memcpy(self.out_next, p, rc)
+			copy(self.out_next, p, rc)
 			self.out_next	= self.out_next + rc
 			p		= p + rc
 		end
-		return p - buf
+		if p ~= buf then
+			rc = p - buf
+		end
+		return rc
 	end,
 
 	writef = function(self, fmt, ...)
