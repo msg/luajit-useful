@@ -207,7 +207,7 @@ websocket.server_handshake = function(sock)
 	status:set('Upgrade', 'websocket')
 	status:set('Connection', 'Upgrade')
 	status:set('Sec-WebSocket-Accept', websocket.accept(key))
-	status:set('Sec-WebSocket-Protocol', 'schedulerserverws')
+	status:set('Sec-WebSocket-Protocol', 'websocketserver')
 	status:send_response(101, 'Switching Protocols')
 end
 
@@ -230,7 +230,7 @@ websocket.client_handshake = function(sock, options)
 	status:set('Connection', 'Upgrade')
 	status:set('Sec-WebSocket-Version', '13')
 	status:set('Sec-WebSocket-Key', key)
-	status:set('Sec-WebSocket-Protocol', options.protocol or 'websocket')
+	status:set('Sec-WebSocket-Protocol', options.protocol or 'websocketclient')
 	status:send_request('GET', '/')
 	status:recv()
 
