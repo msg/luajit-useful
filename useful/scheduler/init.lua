@@ -64,6 +64,7 @@ local Thread = Class({
 		self.scheduler	= scheduler_
 		self.thread	= thread
 		self.args	= args
+		self.priority	= 50
 		self.resumes	= 0
 		self.error	= self.default_error
 		self:set(READY)
@@ -230,18 +231,21 @@ local Scheduler = Class({
 		thread.state	= EXIT
 	end,
 
-	collect_runnable = function(self, dt)
-		local runnable	= {}
+	collect_ready = function(self, dt)
+		local ready	= {}
 		for _,thread in pairs(self.threads) do
 			if thread:ready(dt) then
-				insert(runnable, thread)
+				insert(ready, thread)
 			end
 		end
-		return runnable
+		table.sort(ready, function(a, b)
+			return a.priority < b.priority
+		end)
+		return ready
 	end,
 
-	resume_runnable = function(self, runnable)	--luacheck:ignore
-		for _,thread in ipairs(runnable) do
+	resume_ready = function(self, ready)	--luacheck:ignore
+		for _,thread in ipairs(ready) do
 			-- some other thread stopped this one?
 			if thread.state ~= EXIT then
 				thread.state	= RUNNING
@@ -260,8 +264,8 @@ local Scheduler = Class({
 		local dt	= time_dt(current, self.last or current)
 		self.last	= current
 
-		local runnable	= self:collect_runnable(dt)
-		self:resume_runnable(runnable)
+		local ready	= self:collect_ready(dt)
+		self:resume_ready(ready)
 	end,
 
 	has_threads = function(self)
@@ -274,18 +278,21 @@ local Scheduler = Class({
 		end
 	end,
 
-	make_bind = function(self, t)
-		local methods = {
-			'check', 'signal', 'sleep', 'spawn',
-			'thread', 'step', 'stop', 'timed_wait', 'wait', 'yield',
-		}
-		for _,method in ipairs(methods) do
-			t[method] = bind1(self[method], self)
-		end
-		t['scheduler']	= self
-		t['run']	= function()
-			while next(self.threads) do
-				t['step']() -- this function can be modified
+	make_bind = function(self, env)
+		env.check	= bind1(self.check, self)
+		env.signal	= bind1(self.signal, self)
+		env.sleep	= bind1(self.sleep, self)
+		env.spawn	= bind1(self.spawn, self)
+		env.thread	= bind1(self.thread, self)
+		env.step	= bind1(self.step, self)
+		env.stop	= bind1(self.stop, self)
+		env.timed_wait	= bind1(self.timed_wait, self)
+		env.yield	= bind1(self.yield, self)
+		env.has_threads	= bind1(self.has_threads, self)
+		env.scheduler	= self
+		env.run		= function()
+			while env.has_threads() do
+				env.step()
 			end
 		end
 	end,
