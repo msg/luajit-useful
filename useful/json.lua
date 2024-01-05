@@ -118,6 +118,7 @@ local type_func_map = {
   [ "string"  ] = encode_string,
   [ "number"  ] = encode_number,
   [ "boolean" ] = tostring,
+  [ "cdata"   ] = tostring,
 }
 
 
