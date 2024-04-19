@@ -128,7 +128,7 @@ connection.url_read = function(url, options)
 			insert(chunks, chunk.s)
 		until size == 0
 	else
-		local length = tonumber(transaction.response:get('Content-Length','0'))
+		length = tonumber(transaction.response:get('Content-Length','0'))
 		while length > 0 do
 			local s = transaction.response:read(length)
 			length = length - #s
