@@ -83,17 +83,18 @@ connection.url_read = function(url, options)
 	transaction.request:set('Host', options.host)
 	transaction.request:set('User-Agent', options.agent or 'connection.lua')
 	transaction.request:set('Accept', options.accept or '*/*')
+	local connection = 'close'			-- luacheck:ignore
 	if options.keep_alive ~= nil then
 		transaction.request:set('Keep-Alive', options.keep_alive)
-		transaction.request:set('Connection', 'keep-alive')
+		connection = 'keep-alive'
 	end
+	transaction.request:set('Connection', connection)
 	if options.user_password ~= nil then
 		local encoded = base64_encode(options.user_password)
 		transaction.request:set('Authorization', 'Basic '..encoded)
 	end
-	if options.output ~= nil then
-		transaction.request:set('Content-Length', tostring(#options.output))
-	end
+	local length = tostring(#(options.output or {}))
+	transaction.request:set('Content-Length', length)
 	transaction.request:send_request(options.method or 'GET', options.path)
 	if options.output ~= nil then
 		local o = char.from_string(options.output)
