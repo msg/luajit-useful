@@ -78,28 +78,32 @@ connection.url_read = function(url, options)
 	end
 	sock:nonblock()
 
-	local transaction = Transaction(options.max_size or 32768)
+	local transaction	= Transaction(options.max_size or 32768)
 	transaction:setup(sock)
-	transaction.request:set('Host', options.host)
-	transaction.request:set('User-Agent', options.agent or 'connection.lua')
-	transaction.request:set('Accept', options.accept or '*/*')
+	local request		= transaction.requst
+	request:set('Host', options.host)
+	request:set('User-Agent', options.agent or 'connection.lua')
+	request:set('Accept', options.accept or '*/*')
 	local connection = 'close'			-- luacheck:ignore
 	if options.keep_alive ~= nil then
-		transaction.request:set('Keep-Alive', options.keep_alive)
+		request:set('Keep-Alive', options.keep_alive)
 		connection = 'keep-alive'
 	end
-	transaction.request:set('Connection', connection)
+	request:set('Connection', connection)
 	if options.user_password ~= nil then
 		local encoded = base64_encode(options.user_password)
-		transaction.request:set('Authorization', 'Basic '..encoded)
+		request:set('Authorization', 'Basic '..encoded)
 	end
 	local length = tostring(#(options.output or {}))
-	transaction.request:set('Content-Length', length)
-	transaction.request:send_request(options.method or 'GET', options.path)
+	request:set('Content-Length', length)
+	if options.debug == true then
+		options.header = request.header_buf:to_string()
+	end
+	request:send_request(options.method or 'GET', options.path)
 	if options.output ~= nil then
 		local o = char.from_string(options.output)
 		while #o > 0 do
-			local rc = transaction.request:write(o.front, #o)
+			local rc = request:write(o.front, #o)
 			if rc < 0 then
 				error('write error rc='..tonumber(rc)
 					..'errno='..tonumber(ffi.errno()))
@@ -108,29 +112,30 @@ connection.url_read = function(url, options)
 		end
 	end
 
-	transaction.response:recv()
+	local response		= transaction.response
+	response:recv()
 	-- luacheck: push ignore
-	local protocol		= do_status(transaction.response.status)
-	local status,found	= do_status(transaction.response.status)
-	local message		= skip_ws(transaction.response.status)
+	local protocol		= do_status(response.status)
+	local status,found	= do_status(response.status)
+	local message		= skip_ws(response.status)
 	-- luacheck: pop
 
-	local encoding = transaction.response:get('Transfer-Encoding')
+	local encoding = response:get('Transfer-Encoding')
 	local chunks = { }
 	if encoding == 'chunked' then
 		repeat
-			local size = rstrip(transaction.response:read_line())
+			local size = rstrip(response:read_line())
 			size = tonumber(size.s, 16)
-			local chunk = transaction.response:read(size)
-			if transaction.response:read_line().s ~= '\r\n' then
+			local chunk = response:read(size)
+			if response:read_line().s ~= '\r\n' then
 				error('invalid transfer')
 			end
 			insert(chunks, chunk.s)
 		until size == 0
 	else
-		length = tonumber(transaction.response:get('Content-Length','0'))
+		length = tonumber(response:get('Content-Length','0'))
 		while length > 0 do
-			local s = transaction.response:read(length)
+			local s = response:read(length)
 			length = length - #s
 			insert(chunks, s.s)
 		end
