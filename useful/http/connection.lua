@@ -80,7 +80,7 @@ connection.url_read = function(url, options)
 
 	local transaction	= Transaction(options.max_size or 32768)
 	transaction:setup(sock)
-	local request		= transaction.requst
+	local request		= transaction.request
 	request:set('Host', options.host)
 	request:set('User-Agent', options.agent or 'connection.lua')
 	request:set('Accept', options.accept or '*/*')
@@ -97,7 +97,7 @@ connection.url_read = function(url, options)
 	local length = tostring(#(options.output or {}))
 	request:set('Content-Length', length)
 	if options.debug == true then
-		options.header = request.header_buf:to_string()
+		options.header = request.header_buf.avail:to_string()
 	end
 	request:send_request(options.method or 'GET', options.path)
 	if options.output ~= nil then
