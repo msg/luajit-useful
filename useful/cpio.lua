@@ -42,7 +42,7 @@ cpio.END_OF_ARCHIVE	= 'TRAILER!!!'
 
 -- note TYPE_* are in octal
 cpio.TYPE_MASK		= octal(0170000)
-cpio.TYPE_SOCKET	= octal(0120000)
+cpio.TYPE_SOCKET	= octal(0140000)
 cpio.TYPE_SYMLINK	= octal(0120000)
 cpio.TYPE_REGULAR	= octal(0100000)
 cpio.TYPE_BLOCK		= octal(0060000)
