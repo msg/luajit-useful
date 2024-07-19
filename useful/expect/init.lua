@@ -17,7 +17,7 @@ local class	= require('useful.class')
 local  Class	=  class.Class
 local time	= require('useful.time')
 
-local pty	= require('expect.pty')
+local pty	= require('useful.expect.pty')
 
 local function setblocking(fd, blocking)
 	local fl = C.fcntl(fd, C.F_GETFL)
