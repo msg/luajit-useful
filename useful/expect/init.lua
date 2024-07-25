@@ -70,61 +70,65 @@ local function write(fd, data, timeout)
 end
 
 init.Expect = Class({
-	new = function(self, cols, rows, timeout, blocking)
-		self.cols	= cols or 128
-		self.rows	= rows or 64
-		self.timeout	= timeout or -1
+	new = function(self, file, args, options)
+		self.cwd	= options.cwd or '.'
+		self.cols	= options.cols or 80
+		self.rows	= options.rows or 25
+		self.timeout	= options.timeout or 30
+		self.blocking	= options.blocking or true
+		self.log_file	= options.log_file
+		self.env	= {
+			'PATH=/bin:/usr/bin:/usr/sbin:/usr/local/bin',
+		}
+		for _,env in ipairs(options.env or {}) do
+			table.insert(self.env, env)
+		end
 
 		local pty_, err = pty.open(self.cols, self.rows)
 		if not pty_ then
 			return nil, err
 		end
 
-		if blocking == false then
-			local ok
-			ok, err = setblocking(pty_.master, true)
-			if not ok then
-				return nil, err
-			end
-			ok, err = setblocking(pty_.slave, true)
-			if not ok then
-				return nil, err
-			end
+		local ok
+		ok, err = setblocking(pty_.master, self.blocking)
+		if not ok then
+			return nil, err
+		end
+		ok, err = setblocking(pty_.slave, self.blocking)
+		if not ok then
+			return nil, err
 		end
 
-		self.fresh	= false
+		self.fresh	= true
 		self.buffer	= ''
 		self.master	= pty_.master
 		self.slave	= pty_.slave
 		self.name	= pty_.name
-	end,
 
-	spawn = function(self, file, args, cwd)
-		if not self.master then
-			return nil, 'no master'
+		ok, err	= pty.spawn(self.master, self.slave, file, args,
+			self.env, self.cwd, self.cols, self.rows)
+		if not ok then
+			return nil, err
 		end
-		self.fresh = true
-		return pty.spawn(self.master, self.slave, file, args,
-			{ 'PATH=/bin:/usr/bin:/usr/sbin:/usr/local/bin' },
-			cwd, self.cols, self.rows)
 	end,
 
 	expect = function(self, pattern, timeout, plain)
 		if not self.fresh then
-			return find(self.buf, pattern, 1, plain), self.buf
+			return find(self.buffer, pattern, 1, plain), self.buffer
 		end
 
-		self.buf = ''
-		local try = (timeout or 1) / 0.1
-
+		self.buffer = ''
+		local try = (timeout or self.timeout) / 0.1
 		while try > 0 do
 			local data, err = self:read(4096, 0.1)
 			if data then
-				--io.write(data)
-				self.buf = self.buf..data
-				local s, _ = find(self.buf, pattern, 1, plain)
+				if self.log_file then
+					self.log_file:write('< '..data)
+				end
+				self.buffer = self.buffer..data
+				local s, _ = find(self.buffer, pattern, 1, plain)
 				if s then
-					return s, self.buf
+					return s, self.buffer
 				end
 			elseif err == 'timeout' then
 				try = try - 1
@@ -135,10 +139,13 @@ init.Expect = Class({
 
 		self.fresh = false
 
-		return find(self.buf, pattern, 1, plain), self.buf
+		return find(self.buffer, pattern, 1, plain), self.buffer
 	end,
 
 	sendline = function(self, line)
+		if self.log_file then
+			self.log_file:write('> '..line)
+		end
 		return self:write(line..'\r')
 	end,
 
