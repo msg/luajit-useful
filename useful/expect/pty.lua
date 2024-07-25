@@ -4,20 +4,22 @@
 --
 local pty = { }
 
-local ffi	= require('ffi')
-local  C	=  ffi.C
-local  cast	=  ffi.cast
-local  fstring	=  ffi.string
-local  new	=  ffi.new
-local  sizeof	=  ffi.sizeof
-local bit	= require('bit')
+local ffi		= require('ffi')
+local  C		=  ffi.C
+local  cast		=  ffi.cast
+local  fstring		=  ffi.string
+local  new		=  ffi.new
+local  sizeof		=  ffi.sizeof
+local bit		= require('bit')
+local  band		=  bit.band
+local  bnot		=  bit.bnot
+local  bor		=  bit.bor
 
-local lpty	= require('linux.pty')
-		  require('posix.fcntl')
-		  require('posix.stdio')
-		  require('posix.stdlib')
-		  require('posix.termios')
-		  require('posix.unistd')
+local lpty		= require('linux.pty')
+			  require('posix.fcntl')
+			  require('posix.stdio')
+			  require('posix.termios')
+			  require('posix.unistd')
 
 ffi.cdef [[
 char **environ;
@@ -62,7 +64,7 @@ local pty_login_tty = function(slave_fd)
 	return 0
 end
 
-local pty_fork = function(master, slave, amaster)
+local pty_fork = function(master, slave)
 	local pid = C.fork()
 	if pid == -1 then
 		C.close(master)
@@ -76,21 +78,24 @@ local pty_fork = function(master, slave, amaster)
 		end
 		return 0
 	else -- parent
-		amaster[0] = master
 		return pid
 	end
 end
 
 pty.spawn = function(master, slave, file, args, env, cwd, cols, rows)
-	local argc	= table.getn(args)
-	local argv	= cast('char **', C.calloc(argc + 2, sizeof('char *')))
+	local argc	= #args
+	local argv	= new('char *[?]', argc + 2)
 	argv[0]		= cast('char *', file)
 	argv[argc+1]	= cast('char *', nil)
-	for i=1,argc do argv[i] = cast('char *', args[i]) end
+	for i=1,argc do
+		argv[i] = cast('char *', args[i])
+	end
 
-	local envc	= table.getn(env)
-	local envp	= cast('char **', C.calloc(envc + 1, sizeof('char *')))
-	for i=1,envc do envp[i-1] = cast('char *', env[i]) end
+	local envc	= #env
+	local envp	= new('char *[?]', envc + 1)
+	for i=1,envc do
+		envp[i-1] = cast('char *', env[i])
+	end
 
 	local winp		= new('struct winsize[1]')
 	winp[0].ws_xpixel	= 0
@@ -98,14 +103,7 @@ pty.spawn = function(master, slave, file, args, env, cwd, cols, rows)
 	winp[0].ws_col		= cols
 	winp[0].ws_row		= rows
 
-	local amaster		= new('int[1]')
-	local pid = pty_fork(master, slave, amaster)
-
-	if pid ~= 0 then
-		C.free(argv)
-		C.free(envp)
-	end
-
+	local pid = pty_fork(master, slave)
 	if pid == -1 then
 		return nil, 'forkpty failed'
 	elseif pid == 0 then
@@ -148,13 +146,17 @@ pty.open = function(cols, rows)
 	}
 end
 
-pty.turn_echoing_off = function()
+pty.echoing = function(enable, stdin_fd)
 	local tp = new('struct termios[1]')
-	if C.tcgetattr(C.STDIN_FILENO, tp) < 0 then
+	if C.tcgetattr(stdin_fd or C.STDIN_FILENO, tp) < 0 then
 		return nil, 'tcgetattr failed'
 	end
-	tp[0].c_lflag = bit.band(tp[0].c_lflag, bit.bnot(C.ECHO))
-	if C.tcsetattr(C.STDIN_FIOLENO, C.TCSAFLUSH, tp) < 0 then
+	if enable == false then
+		tp[0].c_lflag = band(tp[0].c_lflag, bnot(C.ECHO))
+	else
+		tp[0].c_lflag = bor(tp[0].c_lflag, C.ECHO)
+	end
+	if C.tcsetattr(stdin_fd or C.STDIN_FIOLENO, C.TCSAFLUSH, tp) < 0 then
 		return nil, 'tcsetattr failed'
 	end
 	return true
