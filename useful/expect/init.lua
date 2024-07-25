@@ -71,6 +71,7 @@ end
 
 init.Expect = Class({
 	new = function(self, file, args, options)
+		options		= options or {}
 		self.cwd	= options.cwd or '.'
 		self.cols	= options.cols or 80
 		self.rows	= options.rows or 25
