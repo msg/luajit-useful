@@ -223,10 +223,10 @@ end
 filesystem.currentdir = function()
 	local buf = new('char[4096]')
 	local rc = C.getcwd(buf, 4096)
-	if rc < 0 then
+	if rc == nil then
 		error(errno_string())
 	end
-	return rc
+	return fstring(rc)
 end
 
 filesystem.link = function(old, new_, symlink)
