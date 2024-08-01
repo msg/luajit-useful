@@ -8,7 +8,7 @@ local class		= require('useful.class')
 local  Class		=  class.Class
 local protect_		= require('useful.protect')
 local  protect		=  protect_.protect
-local  try1		=  protect_.try1
+local  throw1		=  protect_.throw1
 local range		= require('useful.range')
 local  uint8		=  range.uint8
 local  uint16		=  range.uint16
@@ -88,11 +88,11 @@ msgpack.Buffer = Class({
 
 	recv = function(self)
 		local buffer	= self.buffer
-		local r8	= try1(buffer:read(HEADER_SIZE))
-		local length	= try1(decode_header(r8))
-		r8		= try1(buffer:read(length))
+		local r8	= throw1(buffer:read(HEADER_SIZE))
+		local length	= throw1(decode_header(r8))
+		r8		= throw1(buffer:read(length))
 		buffer:flush()
-		return		  try1(decode_payload(r8, length))
+		return		  throw1(decode_payload(r8, length))
 	end,
 
 	recv_p = protect(function(self, ...)
@@ -102,7 +102,7 @@ msgpack.Buffer = Class({
 	send = function(self, msg)
 		local buffer	= self.buffer
 		buffer:flush()
-		local r8	= try1(encode_message(msg, buffer.free))
+		local r8	= throw1(encode_message(msg, buffer.free))
 		buffer:pop_insert(#r8)
 		return		  buffer:flush_write()
 	end,

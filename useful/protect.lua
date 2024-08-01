@@ -25,35 +25,35 @@ protect.traceback_error	= function(message, level)
 end
 protect.error		= protect.default_error
 
-local try = function(ok, err, ...)
+local throw = function(ok, err, ...)
 	if not ok then
 		protect.error(err, 2) -- non-localized so it can be changed
 	else
 		return err, ...
 	end
 end
-protect.try = try
+protect.throw = throw
 
-local try1 = function(v, err, ...)
+local throw1 = function(v, err, ...)
 	if not v then
 		protect.error(err, 2) -- non-localized so it can be changed
 	else
 		return v, err, ...
 	end
 end
-protect.try1 = try1
+protect.throw1 = throw1
 
 protect.unprotect = function(func)
 	assert(type(func) == 'function')
 	return function(...)
-		return try(func(...))
+		return throw(func(...))
 	end
 end
 
 protect.unprotect1 = function(func)
 	assert(type(func) == 'function')
 	return function(...)
-		return try1(func(...))
+		return throw1(func(...))
 	end
 end
 

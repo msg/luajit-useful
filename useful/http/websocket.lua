@@ -19,7 +19,7 @@ local  rshift		=  bit.rshift
 local status_		= require('useful.http.status')
 local  Status		=  status_.Status
 local protect		= require('useful.protect')
-local  try1		=  protect.try1
+local  throw1		=  protect.throw1
 local range		= require('useful.range')
 local  char		=  range.char
 local base64		= require('useful.range.base64')
@@ -73,7 +73,7 @@ websocket.close	= close
 websocket.FIN		= 0x80
 
 local recv_data = function(sock, i8, nbytes)
-	return try1(sock:recv_all(i8.front, nbytes))
+	return throw1(sock:recv_all(i8.front, nbytes))
 end
 
 local xor = function(o8, len, mask)
