@@ -55,8 +55,9 @@ function range.range_type(declaration)
 	-- input range api
 	function rmt.empty(self) return self.front >= self.back end
 	function rmt.pop_front(self, n)
-		assert(self.front < self.back, 'out of range')
-		self.front = self.front + (n or 1)
+		n = n or 1
+		assert(self.front + n <= self.back, 'out of range')
+		self.front = self.front + n
 	end
 	function rmt.get_front(self)
 		assert(self.front < self.back, 'out of range')
@@ -84,8 +85,9 @@ function range.range_type(declaration)
 	end
 	-- bi-directional range api
 	function rmt.pop_back(self, n)
-		self.back = self.back - (n or 1)
-		assert(self.front < self.back, 'out of range')
+		n = n or 1
+		assert(self.front + n <= self.back, 'out of range')
+		self.back = self.back - n
 	end
 	function rmt.get_back(self)
 		assert(self.front < self.back, 'out of range')
