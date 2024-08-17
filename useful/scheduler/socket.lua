@@ -185,7 +185,7 @@ local TCP = Class(socket_TCP, Socket, {
 		local from	= new('struct sockaddr_in[1]')
 		local fromp	= cast('struct sockaddr *', from)
 		local size	= new('socklen_t[1]', sizeof(from))
-		local fd = C.accept(self.fd, fromp, size)
+		local fd	= C.accept(self.fd, fromp, size)
 		if fd < 0 then
 			return nil, errno_message()
 		else
@@ -288,7 +288,7 @@ socket.TCPServer = Class({
 	accept = function(self, client_func, fd, id, addr)	--luacheck:ignore
 		local sock	= TCP(fd)
 		sock.addr	= addr
-		spawn(client_func, sock, id)
+		spawn(client_func, sock, id, addr)
 	end,
 
 	idle = function(self)				--luacheck:ignore
