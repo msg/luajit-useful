@@ -3,22 +3,12 @@
 --
 local mime = { }
 
-local function open_file(name)
-	for entry in package.path:gmatch('[^;]+') do
-		entry = entry:gsub('%?.*$', name)
-		local f = io.open(entry)
-		if f ~= nil then
-			return f
-		end
-	end
-end
-
-local info	= debug.getinfo(open_file)
+local info	= debug.getinfo(function() end)
 local mime_file	= info.short_src:sub(1,-5)..'.types'
 
-local f		= open_file(mime_file)
+local f		= io.open(mime_file)
 if f == nil then
-	error('http/mime.types not found')
+	error(mime_file..' not found')
 end
 mime.exts	= { }
 for line in f:lines() do
