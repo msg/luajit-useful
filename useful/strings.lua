@@ -206,7 +206,6 @@ function strings.expand(s, ...)
 	local mt = _G
 	if type(env.args[1]) == 'table' then
 		mt = table.remove(env.args, 1)
-		setmetatable(mt, { __index = _G })
 	end
 	setmetatable(env, { __index = mt })
 	local do_eval = function(expr)
