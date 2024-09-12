@@ -7,6 +7,7 @@ function class.Class(...)
 	local class = { } -- luacheck: ignore
 
 	class.__index	= class
+	class._is_a	= { [class] = true }
 
 	local bases = {...}
 	for i, base in ipairs(bases) do
@@ -20,10 +21,6 @@ function class.Class(...)
 				class[k] = v
 			end
 		end
-	end
-
-	class._is_a = { [class] = true }
-	for _, base in ipairs(bases) do
 		if base._is_a ~= nil then
 			for c in pairs(base._is_a) do
 				class._is_a[c] = true
