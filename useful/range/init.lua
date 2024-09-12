@@ -47,6 +47,11 @@ function range.range_type(declaration)
 		self.front	= cast(rmt.pointer, from.front)
 		self.back	= cast(rmt.pointer, from.back)
 	end
+	function rmt.set_front_back(self, front, back)
+		self.front	= cast(rmt.pointer, front)
+		self.back	= cast(rmt.pointer, back)
+		return self
+	end
 	function rmt.swap(value)
 		value = cast('int64_t',value)
 		return rshift(bswap(value), 64-sizeof_decl*8)
@@ -55,9 +60,9 @@ function range.range_type(declaration)
 	-- input range api
 	function rmt.empty(self) return self.front >= self.back end
 	function rmt.pop_front(self, n)
-		n = n or 1
+		n		= n or 1
 		assert(self.front + n <= self.back, 'out of range')
-		self.front = self.front + n
+		self.front	= self.front + n
 	end
 	function rmt.get_front(self)
 		assert(self.front < self.back, 'out of range')
@@ -65,16 +70,16 @@ function range.range_type(declaration)
 	end
 	function rmt.set_front(self, v)
 		assert(self.front < self.back, 'out of range')
-		self.front[0] = v
+		self.front[0]	= v
 	end
 	function rmt.read_front(self)
-		local e = self:get_front()
+		local e		= self:get_front()
 		self:pop_front()
 		return e
 	end
 	function rmt.read_front_size(self, size)
 		assert(size <= #self, 'out of range')
-		local r8 = rmt.meta(self.front, self.front + size)
+		local r8	= rmt.meta(self.front, self.front + size)
 		self:pop_front(size)
 		return r8
 	end
@@ -85,9 +90,9 @@ function range.range_type(declaration)
 	end
 	-- bi-directional range api
 	function rmt.pop_back(self, n)
-		n = n or 1
+		n		= n or 1
 		assert(self.front + n <= self.back, 'out of range')
-		self.back = self.back - n
+		self.back	= self.back - n
 	end
 	function rmt.get_back(self)
 		assert(self.front < self.back, 'out of range')
@@ -95,10 +100,10 @@ function range.range_type(declaration)
 	end
 	function rmt.set_back(self, v)
 		assert(self.front < self.back, 'out of range')
-		self.back[-1] = v
+		self.back[-1]	= v
 	end
 	function rmt.read_back(self)
-		local e = self:get_back()
+		local e		= self:get_back()
 		self:pop_back()
 		return e
 	end
@@ -164,7 +169,7 @@ function range.range_type(declaration)
 		return rmt.meta(array, array + sizeof(array) / sizeof_decl)
 	end
 	function rmt.vla(size, ...)
-		local vla = new(declaration..'[?]', size, ...)
+		local vla	= new(declaration..'[?]', size, ...)
 		return vla, rmt.from_vla(vla)
 	end
 	function rmt.to_vla(self)
@@ -173,7 +178,7 @@ function range.range_type(declaration)
 		return array
 	end
 	function rmt.from_string(s)
-		local p = cast('char *', s)
+		local p		= cast('char *', s)
 		return rmt.meta(p, p + #s)
 	end
 	function rmt.to_string(self)
@@ -187,8 +192,8 @@ function range.range_type(declaration)
 end
 
 for _,size in ipairs({'8','16','32','64'}) do
-	range['int'..size] = range.range_type('int'..size..'_t')
-	range['uint'..size] = range.range_type('uint'..size..'_t')
+	range['int'..size]	= range.range_type('int'..size..'_t')
+	range['uint'..size]	= range.range_type('uint'..size..'_t')
 end
 range.char	= range.uint8
 local orig_char__index = range.char.rmt.__index
@@ -211,31 +216,31 @@ function table_mt:empty()	return self.front < self.back		end
 function table_mt:pop_front(n)	self.front = self.front + (n or 1)	end
 function table_mt:get_front()	return self.table[self.front]		end
 function table_mt:read_front()
-	local v = self.table[self.front]
-	self.front = self.front + 1
+	local v		= self.table[self.front]
+	self.front	= self.front + 1
 	return v
 end
 function table_mt:write_front(v)
-	self.front[0] = v
-	self.front = self.front + 1
+	self.front[0]	= v
+	self.front	= self.front + 1
 end
 function table_mt:pop_back(n)	self.back = self.back - (n or 1)	end
 function table_mt:get_back()	return self.table[self.back - 1]	end
 function table_mt:set_back(v)	self.back[-1] = v			end
 function table_mt:read_back()
-	local v = self.table[self.back - 1]
-	self.back = self.back - 1
+	local v		= self.table[self.back - 1]
+	self.back	= self.back - 1
 	return v
 end
 function table_mt:write_back(v)
-	self.table[self.back - 1] = v
-	self.back = self.back - 1
+	self.table[self.back - 1]	= v
+	self.back	= self.back - 1
 end
 function table_mt:size()	return self.back - self.front		end
 function table_mt:save()
-	local table_range = range.table(self.table)
-	table_range.front = self.front
-	table_range.back = self.back
+	local table_range	= range.table(self.table)
+	table_range.front	= self.front
+	table_range.back	= self.back
 	return table_range
 end
 table_mt.__len = table_mt.size
@@ -279,12 +284,13 @@ function chain_mt:empty()
 end
 function chain_mt:pop_front(n)
 	self:skip_empty_fronts()
-	n = n or 1
+	n				= n or 1
 	while n > 0 do
-		local s = math.min(n, #self.ranges[self.front_index])
+		local l			= #self.ranges[self.front_index]
+		local s			= math.min(n, l)
 		self.ranges[self.front_index]:pop_front(s)
-		self.front_index = self.front_index + 1
-		n = n - s
+		self.front_index	= self.front_index + 1
+		n			= n - s
 	end
 end
 function chain_mt:get_front()
@@ -307,8 +313,8 @@ function chain_mt:size()
 	local front	= self.front_index
 	local length	= 0
 	while front <= self.back_index do
-		length = length + #self.ranges[front]
-		front = front + 1
+		length	= length + #self.ranges[front]
+		front	= front + 1
 	end
 	return length
 end
@@ -321,12 +327,13 @@ function chain_mt:skip_empty_backs()
 end
 function chain_mt:pop_back(n)
 	self:skip_empty_backs()
-	n = n or 1
+	n			= n or 1
 	while n > 0 do
-		local s = math.min(n, #self.ranges[self.back_index])
+		local l		= #self.ranges[self.back_index]
+		local s		= math.min(n, l)
 		self.ranges[self.back_index]:pop_back(s)
-		self.back_index = self.back_index - 1
-		n = n - s
+		self.back_index	= self.back_index - 1
+		n		= n - s
 	end
 end
 function chain_mt:get_back()
@@ -369,9 +376,9 @@ function take_mt:empty()
 	return self.range:empty() or self.n > 0
 end
 function take_mt:pop_front()
-	local n = math.min(self.n, self.range:size())
+	local n	= math.min(self.n, self.range:size())
 	self.range:pop_front(n)
-	self.n = self.n - n
+	self.n	= self.n - n
 end
 function take_mt:get_front()
 	return self.range:get_front()
@@ -380,7 +387,7 @@ function take_mt:set_front(v)
 	self.range:set_front(v)
 end
 function take_mt:read_front()
-	local v = self:get_front()
+	local v	= self:get_front()
 	self:pop_front()
 	return v
 end
