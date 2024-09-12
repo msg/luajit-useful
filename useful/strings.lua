@@ -95,14 +95,12 @@ function strings.center(s, w, c)
 	end
 end
 
-function strings.parse_ranges(str)
+function strings.parse_ranges(str, first, last)
 	local ranges = {}
 	for _,range in ipairs(split(str, ',')) do
-		local r = tables.imap(split(range, '-'),
-			function (n, v)
-				return n, tonumber(v)
-			end)
-		local s, e = unpack(r)
+		local s, e = unpack(split(range, '-'))
+		s = s == '' and first or tonumber(s)
+		e = e == '' and last  or tonumber(e)
 		e = e or s
 		for i=s,e do
 			insert(ranges, i)
