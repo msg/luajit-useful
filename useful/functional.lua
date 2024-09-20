@@ -63,6 +63,14 @@ function functional.take2(func)
 	end
 end
 
+function functional.taken(func, n)
+	func = function_arg(func)
+	return function(...)
+		local results = { func(...) }
+		return results[n]
+	end
+end
+
 function functional.compose(...)
 	local funcs = { }
 	for _,func in pairs({...}) do
