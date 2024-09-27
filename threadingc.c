@@ -154,7 +154,7 @@ static void push_function(lua_State *to_lua, lua_State *from_lua, int index) {
 	int rc;
 	int n;
 
-	lua_pushvalue(from_lua, index);
+	lua_pushvalue(from_lua, index); // push function to top	// [-0 +1 m]
 	n = lua_gettop(from_lua);
 	luaL_buffinit(from_lua, cm->buf);
 	rc = lua_dump(from_lua, chunk_writer, cm);		// [-0 +0 m]
@@ -190,6 +190,9 @@ static void push_value(lua_State *to_lua, lua_State *from_lua,
 		lua_pushlstring(to_lua, p, size);		// [-0 +0 m]
 		break;
 	}
+	case LUA_TFUNCTION:
+		push_function(to_lua, from_lua, index);
+		break;
 	case LUA_TTABLE:
 		push_table(to_lua, from_lua, index, err_lua);	// [-? +? e]
 		break;
