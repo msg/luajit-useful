@@ -129,6 +129,47 @@ static void push_table(lua_State *to_lua, lua_State *from_lua,
 	// from_lua [-0 +0 e], to_lua [-0 +1 e]
 }
 
+typedef struct chunk_move {
+	luaL_Buffer buf[1];
+	const char *chunk;
+	size_t size;
+} chunk_move;
+
+static int chunk_writer(lua_State *lua, const void *p, size_t sz, void *ud) {
+	(void)lua;
+	chunk_move *cm = (chunk_move *)ud;
+	luaL_addlstring(cm->buf, p, sz);			// [-0 +0 m]
+	return 0;
+}
+
+static const char *chunk_reader(lua_State *lua, void *ud, size_t *size) {
+	(void)lua;
+	chunk_move *cm	= (chunk_move *)ud;
+	*size		= cm->size;
+	return cm->chunk;
+}
+
+static void push_function(lua_State *to_lua, lua_State *from_lua, int index) {
+	chunk_move cm[1];
+	int rc;
+	int n;
+
+	lua_pushvalue(from_lua, index); // push function to top	// [-0 +1 m]
+	n = lua_gettop(from_lua);
+	luaL_buffinit(from_lua, cm->buf);
+	rc = lua_dump(from_lua, chunk_writer, cm);		// [-0 +0 m]
+	lua_remove(from_lua, n); // remove function on the top
+	if (rc != 0)
+		luaL_error(from_lua, "unable to dump function: %d",
+			lua_tostring(from_lua, -1));
+	luaL_pushresult(cm->buf);				// [1 +1 m]
+	cm->chunk = luaL_checklstring(from_lua, -1, &cm->size);	// [-0 +0 m]
+
+	lua_load(to_lua, chunk_reader, cm, "push_function");
+
+	lua_pop(from_lua, 1); // remove buffer
+}
+
 static void push_value(lua_State *to_lua, lua_State *from_lua,
 		int index, lua_State *err_lua) {
 	int type = lua_type(from_lua, index);
@@ -149,6 +190,9 @@ static void push_value(lua_State *to_lua, lua_State *from_lua,
 		lua_pushlstring(to_lua, p, size);		// [-0 +0 m]
 		break;
 	}
+	case LUA_TFUNCTION:
+		push_function(to_lua, from_lua, index);
+		break;
 	case LUA_TTABLE:
 		push_table(to_lua, from_lua, index, err_lua);	// [-? +? e]
 		break;
@@ -173,47 +217,6 @@ static int push_stack(lua_State *to_lua, lua_State *from_lua,
 	}
 	// from_lua [-0 +0 e], to_lua [-0 +(n-start+1) e]
 	return n - start + 1;
-}
-
-typedef struct chunk_move {
-	luaL_Buffer buf[1];
-	const char *chunk;
-	size_t size;
-} chunk_move;
-
-static int chunk_writer(lua_State *lua, const void *p, size_t sz, void *ud) {
-	(void)lua;
-	chunk_move *cm = (chunk_move *)ud;
-	luaL_addlstring(cm->buf, p, sz);			// [-0 +0 m]
-	return 0;
-}
-
-static const char *chunk_reader(lua_State *lua, void *ud, size_t *size) {
-	(void)lua;
-	chunk_move *cm	= (chunk_move *)ud;
-	*size		= cm->size;
-	return cm->chunk;
-}
-
-static void load_code(lua_State *to_lua, lua_State *from_lua) {
-	chunk_move cm[1];
-	int rc;
-	int n;
-
-	lua_pushvalue(from_lua, 1); // push function on the top	// [-0 +1 m]
-	n = lua_gettop(from_lua);
-	luaL_buffinit(from_lua, cm->buf);
-	rc = lua_dump(from_lua, chunk_writer, cm);		// [-0 +0 m]
-	lua_remove(from_lua, n); // remove function on the top
-	if (rc != 0)
-		luaL_error(from_lua, "unable to dump function: %d",
-			lua_tostring(from_lua, -1));
-	luaL_pushresult(cm->buf);				// [1 +1 m]
-	cm->chunk = luaL_checklstring(from_lua, -1, &cm->size);	// [-0 +0 m]
-
-	lua_load(to_lua, chunk_reader, cm, "load_code");
-
-	lua_pop(from_lua, 1); // remove buffer
 }
 
 static void add_traceback(lua_State *lua) {
@@ -254,7 +257,7 @@ static int start_(lua_State *lua) {
 
 	lua_cpcall(new_lua, MODULE, NULL);
 
-	load_code(new_lua, lua);				// [-0 +1 e]
+	push_function(new_lua, lua, 1);				// [-0 +1 e]
 
 	push_stack(new_lua, lua, 2, lua);			// [-0 +? e]
 
@@ -294,7 +297,7 @@ static int exec_(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);		// [-0 +0 e]
 	int rc, n = lua_gettop(lua);
 
-	load_code(man->lua, lua);				// [-0 +1 m]
+	push_function(man->lua, lua, 1);				// [-0 +1 m]
 
 	if ((n = push_stack(man->lua, lua, 2, lua)) < 0)	// [-0 +0 e]
 		lua_error(lua);
