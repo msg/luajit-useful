@@ -641,12 +641,18 @@ local put_table = function(to_lua, tbl)
 	end
 end
 
+local put_function = function(to_lua, func)
+	local v = string.dump(func)
+	C.luaL_loadbuffer(to_lua, v, #v, "put_function")
+end
+
 local put_values = {
 	['nil']	= function(to_lua) C.lua_pushnil(to_lua) end,
+	['function'] = put_function(to_lua, v),
 	boolean	= function(to_lua, v) C.lua_pushboolen(to_lua, v) end,
 	string	= function(to_lua, v) C.lua_pushlstring(to_lua, v, #v) end,
 	number	= function(to_lua, v) C.lua_pushnumber(to_lua, v) end,
-	table	= function(to_lua, v) put_table(to_lua, v) end,
+	table	= put_table(to_lua, v),
 	userdata = function(to_lua, v) C.lua_pushlightuserdata(to_lua, v) end,
 }
 
