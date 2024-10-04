@@ -154,7 +154,7 @@ function strings.binary_to_hex(s, sep)
 	return concat(out)
 end
 
-function strings.hexdump(bytes, addr)
+local function hexdump_lines(bytes, addr)
 	local function hex_data(bytes, at_most) -- luacheck:ignore
 		local hex = { }
 		at_most = at_most or 16
@@ -188,7 +188,12 @@ function strings.hexdump(bytes, addr)
 			char_data(bytes:sub(off,off+16-1)))
 		insert(lines, line)
 	end
-	return concat(lines, '\n')
+	return lines
+end
+strings.hexdump_lines = hexdump_lines
+
+function strings.hexdump(bytes, addr)
+	return concat(hexdump_lines(bytes, addr), '\n')
 end
 
 function strings.serialize(t, indent, sp, nl, visited)
