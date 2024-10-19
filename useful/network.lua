@@ -3,17 +3,26 @@
 --
 local network = { }
 
-local  sprintf	=  string.format
+local  sprintf		=  string.format
 
-local bit	= require('bit')
-local  band	=  bit.band
-local  bnot	=  bit.bnot
-local  bor	=  bit.bor
-local  lshift	=  bit.lshift
+local ffi		= require('ffi')
+local  C		=  ffi.C
+local  cast		=  ffi.cast
+local  copy		=  ffi.copy
+local  fstring		=  ffi.string
+local  new		=  ffi.new
+local  sizeof		=  ffi.sizeof
+local bit		= require('bit')
+local  band		=  bit.band
+local  bor		=  bit.bor
+local  lshift		=  bit.lshift
 
-local bits	= require('useful.bits')
-local  getbits	=  bits.getbits
-local json	= require('useful.json')
+local bits		= require('useful.bits')
+local  getbits		=  bits.getbits
+local json		= require('useful.json')
+local system		= require('useful.system')
+local  errno_string	=  system.errno_string
+
 
 local iptos = function(ip)
 	local octets = { }
@@ -66,22 +75,49 @@ local interfaces = function()
 end
 network.interfaces = interfaces
 
+local assertrc = function(r, msg)
+	if r < 0 then
+		error(msg..':'..errno_string())
+	end
+end
 local addresses = function()
-	local addresses = { }
-	for _,entry in ipairs(interfaces()) do
-		local info	= entry.addr_info[1]
-		if info then
-			local addr	= info['local']
-			local nm	= bnot(lshift(1,32-info.prefixlen)-1)
-			local mac	= stomac(entry.address)
-			local interface = {
-				ifname	= entry.ifname,
-				ip	= addr,
-				nm	= iptos(nm),
-				mac	= mactos(mac),
-			}
-			table.insert(addresses, interface)
+	local addresses	= { }
+	local s		= C.socket(C.AF_INET, C.SOCK_DGRAM, 0)
+	assertrc(s, 'socket')
+	local ifca	= new('struct ifconf[1]')
+	local ifc	= ifca + 0
+	local len	= 2048
+	local buf	= new('char[?]', len)
+	ifc.ifc_len	= len
+	ifc.ifcu_buf	= buf
+	local ifra	= new('struct ifreq[1]')
+	local ifr	= ifra + 0
+
+	local r = C.ioctl(s, C.SIOCGIFCONF, ifc)
+	assertrc(r, 'ioctl SIOCGIFCONF')
+	local ifre	= cast('struct ifreq *', ifc.ifcu_buf + ifc.ifc_len)
+	local ifrp	= cast('struct ifreq *', ifc.ifcu_buf)
+	while ifrp < ifre do
+		local inaddr = cast('struct sockaddr_in *', ifrp.ifr_addr)
+		local address = {
+			ifname	= fstring(ifrp.ifr_name),
+			ip	= fstring(C.inet_ntoa(inaddr.sin_addr)),
+		}
+		copy(ifr.ifr_name, ifrp.ifr_name, sizeof(ifr.ifr_name));
+		inaddr	= cast('struct sockaddr_in *', ifr.ifr_netmask)
+		r = C.ioctl(s, C.SIOCGIFNETMASK, ifr)
+		assertrc(r, 'ioctl SIOCFGNETMASK')
+		address.nm	= fstring(C.inet_ntoa(inaddr.sin_addr))
+		r = C.ioctl(s, C.SIOCGIFHWADDR, ifr)
+		assertrc(r, 'ioctl SIOCGIFHWADDR')
+		local mac = ''
+		for i=0,5 do
+			local c = i == 0 and '' or ':'
+			mac = mac..sprintf("%s%02x", c, band(ifr.ifr_hwaddr.sa_data[i], 0xff))
 		end
+		address.mac = mac
+		table.insert(addresses, address)
+		ifrp = ifrp + 1
 	end
 	return addresses
 end
