@@ -27,11 +27,8 @@ local stat		= require('posix.sys.stat')
 local  unpack		=  table.unpack			-- luacheck:ignore
 local path_		= require('useful.path')
 local  split_path	=  path_.split_path
-
-local function errno_string(err)
-	err = err or errno()
-	return tostring(err)..' '..fstring(C.strerror(err))
-end
+local system		= require('useful.system')
+local  errno_string	=  system.errno_string
 
 local function to_permissions(st)
 	local all_permissions = 'xwr'--'rwxrwxrwx'
@@ -203,6 +200,7 @@ end
 
 filesystem.list = function(path)
 	local list = { }
+	assert(path ~= nil)
 	for name in filesystem.dir(path) do
 		if name ~= '.' and name ~= '..' then
 			insert(list, name)

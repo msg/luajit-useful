@@ -36,12 +36,12 @@ local class		= require('useful.class')
 local  Class		=  class.Class
 local stdio		= require('useful.stdio')
 local  sprintf		=  stdio.sprintf
+local system		= require('useful.system')
+local  errno_string_	=  system.errno_string
 
 local errno_string = function(call)
-	local err = errno()
-	return sprintf("%s: %d %s\n", call, err, fstring(C.strerror(err)))
+	return call..': '..errno_string_()
 end
-
 socket.errno_string = errno_string
 
 local function getaddrinfo(host, port, protocol)
