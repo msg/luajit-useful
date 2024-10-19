@@ -29,6 +29,8 @@ local  socket_Socket	=  socket_.Socket
 local  socket_TCP	=  socket_.TCP
 local  socket_UDP	=  socket_.UDP
 local  close		=  socket_TCP.close
+local system		= require('useful.system')
+local  errno_string	=  system.errno_string
 local time		= require('useful.time')
 local  now		=  time.now
 
@@ -39,7 +41,7 @@ local errno_message = function(e)
 	elseif e == C.EBADF then
 		return 'closed'
 	else
-		return tostring(e)..' '..fstring(C.strerror(e))
+		return errno_string(e)
 	end
 end
 socket.errno_message = errno_message

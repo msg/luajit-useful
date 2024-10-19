@@ -3,16 +3,13 @@
 --
 local protect = { }
 
-local ffi	= require('ffi')
-local  C	=  ffi.C
-local  errno	=  ffi.errno
-local  fstring	=  ffi.string
-
 		  require('posix.string')
 
 		  require('useful.compatible')
 local  pack	=  table.pack				-- luacheck:ignore
 local  unpack	=  table.unpack				-- luacheck:ignore
+local system		= require('useful.system')
+local  errno_string_	=  system.errno_string
 
 local function pack_ok(ok, ...)
 	return ok, pack(...)
@@ -81,9 +78,7 @@ protect.protect1 = function(func)
 	end
 end
 
-local default_errno_string = function(err)
-	return fstring(C.strerror(err))
-end
+local default_errno_string = errno_string_
 protect.errno_string = default_errno_string
 
 protect.protect_s = function(func, errno_string)
@@ -92,7 +87,7 @@ protect.protect_s = function(func, errno_string)
 	return function(...)
 		local rc, args = pack_ok(func(...))
 		if rc < 0 then
-			return nil, errno_string(errno())
+			return nil, errno_string()
 		else
 			return rc, unpack(args)
 		end
