@@ -203,7 +203,7 @@ static void push_value(lua_State *to_lua, lua_State *from_lua,
 	}
 	default:
 		luaL_error(from_lua, "only nil, booleans, numbers, "
-				"strings and non-recurive tables "
+				"strings, functions and non-recurive tables "
 				"supported got type %d", type);	// [-0 +1 m]
 	}
 	// from_lua [-0 +0 e], to_lua [-0 +1 e]
