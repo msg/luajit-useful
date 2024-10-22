@@ -275,8 +275,8 @@ filesystem.mkdirp = function(path, permissions)
 end
 
 local ftw
-ftw = function(path, func)
-	local attributes_ = filesystem.symlinkattributes
+ftw = function(path, func, attributes_)
+	attributes_ = attributes_ or filesystem.symlinkattributes
 	for entry in filesystem.dir(path) do
 		if entry ~= '.' and entry ~= '..' then
 			local entry_path = path .. '/' .. entry
