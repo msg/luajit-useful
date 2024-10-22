@@ -26,14 +26,5 @@ build() {
 package() {
 	cd $startdir
 
-	lmod="$pkgdir$(pkg-config --variable=INSTALL_LMOD luajit)"
-	for i in $(find useful -name '*.lua' -type f); do
-		install -D -m644 "$i" "$lmod/$i"
-	done
-	install -D -m644 useful/http/mime.types "$lmod/useful/http/mime.types"
-
-	cmod="$pkgdir$(pkg-config --variable=INSTALL_CMOD luajit)"
-	for i in $(find useful -name '*.so' -type f); do
-		install -D -m755 "$i" "$cmod/$i"
-	done
+	make PREFIX=$pkgdir install
 }
