@@ -297,7 +297,7 @@ static int exec_(lua_State *lua) {
 	manager *man = get_manager(lua, RAISE_ERROR);		// [-0 +0 e]
 	int rc, n = lua_gettop(lua);
 
-	push_function(man->lua, lua, -1);				// [-0 +1 m]
+	push_function(man->lua, lua, 1);				// [-0 +1 m]
 
 	if ((n = push_stack(man->lua, lua, 2, lua)) < 0)	// [-0 +0 e]
 		lua_error(lua);
