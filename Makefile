@@ -8,10 +8,10 @@ all: useful/threadingc.so
 
 install: useful/threadingc.so
 	for file in `find useful -name '*.lua'` useful/http/mime.types; do \
-		/bin/install -v -D -m644 $$file $(LMOD)/$$FILE; \
+		/bin/install -D -m644 $$file $(LMOD)/$$FILE; \
 	done
 	for file in `find useful -name '*.so'`; do \
-		/bin/install -v -D -m644 $$file $(CMOD)/$$FILE; \
+		/bin/install -D -m644 $$file $(CMOD)/$$FILE; \
 	done
 
 useful/threadingc.so: threadingc.c
