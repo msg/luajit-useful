@@ -6,48 +6,35 @@ local class = { }
 function class.Class(...)
 	local class = { } -- luacheck: ignore
 
-	class.__index	= class
-	class._is_a	= { [class] = true }
+	-- class._is_a will be overwritten below, build it locally
+	local _is_a	= { [class] = true }
 
 	local bases = {...}
-	for i, base in ipairs(bases) do
+	for _, base in ipairs(bases) do
 		for k, v in pairs(base) do
-			-- all members of class implementation (last entry) used
-			if i == #bases then
-				class[k] = v
-			-- __index ignored for base classes
-			-- it will have to be called or set specifically
-			elseif k ~= '__index' then
-				class[k] = v
-			end
+			class[k] = v
 		end
+		_is_a[base] = true
 		if base._is_a ~= nil then
-			for c in pairs(base._is_a) do
-				class._is_a[c] = true
+			for class_ in pairs(base._is_a) do
+				_is_a[class_] = true
 			end
 		end
-		class._is_a[base] = true
 	end
+	class.__index	= class -- overridden by base(s) above
+	class._is_a	= _is_a	-- set it after all bases parsed
 
-	function class:is_a(def)
-		return self._is_a[def]
+	function class:is_a(class_)
+		return self._is_a[class_]
 	end
 
 	setmetatable(class, {
 		__call = function (class, ...) -- luacheck: ignore
-			local instance = setmetatable({ _class=class, }, class)
-			-- run the new method if it's there
-			if class.__gc ~= nil then
-				instance._gc = newproxy(true)
-				local mt = getmetatable(instance._gc)
-				mt.__gc = function()
-					class.__gc(instance)
-				end
-			end
-			if class.new then
-				class.new(instance, ...)
-			end
-			return instance
+			local obj = { _class = class, _gc = newproxy(true), }
+			getmetatable(obj._gc).__gc =
+					class.__gc or function() end
+			setmetatable(obj, class):new(...)
+			return obj
 		end
 	})
 
