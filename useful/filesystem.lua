@@ -288,7 +288,7 @@ ftw = function(path, func, attributes_)
 			end
 			if not entry_stat then -- luacheck:ignore
 			elseif entry_stat.mode == 'directory' then
-				if ftw(entry_path, func) == false then
+				if ftw(entry_path, func, attributes_) == false then
 					return false
 				end
 			end
