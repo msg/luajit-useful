@@ -13,43 +13,37 @@ local  band		=  bit.band
 local  bnot		=  bit.bnot
 local  bor		=  bit.bor
 
-		  require('posix.fcntl')
-		  require('posix.unistd')
-		  require('posix.sys.mman')
+			  require('posix.fcntl')
+			  require('posix.unistd')
+			  require('posix.sys.mman')
 
-local class	= require('useful.class')
-local  Class	=  class.Class
+local class		= require('useful.class')
+local  Class		=  class.Class
 
 local function align_to_page(addr)
-	return band(addr, bnot(0xfff))
+	return cast('char *', band(cast('off_t', addr), bnot(0xfff)))
 end
+mmap.align_to_page = align_to_page
 
 mmap.MMAP = Class({
 	new = function(self, path, addr, size, options)
 		options = options or {
-			mode = 'read',
+			prot		= C.PROT_READ,
+			open_flags	= C.O_RDONLY,
+			flags		= C.MAP_SHARED,
 		}
 		self.path	= path
-		self.addr	= cast('off_t', align_to_page(addr))
+		self.addr	= align_to_page(addr)
 		local offset	= addr - self.addr
 		self.size	= cast('size_t', size + offset)
 
-		local prot	= C.PROT_READ
-		local flags	= bor(C.O_RDONLY, C.O_SYNC)
-		if options.mode == 'write' then
-			prot	= C.PROT_WRITE
-			flags	= bor(C.O_WRONLY, C.OSYNC)
-		elseif options.mode == 'read_write' then
-			prot	= bor(C.PROT_READ, C.PROT_WRITE)
-			flags	= bor(C.O_RDWR, C.OSYNC)
-		end
-		self.fd = C.open(path, flags)
+		self.fd = C.open(path, options.open_flags)
 		if self.fd < 0 then
 			self.p = nil
 			return
 		end
-		self.base	= C.mmap(nil, self.size, prot,
-					C.MAP_SHARED, self.fd, self.addr)
+		self.base	= C.mmap(self.addr, self.size, options.prot,
+					options.flags, self.fd, offset)
 		if self.base == C.MAP_FAILED then
 			C.close(self.fd)
 			self.base	= nil
@@ -58,10 +52,6 @@ mmap.MMAP = Class({
 		else
 			self.base	= cast('char *', self.base)
 			self.p		= self.base + offset
-			-- cleanup code
-			self.base	= gc(self.base, function()
-				self:__gc()
-			end)
 		end
 	end,
 
