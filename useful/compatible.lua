@@ -25,8 +25,8 @@ table.unpack	= table.unpack or unpack
 loadstring	= loadstring or load
 
 local struct		= require('useful.struct')
-string.pack	= string.pack
-string.unpack	= struct.unpack
+string.pack	= string.pack or struct.pack
+string.unpack	= string.unpack or struct.unpack
 
 setfenv = setfenv or function(fn, env)
 	local i = 1
