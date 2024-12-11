@@ -79,6 +79,7 @@ function Request:new(size)
 	self.dentries	= status.char_range_array(MAXENTRIES)
 	self.args	= status.char_range_array(MAXENTRIES)
 	self.time	= time.now()
+	self.path	= self.dentries[0]
 end
 
 function Request:setup(sock)
@@ -129,6 +130,7 @@ function Request:process_path(path)		--luacheck:ignore
 			ndentries = ndentries + 1
 		end
 		if found == QUESTION then
+			self.path.back = dentry.back
 			break
 		end
 	end
@@ -166,9 +168,10 @@ end
 function Request:recv_status()
 	self.time	= time.now()
 	Status.recv_status(self)
-	self.method	= do_status(self.status)
-	self.uri	= do_status(self.status)
-	self.protocol	= do_status(self.status)
+	local status	= self.status:save()
+	self.method	= do_status(status)
+	self.uri	= do_status(status)
+	self.protocol	= do_status(status)
 	local args	= self:process_path(self.uri:save())
 	self:process_args(args)
 end
@@ -375,7 +378,7 @@ function Transaction:handle()
 		maybe a set of rewrite rules? this would happen before
 		the modules get the request.
 	]]--
-	local s = request.uri.s
+	local s = request.path.s
 	if s == '/status' then
 		self:status()
 	elseif s == '/hook' then
@@ -395,6 +398,7 @@ function Transaction:process(sock)
 		self.request:recv()
 		self.num_requests = self.num_requests + 1
 		--self:dump_request()
+		print(self.request.status.s)
 		self:handle()
 	until self.keep_alive == 0
 	self.time = time.dt(time.now(), start) * 1e3
@@ -448,7 +452,7 @@ function HTTPServer:client(sock, id, addr)
 	sock:shutdown()
 	xact.working = false
 	insert(self.xacts_idle, xact)
-	if not ok then
+	if not ok and not err:find('closed') and not err:find('timeout') then
 		error(err)
 	end
 end
@@ -460,6 +464,7 @@ local function main(args)
 	server_:run()
 	print('server exitted')
 end
+server.main = main
 
 if is_main() then
 	main(arg)
