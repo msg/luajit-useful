@@ -108,6 +108,9 @@ function struct.pack(format, ...)
       end
       table.insert(stream, str:sub(1, len))
       i = i + n:len() -- luacheck:ignore
+    elseif opt == 'x' then
+      table.insert(stream, '\0')
+      i = i + 1 -- luacheck:ignore
     end
   end
 
@@ -195,6 +198,8 @@ function struct.unpack(format, stream, pos)
       table.insert(vars, stream:sub(iterator, iterator + len - 1))
       iterator = iterator + len
       i = i + n:len() -- luacheck:ignore
+    elseif opt == 'x' then
+      i = i + 1 -- luacheck:ignore
     end
   end
 
