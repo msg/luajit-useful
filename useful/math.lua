@@ -8,7 +8,7 @@ local  floor		=  math.floor
 useful_math.divmod = function(x, y)
 	x = x + 0LL
 	y = y + 0LL
-	return tonumber(x / y), tonumber(y % y)
+	return tonumber(x / y), tonumber(x % y)
 end
 
 useful_math.round = function(x)
