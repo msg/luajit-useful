@@ -34,11 +34,11 @@ end
 network.iptos = iptos
 
 local stoip = function(s)
-	local ip = 0
+	local ip = 0ULL
 	for octet in s:gmatch('%d+') do
 		ip = bor(lshift(ip, 8), tonumber(octet))
 	end
-	return ip
+	return tonumber(ip)
 end
 network.stoip = stoip
 
@@ -133,11 +133,11 @@ network.config = function(ifname)
 end
 
 network.is_multicast = function(ip)
-	return band(ip, 0xf0000000) == 0xe0000000
+	return band(ip+0LL, 0xf0000000ULL) == 0xe0000000ULL
 end
 
 network.multicast_to_mac = function(ip)
-	return bor(0x000001005e000000LL, band(ip, 0x007fffff))
+	return bor(0x000001005e000000ULL, band(ip+0LL, 0x007fffffULL))
 end
 
 return network
