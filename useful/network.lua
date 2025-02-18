@@ -17,12 +17,14 @@ local  band		=  bit.band
 local  bor		=  bit.bor
 local  lshift		=  bit.lshift
 
+			  require('linux.net.if')
+			  require('linux.sockios')
+
 local bits		= require('useful.bits')
 local  getbits		=  bits.getbits
 local json		= require('useful.json')
 local system		= require('useful.system')
 local  errno_string	=  system.errno_string
-
 
 local iptos = function(ip)
 	local octets = { }
