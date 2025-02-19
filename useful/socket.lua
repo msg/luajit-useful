@@ -44,6 +44,22 @@ local errno_string = function(call)
 end
 socket.errno_string = errno_string
 
+local sockaddr_in_mt = { }
+function sockaddr_in_mt:get_addr()
+	return C.ntohl(self.sin_addr.s_addr)
+end
+function sockaddr_in_mt:get_port()
+	return C.ntohs(self.sin_port)
+end
+function sockaddr_in_mt:__index(name)
+	local fn = sockaddr_in_mt['get_'..name]
+	if fn == nil then
+		error('no field named '..name)
+	end
+	return fn(self)
+end
+socket.sockaddr_in = ffi.metatype('struct sockaddr_in', sockaddr_in_mt)
+
 local function getaddrinfo(host, port, protocol)
 	local hint		= new('struct addrinfo [1]')
 	local ai		= new('struct addrinfo *[1]')
@@ -334,7 +350,7 @@ socket.TCP = Class(socket.Socket, {
 socket.UDP = Class(socket.Socket, {
 	new = function(self)
 		socket.Socket.new(self)
-		self.fd = C.socket(C.AF_INET, C.SOCK_DGRAM, 0)
+		self.fd = C.socket(C.AF_INET, C.SOCK_DGRAM, C.IPPROTO_UDP)
 		if self.fd < 0 then
 			return nil, errno_string('socket')
 		end
@@ -369,19 +385,19 @@ socket.UDP = Class(socket.Socket, {
 
 	ip_multicast_if = function(self, addr)
 		addr		= getaddrinfo(addr, 0)
-		local imreq	= new('struct ip_mreqn[1]')
-		imreq[0].imr_address.s_addr = addr[0].sin_addr.s_addr
+		local imreq	= new('struct ip_mreq[1]')
+		imreq[0].imr_interface.s_addr = addr[0].sin_addr.s_addr
 		return self:setsockopt(C.IPPROTO_IP, C.IP_MULTICAST_IF,
 				imreq, sizeof(imreq))
 	end,
 
 	add_membership = function(self, addr, ifaddr)
 		addr		= getaddrinfo(addr, 0)
-		local imreq	= new('struct ip_mreqn[1]')
+		local imreq	= new('struct ip_mreq[1]')
 		imreq[0].imr_multiaddr.s_addr = addr[0].sin_addr.s_addr
 		if ifaddr ~= nil then
 			ifaddr	= getaddrinfo(ifaddr, 0)
-			imreq[0].imr_address.s_addr = ifaddr[0].sin_addr.s_addr
+			imreq[0].imr_interface.s_addr = ifaddr[0].sin_addr.s_addr
 		end
 		return self:setsockopt(C.IPPROTO_IP, C.IP_ADD_MEMBERSHIP,
 				imreq, sizeof(imreq))
@@ -389,7 +405,7 @@ socket.UDP = Class(socket.Socket, {
 
 	drop_membership = function(self, addr)
 		addr		= getaddrinfo(addr, 0)
-		local imreq	= new('struct ip_mreqn[1]')
+		local imreq	= new('struct ip_mreq[1]')
 		imreq[0].imr_multiaddr.s_addr = addr[0].sin_addr.s_addr
 		return self:setsockopt(C.IPPROTO_IP, C.IP_DROP_MEMBERSHIP,
 				imreq, sizeof(imreq))
