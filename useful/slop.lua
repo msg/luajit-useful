@@ -252,12 +252,14 @@ slop.Transaction = Class({
 		self.status = self:readline(inp)
 		if self.status == '' or
 		   self.status:sub(#self.status-(#eol-1)) ~= eol then
+			self.valid = false
 			return -1
 		end
 		self.args = split(strip(self.status), '%s+')
 
 		self:process_status()
 		if self.name == '' then
+			self.valid = false
 			return -1
 		elseif self.name:sub(1, #multi_start) == multi_start then
 			self.name = self.name:sub(#multi_start+1)
