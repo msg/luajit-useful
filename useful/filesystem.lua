@@ -300,12 +300,12 @@ ftw = function(path, func, attributes_)
 	for entry in filesystem.dir(path) do
 		if entry ~= '.' and entry ~= '..' then
 			local entry_path = path .. '/' .. entry
-			local entry_stat = { }
-			local ok = pcall(attributes_, entry_path, entry_stat)
+			local entry_attrs = { }
+			local ok = pcall(attributes_, entry_path, entry_attrs)
 			if not ok then
 				entry_stat = nil
 			end
-			if func(entry_path, entry_stat) == false then
+			if func(entry_path, entry_attrs) == false then
 				return false
 			end
 			if not entry_stat then -- luacheck:ignore
