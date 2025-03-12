@@ -30,29 +30,51 @@ local  split_path	=  path_.split_path
 local system		= require('useful.system')
 local  errno_string	=  system.errno_string
 
+local x_map = {
+	[C.S_IXUSR]			= 'x',
+	[C.S_ISUID]			= 'S',
+	[bor(C.S_IXUSR,C.S_ISUID)]	= 's',
+	[C.S_IXGRP]			= 'x',
+	[C.S_ISGID]			= 'S',
+	[bor(C.S_IXGRP,C.S_ISGID)]	= 's',
+	[C.S_IXOTH]			= 'x',
+	[bor(C.S_IXOTH,C.S_ISVTX)]	= 't',
+	[C.S_ISVTX]			= 'T',
+}
 local function to_permissions(st)
-	local all_permissions = 'xwr'--'rwxrwxrwx'
-	local permissions = ''
-	for i=0,8 do
-		if band(st.st_mode, lshift(1,i)) ~= 0 then
-			local flag = all_permissions:sub((i%3)+1,(i%3)+1)
-			permissions = flag..permissions
-		else
-			permissions = '-'..permissions
-		end
-	end
-	return permissions
+	return	(band(st.st_mode, C.S_IRUSR) ~= 0 and 'r' or '-') ..
+		(band(st.st_mode, C.S_IWUSR) ~= 0 and 'w' or '-') ..
+		(x_map[band(st.st_mode, bor(C.S_IXUSR, C.S_ISUID))] or '-') ..
+		(band(st.st_mode, C.S_IRGRP) ~= 0 and 'r' or '-') ..
+		(band(st.st_mode, C.S_IWGRP) ~= 0 and 'w' or '-') ..
+		(x_map[band(st.st_mode, bor(C.S_IXGRP, C.S_ISGID))] or '-') ..
+		(band(st.st_mode, C.S_IROTH) ~= 0 and 'r' or '-') ..
+		(band(st.st_mode, C.S_IWOTH) ~= 0 and 'w' or '-') ..
+		(x_map[band(st.st_mode, bor(C.S_IXOTH, C.S_ISVTX))] or '-')
 end
+filesystem.to_permissions = to_permissions
 
 local function from_permissions(permissions)
-	local mode = 0
-	for i=0,8 do
-		if permissions:sub(9-i,9-i) ~= '-' then
-			mode = bor(mode, lshift(1, i))
-		end
-	end
-	return mode
+	local function sub(i) return permissions:sub(i, i) end
+	return bor(
+		sub(1) == 'r' and C.S_IRUSR or 0,
+		sub(2) == 'w' and C.S_IWUSR or 0,
+		sub(3) == 'x' and C.S_IXUSR or 0,
+		sub(3) == 's' and bor(C.S_ISUID, C.S_IXUSR) or 0,
+		sub(3) == 'S' and C.S_ISUID or 0,
+		sub(4) == 'r' and C.S_IRGRP or 0,
+		sub(5) == 'w' and C.S_IWGRP or 0,
+		sub(6) == 'x' and C.S_IXGRP or 0,
+		sub(6) == 's' and bor(C.S_ISGID, C.S_IXGRP) or 0,
+		sub(6) == 'S' and C.S_ISGID or 0,
+		sub(7) == 'r' and C.S_IROTH or 0,
+		sub(8) == 'w' and C.S_IWOTH or 0,
+		sub(9) == 'x' and C.S_IXOTH or 0,
+		sub(9) == 't' and bor(C.S_ISVTX, C.S_IXOTH) or 0,
+		sub(9) == 'T' and C.S_ISVTX or 0
+	)
 end
+filesystem.from_permissions = from_permissions
 
 local attribute_modes = {
 	[C.S_IFDIR] = 'directory',
