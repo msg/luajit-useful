@@ -144,14 +144,19 @@ local attributes = function(filepath, arg, stat_func)
 end
 filesystem.attributes = attributes
 
+local symlink_target = function(path)
+	local buf = new('char[4096]')
+	local rc = C.readlink(path, buf, 4096)
+	if rc > -1 then
+		return fstring(buf, rc)
+	end
+end
+filesystem.symlink_target = symlink_target
+
 filesystem.symlinkattributes = function(filepath, arg)
 	local result = { attributes(filepath, arg, stat.lstat) }
 	if result[1] ~= nil then
-		local buf = new('char[4096]')
-		local rc = C.readlink(filepath, buf, 4096)
-		if rc > -1 then
-			result[1].target = fstring(buf)
-		end
+		result[1].target = symlink_target(filepath)
 	end
 	return unpack(result)
 end
