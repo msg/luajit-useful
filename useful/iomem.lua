@@ -106,7 +106,9 @@ local ReadIO = Class({
 				pos = #str + 1
 				break
 			elseif type(arg) == 'number' then
-				insert(results, str:sub(pos, pos + arg - 1))
+				if pos <= #str then
+					insert(results, str:sub(pos, pos + arg - 1))
+				end
 				pos = min(pos + arg, #str + 1)
 			else
 				error('invalid format arg #'..i)
