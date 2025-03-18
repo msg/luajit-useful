@@ -34,7 +34,7 @@ mmap.MMAP = Class({
 		}
 		self.path	= path
 		self.addr	= align_to_page(addr)
-		local offset	= addr - self.addr
+		local offset	= cast('char *', addr) - self.addr
 		self.size	= cast('size_t', size + offset)
 
 		self.fd = C.open(path, options.open_flags)
