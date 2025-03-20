@@ -308,13 +308,13 @@ ftw = function(path, func, attributes_)
 			local entry_attrs = { }
 			local ok = pcall(attributes_, entry_path, entry_attrs)
 			if not ok then
-				entry_stat = nil
+				entry_attrs = nil
 			end
 			if func(entry_path, entry_attrs) == false then
 				return false
 			end
-			if not entry_stat then -- luacheck:ignore
-			elseif entry_stat.mode == 'directory' then
+			if not entry_attrs then -- luacheck:ignore
+			elseif entry_attrs.mode == 'directory' then
 				if ftw(entry_path, func, attributes_) == false then
 					return false
 				end
