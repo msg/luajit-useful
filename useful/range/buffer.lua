@@ -133,7 +133,7 @@ buffer.Buffer = Class({
 
 	write = function(self, data)
 		if type(data) == 'string' then
-			data	= self.free.from_string(data)
+			data	= char.from_string(data)
 		end
 		local nbytes	= min(#data, #self.free)
 		local r8	= self.free:front_range(nbytes)
