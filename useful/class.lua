@@ -21,13 +21,23 @@ function class.Class(...)
 			end
 		end
 	end
-	class.__index	= class -- overridden by base(s) above
+	class.__index	= class -- maybe overridden by base(s) above
 	class._is_a	= _is_a	-- set it after all bases parsed
 
 	function class:is_a(class_)
 		return self._is_a[class_]
 	end
 
+	-- NOTE: if __newindex is overridden, setting it will be called in
+	-- new() on each self.<name> = <value> and,
+	-- rawset(self, <name>, <value>) must be used.
+	--
+	-- there were 2 design options:
+	--
+	-- 1. allow methods to be called in new()
+	-- 2. allow __newindex to handle self.
+	--
+	-- I chose option 1 as __newindex is less often used.
 	setmetatable(class, {
 		__call = function (class, ...) -- luacheck: ignore
 			local obj = { _class = class, _gc = newproxy(true), }
