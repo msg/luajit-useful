@@ -22,22 +22,23 @@ local  printf		=  stdio.printf
 
 local range_types = { }
 
-function range.range_type(declaration)
-	if range_types[declaration] ~= nil then
-		return range_types[declaration]
+function range.range_type(type)
+	if range_types[type] ~= nil then
+		return range_types[type]
 	end
 
-	local sizeof_decl = sizeof(declaration)
+	local sizeof_decl = sizeof(type)
 
 	local rmt	= { }
 	rmt.__index	= rmt
 
 	rmt.rmt		= rmt
-	rmt.declaration	= declaration
+	rmt.type	= type
 	rmt.sizeof	= sizeof_decl
 	rmt.sizemask	= rmt.sizeof - 1
-	rmt.pointer	= typeof(rmt.declaration .. '*')
+	rmt.pointer	= typeof(rmt.type .. '*')
 	rmt.struct	= typeof('struct { $ front, back; }', rmt.pointer)
+	rmt.structp	= typeof('$ *', rmt.struct)
 	rmt.meta	= metatype(rmt.struct, rmt)
 	function rmt.cast(self, type_range)
 		return type_range(cast(type_range.pointer, self.front),
@@ -169,7 +170,7 @@ function range.range_type(declaration)
 		return rmt.meta(array, array + sizeof(array) / sizeof_decl)
 	end
 	function rmt.vla(size, ...)
-		local vla	= new(declaration..'[?]', size, ...)
+		local vla	= new(type..'[?]', size, ...)
 		return vla, rmt.from_vla(vla)
 	end
 	function rmt.to_vla(self)
@@ -186,7 +187,7 @@ function range.range_type(declaration)
 	end
 	rmt.__tostring = rmt.to_string
 
-	range_types[declaration] = rmt.meta
+	range_types[type] = rmt.meta
 
 	return rmt.meta
 end
@@ -415,14 +416,14 @@ local function main()
 	for _,type in ipairs(types) do
 		local r = r8:cast(type)
 		while not r:empty() do
-			printf("swap:read_front(%s))=0x%s\n", r.declaration,
+			printf("swap:read_front(%s))=0x%s\n", r.type,
 					bit.tohex(r.swap(r:read_front())))
 		end
 	end
 	s = 'testing 1 2 3'
 	r8 = range.int8.from_string(s)
 	while not r8:empty() do
-		printf('%s front=%s\n', r8.declaration,
+		printf('%s front=%s\n', r8.type,
 				string.char(r8:read_front()))
 	end
 end
