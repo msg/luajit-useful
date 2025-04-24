@@ -64,6 +64,7 @@ function range.range_type(type)
 		n		= n or 1
 		assert(self.front + n <= self.back, 'out of range')
 		self.front	= self.front + n
+		return self
 	end
 	function rmt.get_front(self)
 		assert(self.front < self.back, 'out of range')
@@ -72,6 +73,7 @@ function range.range_type(type)
 	function rmt.set_front(self, v)
 		assert(self.front < self.back, 'out of range')
 		self.front[0]	= v
+		return self
 	end
 	function rmt.read_front(self)
 		local e		= self:get_front()
@@ -94,6 +96,7 @@ function range.range_type(type)
 		n		= n or 1
 		assert(self.front + n <= self.back, 'out of range')
 		self.back	= self.back - n
+		return self
 	end
 	function rmt.get_back(self)
 		assert(self.front < self.back, 'out of range')
@@ -102,6 +105,7 @@ function range.range_type(type)
 	function rmt.set_back(self, v)
 		assert(self.front < self.back, 'out of range')
 		self.back[-1]	= v
+		return self
 	end
 	function rmt.read_back(self)
 		local e		= self:get_back()
@@ -138,23 +142,28 @@ function range.range_type(type)
 	function rmt.write_front(self, v)
 		self:set_front(v)
 		self:pop_front()
+		return self
 	end
 	function rmt.write_front_range(self, from)
 		assert(#from <= #self * sizeof_decl, 'out of range')
 		copy(self.front, from.front, #from)
 		self:pop_front(#from)
+		return self
 	end
 	function rmt.write_front_type(self, type, value)
 		cast(type..'*', self.front)[0] = value
 		self:pop_front(sizeof(type))
+		return self
 	end
 	function rmt.write_back(self, v)
 		self:set_back(v)
 		self:pop_back()
+		return self
 	end
 	function rmt.write_back_type(self, type, value)
 		self:pop_back(sizeof(type))
 		cast(type..'*', self.back)[0] = value
+		return self
 	end
 
 	-- create new range from front or back
