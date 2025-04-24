@@ -155,7 +155,7 @@ linearize_table = function(e, leader, unknown_ok, new)
 end
 
 local linearize = function(t, leader, unknown_ok, ignore_loops)
-	local et, e = unpack(build_entry(t, ignore_loops))
+	local et, e = unpack(build_entry(t, nil, ignore_loops))
 	if et == 'table' then
 		return concat(linearize_table(e, leader, unknown_ok), '\n')
 	else
