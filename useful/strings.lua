@@ -285,5 +285,13 @@ function strings.format_engineering(value, places)
         return format(neg .. fmt, value, prefixes:sub(p,p))
 end
 
+function strings.format_commas(n)
+	local k
+	repeat
+		n, k = string.gsub(n, '^(-?%d+)(%d%d%d)', '%1,%2')
+	until k == 0
+	return n
+end
+
 return strings
 
