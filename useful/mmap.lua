@@ -15,7 +15,7 @@ local  bor		=  bit.bor
 
 			  require('posix.fcntl')
 			  require('posix.unistd')
-			  require('posix.sys.mman')
+local mman		= require('posix.sys.mman')
 
 local class		= require('useful.class')
 local  Class		=  class.Class
@@ -44,7 +44,7 @@ mmap.MMAP = Class({
 		end
 		self.base	= C.mmap(self.addr, self.size, options.prot,
 					options.flags, self.fd, offset)
-		if self.base == C.MAP_FAILED then
+		if self.base == mman.MAP_FAILED then
 			C.close(self.fd)
 			self.base	= nil
 			self.p		= nil
