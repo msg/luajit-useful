@@ -130,6 +130,7 @@ local stat_to_attributes = function(st, arg)
 	for name,func in pairs(attribute_convert) do
 		attributes[name] = func(st)
 	end
+	attributes.stat = st
 	return attributes
 end
 filesystem.stat_to_attributes = stat_to_attributes
