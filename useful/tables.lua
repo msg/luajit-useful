@@ -3,6 +3,7 @@
 --
 local tables = { }
 
+local  format		=  string.format
 local  insert		=  table.insert
 local  concat		=  table.concat
 
@@ -28,8 +29,7 @@ local function is_keyword(s)
 end
 
 local function encode(s)
-	local data = string.format('%q', s)
-	return data
+	return format('%q', s)
 end
 
 local build_entry
