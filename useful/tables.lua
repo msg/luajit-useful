@@ -98,7 +98,7 @@ local serialize_table = function(t, indent, sp, nl, unknown_ok)
 	end
 	insert(new, indent..'}')
 	local s = concat(new, nl)
-	local ns = s:gsub('%s+', ' ')
+	local ns = s:gsub('\n%s*', ' ')
 	if #indent + #ns < 64 then
 		s = ns
 	end
