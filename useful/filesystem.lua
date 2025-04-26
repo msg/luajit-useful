@@ -302,14 +302,14 @@ end
 
 local ftw
 ftw = function(path, func, attributes_)
-	attributes_ = attributes_ or filesystem.symlinkattributes
+	attributes_	= attributes_ or filesystem.symlinkattributes
 	for entry in filesystem.dir(path) do
 		if entry ~= '.' and entry ~= '..' then
-			local entry_path = path .. '/' .. entry
-			local entry_attrs = { }
+			local entry_path	= path .. '/' .. entry
+			local entry_attrs	= { }
 			local ok = pcall(attributes_, entry_path, entry_attrs)
 			if not ok then
-				entry_attrs = nil
+				entry_attrs	= nil
 			end
 			if func(entry_path, entry_attrs) == false then
 				return false
@@ -325,5 +325,14 @@ ftw = function(path, func, attributes_)
 	return true
 end
 filesystem.ftw = ftw
+
+function filesystem.ftwi(path, attributes_)
+	local yield	= coroutine.yield
+	return coroutine.wrap(function()
+		ftw(path, function(name, attrs)
+			yield(name, attrs)
+		end, attributes_)
+	end)
+end
 
 return filesystem
