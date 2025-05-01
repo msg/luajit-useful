@@ -37,10 +37,15 @@ mmap.MMAP = Class({
 		local offset	= cast('char *', addr) - self.addr
 		self.size	= cast('size_t', size + offset)
 
-		self.fd = C.open(path, options.open_flags)
-		if self.fd < 0 then
-			self.p = nil
-			return
+		if path ~= nil and path ~= '' then
+			self.fd = C.open(path, options.open_flags)
+			if self.fd < 0 then
+				self.p = nil
+				return
+			end
+		else
+			self.fd = -1
+			options.flags = bor(options.flags, C.MAP_ANONYMOUS)
 		end
 		self.base	= C.mmap(self.addr, self.size, options.prot,
 					options.flags, self.fd, offset)
