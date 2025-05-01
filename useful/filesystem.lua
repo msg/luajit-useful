@@ -335,4 +335,19 @@ function filesystem.ftwi(path, attributes_)
 	end)
 end
 
+function filesystem.glob(pattern)
+	local files	= { }
+	local dir	= pattern:sub(1,1) == '/' and '/' or '.'
+	pattern		= pattern
+			  :gsub('%.', '%%.')
+			  :gsub('%*', '[^/]*')
+			  :gsub('%?', '.')
+	ftw(dir, function(path)
+		if path:match(pattern) then
+			table.insert(files, path:sub(#dir+2))
+		end
+	end, attributes)
+	return files
+end
+
 return filesystem
