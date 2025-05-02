@@ -15,7 +15,6 @@ local  new		=  ffi.new
 local bit		= require('bit')
 local  band		=  bit.band
 local  bor		=  bit.bor
-local  lshift		=  bit.lshift
 
 			  require('posix.dirent')
 			  require('posix.errno')
@@ -168,7 +167,7 @@ filesystem.set_permissions = function(path, permissions)
 end
 
 filesystem.exists = function(path)
-	return attributes(path, 'mode') ~= nil
+	return stat.stat(path, new('struct stat')) == 0
 end
 
 local function is_mode(path, what_mode)
