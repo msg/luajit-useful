@@ -6,7 +6,6 @@ local ffi		= require('ffi')
 local  C		=  ffi.C
 local  cast		=  ffi.cast
 local  errno		=  ffi.errno
-local  fstring		=  ffi.string
 local  new		=  ffi.new
 local  sizeof		=  ffi.sizeof
 

@@ -86,10 +86,10 @@ function range.range_type(type)
 		self:pop_front(size)
 		return r8
 	end
-	function rmt.read_front_type(self, type)
-		self:pop_front(sizeof(type))
+	function rmt.read_front_type(self, type_)
+		self:pop_front(sizeof(type_))
 		-- -1 is ok because an assert is done in pop_front()
-		return cast(type..'*', self.front)[-1]
+		return cast(type_..'*', self.front)[-1]
 	end
 	-- bi-directional range api
 	function rmt.pop_back(self, n)
@@ -112,9 +112,9 @@ function range.range_type(type)
 		self:pop_back()
 		return e
 	end
-	function rmt.read_back_type(self, type)
-		self:pop_back(sizeof(type))
-		return cast(type..'*', self.back)[0]
+	function rmt.read_back_type(self, type_)
+		self:pop_back(sizeof(type_))
+		return cast(type_..'*', self.back)[0]
 	end
 	-- forward range api
 	function rmt.save(self) return rmt.meta(self.front, self.back) end
@@ -150,9 +150,9 @@ function range.range_type(type)
 		self:pop_front(#from)
 		return self
 	end
-	function rmt.write_front_type(self, type, value)
-		cast(type..'*', self.front)[0] = value
-		self:pop_front(sizeof(type))
+	function rmt.write_front_type(self, type_, value)
+		cast(type_..'*', self.front)[0] = value
+		self:pop_front(sizeof(type_))
 		return self
 	end
 	function rmt.write_back(self, v)
@@ -160,9 +160,9 @@ function range.range_type(type)
 		self:pop_back()
 		return self
 	end
-	function rmt.write_back_type(self, type, value)
-		self:pop_back(sizeof(type))
-		cast(type..'*', self.back)[0] = value
+	function rmt.write_back_type(self, type_, value)
+		self:pop_back(sizeof(type_))
+		cast(type_..'*', self.back)[0] = value
 		return self
 	end
 

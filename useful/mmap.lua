@@ -6,7 +6,6 @@ local mmap	= { }
 local ffi		= require('ffi')
 local  C		=  ffi.C
 local  cast		=  ffi.cast
-local  gc		=  ffi.gc
 
 local bit		= require('bit')
 local  band		=  bit.band
