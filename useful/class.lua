@@ -42,7 +42,9 @@ function class.Class(...)
 		__call = function (class, ...) -- luacheck: ignore
 			local obj = { _class = class, _gc = newproxy(true), }
 			getmetatable(obj._gc).__gc = function()
-				(obj.__gc or function() end)(obj)
+				(rawget(obj,'__gc') or
+				 class.__gc or
+				 function() end)(obj)
 			end
 			setmetatable(obj, class):new(...)
 			return obj
