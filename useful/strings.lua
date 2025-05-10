@@ -215,9 +215,12 @@ function strings.expand(s, ...)
 		if env[expr] ~= nil then
 			return tostring(env[expr])
 		else
-			local f = loadstring('return '..tostring(expr))
+			local f,msg = loadstring('return '..tostring(expr))
 			if not f then
-				return expr
+				f, msg = loadstring(tostring(expr))
+				if not f then
+					return expr
+				end
 			end
 			setfenv(f, env)
 			return f()
