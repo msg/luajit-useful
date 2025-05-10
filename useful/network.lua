@@ -17,6 +17,9 @@ local  band		=  bit.band
 local  bor		=  bit.bor
 local  lshift		=  bit.lshift
 
+			  require('posix.sys.ioctl')
+			  require('posix.arpa.inet')
+
 			  require('linux.net.if')
 			  require('linux.sockios')
 
