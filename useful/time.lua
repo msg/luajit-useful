@@ -73,11 +73,13 @@ local function number_to_timespec(n)
 	return timespec(floor(i), floor(f * NANO_HZ))
 end
 time.number_to_timespec = number_to_timespec
+time.to_timespec = number_to_timespec
 
 local function timespec_to_number(ts)
 	return tonumber(ts.tv_sec) + tonumber(ts.tv_nsec) / NANO_HZ
 end
 time.timespec_to_number = timespec_to_number
+time.to_number = timespec_to_number
 
 time.iso8601_fmt = '%Y%m%dT%H%M%S%Z'
 
