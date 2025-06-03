@@ -363,7 +363,7 @@ socket.UDP = Class(socket.Socket, {
 	end,
 
 	recvfrom = function(self, buf, len)
-		local from	= new('struct sockaddr_in[1]')
+		local from	= new('struct sockaddr_in')
 		local fromp	= cast('struct sockaddr *', from)
 		local size	= new('uint32_t[1]', sizeof(from))
 		local ret	= C.recvfrom(self.fd, buf, len, 0, fromp, size)
