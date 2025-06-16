@@ -99,9 +99,9 @@ local function getaddrinfo(host, port, protocol)
 end
 socket.getaddrinfo = getaddrinfo
 
-socket.addr_to_ip_port = function(addrp)
-	local host = fstring(C.inet_ntoa(addrp[0].sin_addr))
-	local port = C.htons(addrp[0].sin_port)
+socket.addr_to_ip_port = function(addr)
+	local host = fstring(C.inet_ntoa(addr.sin_addr))
+	local port = C.htons(addr.sin_port)
 	return host, port
 end
 
