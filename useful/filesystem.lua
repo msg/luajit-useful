@@ -210,6 +210,7 @@ local dir_iter = function(state)
 end
 
 filesystem.dir = function(path)
+	assert(path ~= nil, 'path nil')
 	local state = {
 		dir = C.opendir(path),
 		ent = nil,
@@ -227,7 +228,7 @@ end
 
 filesystem.list = function(path)
 	local list = { }
-	assert(path ~= nil)
+	assert(path ~= nil, 'path nil')
 	for name in filesystem.dir(path) do
 		if name ~= '.' and name ~= '..' then
 			insert(list, name)
