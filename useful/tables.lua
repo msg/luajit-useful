@@ -392,5 +392,42 @@ function tables.import(env, from, ...)
 	end
 end
 
+local metatable		= {
+	serialize	= tables.serialize,
+	deserialize	= tables.deserialize,
+	linearize	= tables.linearize,
+	save		= tables.save,
+	count		= tables.count,
+	in_table	= tables.in_table,
+	is_empty	= tables.is_empty,
+	get_path	= tables.get_path,
+	keys		= tables.keys,
+	values		= tables.values,
+	append		= tables.append,
+	copy		= tables.copy,
+	iiter		= tables.iiter,
+	map		= tables.map,
+	imap		= tables.imap,
+	equal		= tables.equal,
+	reverse		= tables.reverse,
+	sub		= tables.sub,
+	iremove		= tables.iremove,
+	update		= tables.update,
+	-- methods from table
+	getn		= table.getn,
+	insert		= table.insert,
+	remove		= table.remove,
+	concat		= table.concat,
+	sort		= table.sort,
+	move		= table.move,
+	unpack		= table.unpack, -- luacheck:ignore
+}
+metatable.__index	= metatable
+tables.metatable	= metatable
+
+function tables.new(t)
+	return setmetatable(t or {}, metatable)
+end
+
 return tables
 
