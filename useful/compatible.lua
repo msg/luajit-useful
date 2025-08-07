@@ -16,26 +16,22 @@
 -- `setfenv`, `getfenv`: lua5.1
 
 --luacheck: push ignore
-table.pack	= table.pack or function(...)
-	local t = {...}
-	t.n = select('#', ...)
-	return t
+ table.pack		=  table.pack or function(...)
+	return { n = select('#', ...), ... }
 end
-table.unpack	= table.unpack or unpack
-loadstring	= loadstring or load
+ table.unpack		=  table.unpack or unpack
+loadstring		= loadstring or load
 
 local struct		= require('useful.struct')
-string.pack	= string.pack or struct.pack
-string.unpack	= string.unpack or struct.unpack
+ string.pack		=  string.pack		or struct.pack
+ string.unpack		=  string.unpack	or struct.unpack
 
 setfenv = setfenv or function(fn, env)
 	local i = 1
 	while true do
 		local name = getupvalue(fn, i)
 		if name == '_ENV' then
-			upvaluejoin(fn, i, function()
-				return env
-			end, 1)
+			upvaluejoin(fn, i, function() return env end, 1)
 			break
 		elseif not name then
 			break
