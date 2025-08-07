@@ -204,16 +204,30 @@ function tables.count(t)
 	return i
 end
 
+function tables.in_table(t, value)
+	local compare = type(value) == 'function' and value or
+			function(v) return v == value end
+	for n,v in ipairs(t) do
+		if compare(v) then
+			return n, v
+		end
+	end
+	return nil
+end
+table.index = tables.in_table -- backward compatibility
+
 function tables.is_empty(t)
 	return next(t) == nil
 end
 
-function tables.in_table(t, e)
-	for n,v in pairs(t) do
-		if v == e then
-			return n
-		end
+function tables.get_path(t, path, default)
+	local entries = { }
+	path:gsub('[^./]+', function(entry) insert(entries, entry) end)
+	for _,entry in ipairs(entries) do
+		t = t[entry]
+		if t == nil then break end
 	end
+	return t or default
 end
 
 function tables.keys(t)
@@ -294,17 +308,6 @@ function tables.equal(a, b)
 		end
 	end
 	return true
-end
-
-function tables.index(t, value)
-	local compare = type(value) == 'function' and value or
-			function(v) return v == value end
-	for n,v in ipairs(t) do
-		if compare(v) then
-			return n, v
-		end
-	end
-	return nil
 end
 
 function tables.reverse(t)
