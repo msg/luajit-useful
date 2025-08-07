@@ -175,13 +175,17 @@ end
 tables.deserialize = deserialize
 tables.unserialize = deserialize
 
-function tables.save_table(filename, t)
+local function save(t, filename)
 	local f = io.open(filename, 'w')
 	f:write(serialize(t))
 	f:close()
 end
+tables.save = save
+function tables.save_table(filename, t) -- backward compatibility
+	save(t, filename)
+end
 
-function tables.load_table(filename)
+function tables.load(filename)
 	local f = io.open(filename, 'r')
 	if f == nil then
 		return { }
@@ -190,6 +194,7 @@ function tables.load_table(filename)
 	f:close()
 	return deserialize(data)
 end
+tables.load_table = load -- backward compatibility
 
 function tables.count(t)
 	local i = 0
