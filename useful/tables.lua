@@ -352,6 +352,16 @@ function tables.iremove(t, keep, s, e)
 	return t
 end
 
+function tables.update(t, ...)
+	local a = pack(...)
+	for i=1,a.n do
+		for k,v in pairs(a[i]) do
+			t[k] = v
+		end
+	end
+	return t
+end
+
 function tables.rep(value, count)
 	local new = {}
 	for _=1,count do
@@ -367,16 +377,6 @@ function tables.range(first, last, inc)
 		insert(new, i)
 	end
 	return new
-end
-
-function tables.update(t, ...)
-	local a = pack(...)
-	for i=1,a.n do
-		for k,v in pairs(a[i]) do
-			t[k] = v
-		end
-	end
-	return t
 end
 
 function tables.import(env, from, ...)
