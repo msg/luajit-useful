@@ -383,7 +383,7 @@ function tables.import(env, from, ...)
 	local vars = {...}
 	if #vars ~= 0 then
 		for _,n in ipairs(vars) do
-			env[n] = from[n]
+			env[vars[n]] = from[vars[n]]
 		end
 	else
 		for n,v in pairs(from) do
