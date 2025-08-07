@@ -246,12 +246,13 @@ function tables.values(t)
 	return new
 end
 
-function tables.concat(t, s)
+function tables.append(t, s)
 	for _,v in ipairs(s) do
 		insert(t, v)
 	end
 	return t
 end
+tables.concat = tables.append -- backward compatibility
 
 local copy
 copy = function(t)
