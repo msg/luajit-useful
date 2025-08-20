@@ -649,7 +649,7 @@ end
 local put_values = {
 	['nil']	= function(to_lua) C.lua_pushnil(to_lua) end,
 	['function'] = function(to_lua, v) put_function(to_lua, v) end,
-	boolean	= function(to_lua, v) C.lua_pushboolen(to_lua, v) end,
+	boolean	= function(to_lua, v) C.lua_pushboolean(to_lua, v) end,
 	string	= function(to_lua, v) C.lua_pushlstring(to_lua, v, #v) end,
 	number	= function(to_lua, v) C.lua_pushnumber(to_lua, v) end,
 	table	= function(to_lua, v) put_table(to_lua, v) end,
