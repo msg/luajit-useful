@@ -15,7 +15,10 @@ ffi.cdef([[
 ]])
 
 function path.readpath(path) -- luacheck: ignore path
-	return io.open(path,'r'):read('*a')
+	local f = io.open(path,'r')
+	local d = f:read('*a')
+	f:close()
+	return d
 end
 
 function path.writepath(path, buf) -- luacheck: ignore path
