@@ -137,10 +137,16 @@ filesystem.stat_to_attributes = stat_to_attributes
 local attributes = function(filepath, arg, stat_func)
 	local st = new('struct stat')
 	local rc = (stat_func or stat.stat)(filepath, st)
-	if rc < 0 then
-		return nil, errno_string()
+	if rc > -1 then
+		return stat_to_attributes(st, arg)
+	elseif stat_func == nil then
+		-- deal with broken symlinks and treat them as symlinks
+		rc = stat.lstat(filepath, st)
+		if rc >= 0 then
+			return stat_to_attributes(st, arg)
+		end
 	end
-	return stat_to_attributes(st, arg)
+	return nil, errno_string()
 end
 filesystem.attributes = attributes
 
